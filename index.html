@@ -18,7 +18,23 @@
   color-scheme:dark;
 }
 html,body{height:100%;margin:0;background:var(--void);color:var(--bone);overflow:hidden;font-family:var(--body)}
-#game{position:fixed;inset:0;width:100vw;height:100vh;display:block;cursor:crosshair;background:var(--void)}
+#game{position:fixed;inset:0;width:100vw;height:100vh;display:block;cursor:crosshair;background:var(--void);touch-action:none}
+/* touch controls: a thumbstick that appears where the left thumb lands, big buttons under the right thumb */
+#touchUI{position:fixed;inset:0;z-index:3;pointer-events:none;-webkit-user-select:none;user-select:none}
+#stick{position:absolute;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;border:2px solid rgba(211,199,174,.28);background:rgba(0,0,0,.28);display:none}
+#knob{position:absolute;left:35px;top:35px;width:50px;height:50px;border-radius:50%;background:rgba(211,199,174,.35)}
+.tbtn{position:absolute;pointer-events:auto;touch-action:none;-webkit-tap-highlight-color:transparent;border-radius:50%;
+  border:2px solid rgba(192,42,26,.75);color:var(--bone);font-family:var(--display);letter-spacing:.04em;
+  width:92px;height:92px;font-size:20px;background:rgba(20,8,9,.6)}
+.tbtn:active{background:rgba(125,15,15,.75)}
+.tbtn.mid{width:68px;height:68px;font-size:16px}
+.tbtn.small{width:48px;height:48px;font-size:14px;border-color:rgba(211,199,174,.3)}
+#tAttack{right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(28px + env(safe-area-inset-bottom,0px))}
+#tAbility{right:calc(122px + env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px))}
+#tDash{right:calc(30px + env(safe-area-inset-right,0px));bottom:calc(134px + env(safe-area-inset-bottom,0px))}
+#tUse{right:calc(120px + env(safe-area-inset-right,0px));bottom:calc(106px + env(safe-area-inset-bottom,0px));border-color:rgba(224,184,74,.85)}
+#tPause{left:calc(18px + env(safe-area-inset-left,0px));top:calc(96px + env(safe-area-inset-top,0px))}
+#tTree{left:calc(74px + env(safe-area-inset-left,0px));top:calc(96px + env(safe-area-inset-top,0px));font-size:11px}
 .ov{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
   background:radial-gradient(ellipse at center,rgba(22,8,9,.78),rgba(3,1,2,.97) 72%);
   padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
@@ -97,6 +113,16 @@ h2{font-family:var(--display);font-weight:400;font-size:clamp(34px,5vw,58px);lin
 
 <canvas id="game"></canvas>
 
+<div id="touchUI" hidden>
+  <div id="stick"><div id="knob"></div></div>
+  <button class="tbtn" id="tAttack" aria-label="Attack">ATTACK</button>
+  <button class="tbtn mid" id="tAbility" aria-label="Ability">SKILL</button>
+  <button class="tbtn mid" id="tDash" aria-label="Dash">DASH</button>
+  <button class="tbtn mid" id="tUse" aria-label="Use" hidden>USE</button>
+  <button class="tbtn small" id="tPause" aria-label="Pause">II</button>
+  <button class="tbtn small" id="tTree" aria-label="Skill tree">TREE</button>
+</div>
+
 <div id="ovTitle" class="ov">
   <p class="eyebrow">A descent without end</p>
   <h1>The Deepening</h1>
@@ -104,7 +130,7 @@ h2{font-family:var(--display);font-weight:400;font-size:clamp(34px,5vw,58px);lin
   <button class="btn" id="btnStart">Descend</button>
   <button class="btn ghost" id="btnTitleSet">Settings</button>
   <p class="small" id="bestLine"></p>
-  <p class="small" id="buildTag">Beta build 0.13 · tell the dev what killed you</p>
+  <p class="small" id="buildTag">Beta build 0.14 · tell the dev what killed you</p>
   <p class="small">WASD move · Mouse aim · Left click attack · Right click or Q ability · Space dash · E take loot, open chests, pray · K skill tree · Esc pause · M mute · Controllers supported</p>
 </div>
 
@@ -153,6 +179,7 @@ h2{font-family:var(--display);font-weight:400;font-size:clamp(34px,5vw,58px);lin
     <label for="setSfx">Sound effects <input type="range" id="setSfx" min="0" max="100" step="5"></label>
     <label for="setShake" class="chk"><input type="checkbox" id="setShake"> Screen shake</label>
     <label for="setGrain" class="chk"><input type="checkbox" id="setGrain"> Film grain</label>
+    <label for="setAuto" class="chk"><input type="checkbox" id="setAuto"> Auto-attack (always on for touch)</label>
   </div>
   <button class="btn ghost" id="btnFull">Toggle fullscreen</button>
   <button class="btn" id="btnSetBack">Back</button>
@@ -1261,8 +1288,17 @@ function itemXp(x){
 }
 
 // ================= player actions =================
+// Auto-attack: is there an enemy you'd actually hit right now? With mouse aim it must also be roughly where you're facing.
+function autoTarget(){
+  const p=G.player, c=CLASSES[G.cls], range=c.ranged?260:c.reach+6, free=TOUCH.active||PAD.active;
+  for(const e of G.enemies){ if(e.dead||dist(e,p)-e.r>range) continue;
+    if(!free&&angDiff(Math.atan2(e.y-p.y,e.x-p.x),p.facing)>(c.ranged?.35:c.arc/2)) continue;
+    if(c.ranged&&!los(p.x,p.y,e.x,e.y)) continue; return e; }
+  return null;
+}
 function moveInput(){
   let mx=((keys.KeyD||keys.ArrowRight)?1:0)-((keys.KeyA||keys.ArrowLeft)?1:0), my=((keys.KeyS||keys.ArrowDown)?1:0)-((keys.KeyW||keys.ArrowUp)?1:0);
+  if(!mx&&!my&&(TOUCH.m.x||TOUCH.m.y)) return [TOUCH.m.x,TOUCH.m.y];
   if(!mx&&!my&&(PAD.m.x||PAD.m.y)){const a=Math.atan2(PAD.m.y,PAD.m.x), l=Math.min(1,Math.hypot(PAD.m.x,PAD.m.y)); return [Math.cos(a)*l,Math.sin(a)*l];}
   const l=Math.hypot(mx,my); return l?[mx/l,my/l]:[0,0];
 }
@@ -1375,13 +1411,13 @@ function update(dt){
     } else {t.hitP=false; t.hitE.clear();} }
   G.nearProp=null; {let nd=38; for(const o of G.props){ if(o.kind==='urn'||(o.kind==='chest'&&o.open)||(o.kind==='shrine'&&o.used)||(o.kind==='altar'&&o.state!=='idle')) continue; const d=dist(o,p); if(d<nd){nd=d; G.nearProp=o;}}}
   let mw=mouseWorld();
-  if(PAD.active){ // right stick aims; otherwise a little aim assist toward the nearest visible enemy
+  if(PAD.active||TOUCH.active){ // right stick aims; otherwise aim assist toward the nearest visible enemy
     if(PAD.a.x||PAD.a.y) p.facing=Math.atan2(PAD.a.y,PAD.a.x);
     else {let best=null, bd=260; for(const e of G.enemies){if(e.dead) continue; const d=dist(e,p); if(d<bd&&los(p.x,p.y,e.x,e.y)){bd=d; best=e;}}
       if(best) p.facing=Math.atan2(best.y-p.y,best.x-p.x); else if(mx||my) p.facing=Math.atan2(my,mx);}
     mw={x:p.x+Math.cos(p.facing)*120,y:p.y+Math.sin(p.facing)*120};
   } else p.facing=Math.atan2(mw.y-p.y,mw.x-p.x);
-  if((mouse.down||PAD.fire)&&p.atkT<=0&&!G.dying) attack();
+  if((mouse.down||PAD.fire||TOUCH.fire||((TOUCH.active||SET.auto)&&autoTarget()))&&p.atkT<=0&&!G.dying) attack();
 
   G.flowT-=dt; if(G.flowT<=0){G.flowT=.25; G.flow=bfs(G.map,tileIdx(p.x,p.y),40);}
   for(const e of G.enemies) if(!e.dead) updateEnemy(e,dt);
@@ -1695,8 +1731,9 @@ function drawHUD(){
   // abilities
   const c=CLASSES[G.cls], pa=PAD.active, ak=pa?'LB':'RMB / Q',
     slots=[{k:pa?'RT':'LMB',n:G.cls==='necro'?'Spear':c.ranged?'Bolt':'Strike',cd:Math.max(0,p.atkT)/s.atkCd},{k:G.cls==='necro'?`${ak} · ${G.allies.length}/${maxMinions()}`:ak,n:c.abilName,cd:Math.max(0,p.abilT)/s.abilCd,sec:p.abilT},{k:pa?'A':'SPACE',n:s.canDash?'Dash':'No dash',cd:s.canDash?Math.max(0,p.dashT):1}];
-  const bw=70, gap=8, bx=W/2-(bw*3+gap*2)/2, by=H-20-56;
-  slots.forEach((sl,i)=>{const X=bx+i*(bw+gap); ctx.fillStyle='rgba(10,6,7,.8)'; ctx.fillRect(X,by,bw,56);
+  // on touch the buttons are the ability bar, so cards and prompts sit above them instead
+  const bw=70, gap=8, bx=W/2-(bw*3+gap*2)/2, by=TOUCH.active?H-250:H-20-56;
+  if(!TOUCH.active) slots.forEach((sl,i)=>{const X=bx+i*(bw+gap); ctx.fillStyle='rgba(10,6,7,.8)'; ctx.fillRect(X,by,bw,56);
     if(sl.cd>0){ctx.fillStyle='rgba(0,0,0,.6)'; ctx.fillRect(X,by,bw,56*clamp(sl.cd,0,1));}
     ctx.strokeStyle=sl.cd>0?'#2e1c1e':'#7d0f0f'; ctx.strokeRect(X+.5,by+.5,bw-1,55);
     ctx.textAlign='center'; ctx.font=`17px ${FD}`; ctx.fillStyle=sl.cd>0?'#857a72':'#d3c7ae'; ctx.fillText(sl.n,X+bw/2,by+24);
@@ -1711,7 +1748,7 @@ function drawHUD(){
       ctx.fillStyle='rgba(0,0,0,.6)'; ctx.fillRect(X+1,Y+34,gw-2,3); ctx.fillStyle='#8a7a5a'; ctx.fillRect(X+1,Y+34,(gw-2)*it.xp/itemNeed(it.level),3);}
     else {ctx.font=`italic 13px ${FB}`; ctx.fillStyle='#4a403c'; ctx.fillText('Empty',X+8,Y+24);}});}
   // ground item
-  if(G.near){const it=G.near.item, eq=G.gear[it.slot]; const cards=[[it,'On the floor · E to take']]; if(eq) cards.push([eq,'You carry']);
+  if(G.near){const it=G.near.item, eq=G.gear[it.slot]; const cards=[[it,`On the floor · ${TOUCH.active?'tap USE':PAD.active?'X':'E'} to take`]]; if(eq) cards.push([eq,'You carry']);
     const cw=230, tot=cards.length*cw+(cards.length-1)*10; let X=W/2-tot/2;
     for(const [ci,lab] of cards){ctx.font=`13px ${FB}`; const lines=itemLines(ci).flatMap(l=>wrapText(l.t,cw-20).map(t=>Object.assign({},l,{t}))), ch=54+lines.length*17, Y=by-14-ch;
       ctx.fillStyle='rgba(8,5,6,.92)'; ctx.fillRect(X,Y,cw,ch); ctx.strokeStyle=hexA(RAR[ci.rarity].c,.6); ctx.strokeRect(X+.5,Y+.5,cw-1,ch-1);
@@ -1723,7 +1760,7 @@ function drawHUD(){
   // prompt for a chest or shrine within reach
   if(!G.near&&G.nearProp){const o=G.nearProp, sh=o.kind==='shrine', al=o.kind==='altar';
     const title=sh?o.type.n:al?'Blood Arena':'An old chest', line=sh?o.type.d:al?'Seal yourself in. Survive three waves for a rare reward.':'Open it. Probably.', bw3=Math.min(380,W-40), X=W/2-bw3/2, Y=by-14-62;
-    const col=sh?o.type.c:al?'#e0301a':'#e0b84a', key=PAD.active?'X':'E';
+    const col=sh?o.type.c:al?'#e0301a':'#e0b84a', key=TOUCH.active?'TAP USE':PAD.active?'X':'E';
     ctx.fillStyle='rgba(8,5,6,.92)'; ctx.fillRect(X,Y,bw3,58); ctx.strokeStyle=sh||al?hexA(col,.7):'#5a4020'; ctx.strokeRect(X+.5,Y+.5,bw3-1,57);
     ctx.textAlign='left'; ctx.font=`19px ${FD}`; ctx.fillStyle=col; ctx.fillText(title,X+12,Y+17);
     ctx.textAlign='right'; ctx.font=`10px ${FB}`; ctx.fillStyle='#857a72'; ctx.fillText(`${key} TO ${sh?'PRAY':al?'BEGIN':'OPEN'}`,X+bw3-12,Y+17);
@@ -1743,7 +1780,11 @@ function drawHUD(){
     ctx.font=`26px ${FD}`; ctx.fillStyle='#c02a1a'; ctx.fillText(l2,W/2,H*.3+52);
     ctx.font=`italic 16px ${FB}`; ctx.fillStyle='#857a72'; ctx.fillText(l3,W/2,H*.3+84); ctx.globalAlpha=1;}
   if(G.depth===1&&G.time<14&&!G.near&&!G.nearProp){ctx.globalAlpha=clamp((14-G.time)/2,0,1)*.9; ctx.textAlign='center'; ctx.font=`13px ${FB}`; ctx.fillStyle='#857a72';
-    ctx.fillText('WASD move · click attack · right click ability · space dash · find the stairs down',W/2,by-24); ctx.globalAlpha=1;}
+    const hint=TOUCH.active?'Left thumb moves · you attack automatically · DASH to dodge · find the stairs down'
+      :PAD.active?'Left stick moves · RT attacks · LB skill · A dashes · find the stairs down'
+      :SET.auto?'WASD move · aim with the mouse · you attack automatically · space dash · find the stairs down'
+      :'WASD move · hold left click to attack · right click skill · space dash · find the stairs down';
+    const hl=wrapText(hint,W-40); hl.forEach((l,i)=>ctx.fillText(l,W/2,by-24-(hl.length-1-i)*17)); ctx.globalAlpha=1;}
 }
 function wrapText(t,w){const out=[]; let cur=''; for(const word of t.split(' ')){const nx=cur?cur+' '+word:word; if(cur&&ctx.measureText(nx).width>w){out.push(cur); cur=word;} else cur=nx;} if(cur) out.push(cur); return out;}
 function fit(t,w){ if(ctx.measureText(t).width<=w) return t; while(t.length>1&&ctx.measureText(t+'…').width>w) t=t.slice(0,-1); return t+'…'; }
@@ -1884,17 +1925,18 @@ $('treeCv').addEventListener('click',ev=>{const h=treeHit(ev); if(h>=0&&G.points
 
 // ================= settings =================
 const SET=(()=>{let s=null; try{s=JSON.parse(localStorage.getItem('deepening.settings')||'null')}catch(e){}
-  return Object.assign({music:55,sfx:100,shake:true,grain:true},s||{});})();
+  return Object.assign({music:55,sfx:100,shake:true,grain:true,auto:false},s||{});})();
 function saveSet(){try{localStorage.setItem('deepening.settings',JSON.stringify(SET))}catch(e){}}
 function applySet(){if(SND.ac){SND.music.gain.value=SET.music/100; SND.sfx.gain.value=SET.sfx/100;}}
 function openSettings(from){
-  SET.back=from; $('setMusic').value=SET.music; $('setSfx').value=SET.sfx; $('setShake').checked=SET.shake; $('setGrain').checked=SET.grain;
+  SET.back=from; $('setMusic').value=SET.music; $('setSfx').value=SET.sfx; $('setShake').checked=SET.shake; $('setGrain').checked=SET.grain; $('setAuto').checked=SET.auto;
   showOnly('ovSettings');
 }
 $('setMusic').oninput=e=>{SET.music=+e.target.value; applySet(); saveSet();};
 $('setSfx').oninput=e=>{SET.sfx=+e.target.value; applySet(); saveSet(); play('hit');};
 $('setShake').onchange=e=>{SET.shake=e.target.checked; saveSet();};
 $('setGrain').onchange=e=>{SET.grain=e.target.checked; saveSet();};
+$('setAuto').onchange=e=>{SET.auto=e.target.checked; saveSet();};
 $('btnFull').onclick=()=>{try{const d=document; (d.fullscreenElement?d.exitFullscreen():d.documentElement.requestFullscreen()).catch(()=>{});}catch(e){}};
 $('btnSetBack').onclick=()=>showOnly(SET.back||'ovTitle');
 $('btnTitleSet').onclick=()=>{initAudio(); openSettings('ovTitle');};
@@ -1949,6 +1991,45 @@ function treePad(b,hit,dt){
   if(hit(0)&&TS.hover>=0&&G.points>0&&canTake(TS.hover)){G.alloc.add(TS.hover); G.points--; recalc(); play('level'); refreshChar();}
 }
 
+// ================= touch =================
+// The first touch switches to touch mode: a floating thumbstick on the left half, buttons on the right,
+// automatic aim and attack. Moving a real mouse switches back.
+const TOUCH={active:false,m:{x:0,y:0},fire:false,id:null,ox:0,oy:0};
+function setTouch(on){
+  if(TOUCH.active===on) return; TOUCH.active=on;
+  if(on){PAD.active=false; cv.style.cursor='none'; initAudio(); if(SND.ac&&SND.ac.state==='suspended') SND.ac.resume();} else cv.style.cursor='crosshair';
+  syncTouchUI();
+}
+function syncTouchUI(){
+  const show=TOUCH.active&&state==='play'&&G&&!G.paused&&!G.dying;
+  $('touchUI').hidden=!show;
+  if(!show){TOUCH.fire=false; endStick({pointerId:TOUCH.id}); return;}
+  $('tUse').hidden=!(G.near||G.nearProp);
+  const p=G.player, s=G.stats, cd=(el,k)=>{el.style.background=k>0?`conic-gradient(rgba(0,0,0,.65) ${k*360}deg, rgba(20,8,9,.6) 0)`:'';};
+  cd($('tAbility'),Math.max(0,p.abilT)/s.abilCd); cd($('tDash'),s.canDash?Math.max(0,p.dashT):1);
+}
+addEventListener('pointerdown',e=>{ if(e.pointerType==='touch') setTouch(true); },true);
+addEventListener('pointermove',e=>{ if(e.pointerType==='mouse'&&TOUCH.active&&(Math.abs(e.movementX)+Math.abs(e.movementY)>2)) setTouch(false); });
+cv.addEventListener('pointerdown',e=>{
+  if(e.pointerType!=='touch'||state!=='play'||!G||G.paused) return;
+  e.preventDefault();
+  if(e.clientX<W*.6&&TOUCH.id===null){TOUCH.id=e.pointerId; TOUCH.ox=e.clientX; TOUCH.oy=e.clientY;
+    const st=$('stick'); st.style.left=e.clientX+'px'; st.style.top=e.clientY+'px'; st.style.display='block'; $('knob').style.transform='';}
+});
+addEventListener('pointermove',e=>{
+  if(e.pointerId!==TOUCH.id) return;
+  const dx=e.clientX-TOUCH.ox, dy=e.clientY-TOUCH.oy, R=55, d=Math.hypot(dx,dy), k=d>R?R/d:1;
+  TOUCH.m=d<8?{x:0,y:0}:{x:dx*k/R,y:dy*k/R}; $('knob').style.transform=`translate(${dx*k}px,${dy*k}px)`;
+});
+function endStick(e){ if(e.pointerId!==TOUCH.id||TOUCH.id===null) return; TOUCH.id=null; TOUCH.m={x:0,y:0}; $('stick').style.display='none'; }
+addEventListener('pointerup',endStick); addEventListener('pointercancel',endStick);
+const tap=(id,fn)=>$(id).addEventListener('pointerdown',e=>{e.preventDefault(); e.stopPropagation(); if(state==='play'&&G&&!G.paused&&!G.dying&&!G.transition) fn();});
+tap('tAbility',()=>useAbility()); tap('tDash',()=>dash());
+tap('tUse',()=>{ if(G.near) takeNear(); else if(G.nearProp) useProp(G.nearProp); });
+tap('tPause',()=>showOnly('ovPause')); tap('tTree',()=>toggleChar());
+$('tAttack').addEventListener('pointerdown',e=>{e.preventDefault(); TOUCH.fire=true;});
+for(const ev of ['pointerup','pointercancel','pointerleave']) $('tAttack').addEventListener(ev,()=>{TOUCH.fire=false;});
+
 // ================= input =================
 addEventListener('keydown',e=>{
   if(['Space','Tab','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault();
@@ -1967,7 +2048,7 @@ addEventListener('keydown',e=>{
 });
 addEventListener('keyup',e=>{keys[e.code]=false;});
 addEventListener('mousemove',e=>{mouse.x=e.clientX; mouse.y=e.clientY; if(PAD.active&&(Math.abs(e.movementX)+Math.abs(e.movementY)>2)){PAD.active=false; cv.style.cursor='crosshair';}});
-cv.addEventListener('mousedown',e=>{ if(state!=='play'||!G||G.paused) return; if(e.button===0) mouse.down=true; if(e.button===2&&!G.transition&&!G.dying) useAbility(); });
+cv.addEventListener('mousedown',e=>{ if(state!=='play'||!G||G.paused||TOUCH.active) return; if(e.button===0) mouse.down=true; if(e.button===2&&!G.transition&&!G.dying) useAbility(); });
 addEventListener('mouseup',e=>{if(e.button===0) mouse.down=false;});
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 addEventListener('blur',()=>{for(const k in keys) keys[k]=false; mouse.down=false; if(state==='play'&&G&&!G.paused) showOnly('ovPause');});
@@ -1999,6 +2080,7 @@ function frame(t){
   const dt=Math.min(.05,(t-last)/1000); last=t;
   pollPad(dt);
   if(state==='play'&&G&&!G.paused) update(dt);
+  syncTouchUI();
   if(state!=='play'||!G||G.paused||G.dying) MUS.target=0;
   musicTick();
   render(); requestAnimationFrame(frame);
