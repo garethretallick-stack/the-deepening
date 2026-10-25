@@ -130,7 +130,7 @@ h2{font-family:var(--display);font-weight:400;font-size:clamp(34px,5vw,58px);lin
   <button class="btn" id="btnStart">Descend</button>
   <button class="btn ghost" id="btnTitleSet">Settings</button>
   <p class="small" id="bestLine"></p>
-  <p class="small" id="buildTag">Beta build 0.14 · tell the dev what killed you</p>
+  <p class="small" id="buildTag">Beta build 0.15 · tell the dev what killed you</p>
   <p class="small">WASD move · Mouse aim · Left click attack · Right click or Q ability · Space dash · E take loot, open chests, pray · K skill tree · Esc pause · M mute · Controllers supported</p>
 </div>
 
@@ -922,7 +922,18 @@ function solidAt(px,py){const tx=Math.floor(px/TILE), ty=Math.floor(py/TILE); if
 function collides(x,y,r){const st=r>14?r/2:r; for(let ox=-r;ox<=r+.01;ox+=st) for(let oy=-r;oy<=r+.01;oy+=st) if(solidAt(x+ox,y+oy)) return true; return false;}
 function move(e,dx,dy){
   const steps=Math.ceil(Math.max(Math.abs(dx),Math.abs(dy))/6)||1, sx=dx/steps, sy=dy/steps;
-  for(let i=0;i<steps;i++){ if(!collides(e.x+sx,e.y,e.r)) e.x+=sx; if(!collides(e.x,e.y+sy,e.r)) e.y+=sy; }
+  for(let i=0;i<steps;i++){
+    if(!collides(e.x+sx,e.y,e.r)) e.x+=sx; else if(sx&&Math.abs(sy)<Math.abs(sx)*.3) slide(e,sx,0);
+    if(!collides(e.x,e.y+sy,e.r)) e.y+=sy; else if(sy&&Math.abs(sx)<Math.abs(sy)*.3) slide(e,0,sy);
+  }
+}
+// Clipping a wall corner while walking straight: ease sideways around it instead of sticking.
+function slide(e,sx,sy){
+  const st=Math.min(1.5,Math.abs(sx||sy));
+  for(const n of [4,-4,8,-8]){
+    if(sx&&!collides(e.x+sx,e.y+n,e.r)&&!collides(e.x,e.y+Math.sign(n)*st,e.r)){e.y+=Math.sign(n)*st; return;}
+    if(sy&&!collides(e.x+n,e.y+sy,e.r)&&!collides(e.x+Math.sign(n)*st,e.y,e.r)){e.x+=Math.sign(n)*st; return;}
+  }
 }
 function los(ax,ay,bx,by){const d=Math.hypot(bx-ax,by-ay), n=Math.ceil(d/12); for(let i=1;i<n;i++) if(solidAt(ax+(bx-ax)*i/n,ay+(by-ay)*i/n)) return false; return true;}
 const tileIdx=(x,y)=>Math.floor(y/TILE)*MW+Math.floor(x/TILE);
@@ -1070,6 +1081,8 @@ function strike(e,mult,a,o={}){
   const s=G.stats; let dmg=s.dmg*mult*rand(.9,1.1); const crit=o.forceCrit||Math.random()<s.crit; if(crit) dmg*=s.critMult;
   hitEnemy(e,dmg,Object.assign({crit,angle:a},o));
 }
+// A tiny freeze sells a big hit, but back-to-back freezes feel like lag: at most one every quarter second.
+function hitStop(t){ if(G.time-(G.lastStop??-9)<.25) return; G.lastStop=G.time; G.hitstop=Math.max(G.hitstop||0,t); }
 function hitEnemy(e,dmg,o={}){
   if(e.dead) return; const s=G.stats;
   if(s.execute&&e.hp<e.maxHp*.3) dmg*=2;
@@ -1089,7 +1102,7 @@ function hitEnemy(e,dmg,o={}){
     if(Math.random()<s.chain) chainLightning(e,dmg*.6*(s.u.storm?.6:1));
     if(s.u.bleed){e.bleed={t:3,dps:dmg*.5*s.u.bleed/3}; e.bleedTick=e.bleedTick||.5;}
   }
-  if(!o.quiet){play(o.crit?'crit':'hit',e); G.hitstop=Math.max(G.hitstop||0,o.crit?.07:.03);
+  if(!o.quiet){play(o.crit?'crit':'hit',e); if(o.crit) hitStop(.045);
     if(o.crit){G.effects.push({type:'ring',x:e.x,y:e.y,r0:4,r1:26,t:0,max:.15,color:'#ffe0a0',w:4}); G.shake=Math.min(14,G.shake+3);}}
   if(e.hp<=0) killEnemy(e);
 }
@@ -1110,7 +1123,7 @@ function killEnemy(e){
   blood(e.x,e.y,e.boss?60:16); play(e.type==='bloat'||e.boss?'splat':'kill',e);
   if(!e.boss&&e.type!=='bloat'){G.corpses.push({x:e.x,y:e.y}); if(G.corpses.length>40) G.corpses.shift();}
   gibs(sp,e.x,e.y+e.r*.7,cs,Math.cos(e.face)<0,Math.atan2(e.y-G.player.y,e.x-G.player.x),e.boss?1.4:1);
-  G.hitstop=Math.max(G.hitstop||0,e.boss?.25:.05);
+  if(e.boss) G.hitstop=.25; else hitStop(.035);
   if(e.boss) G.flash=.8;
   if(e.type==='bloat'){ // bursts whether you killed it or it reached you
     G.effects.push({type:'ring',x:e.x,y:e.y,r0:10,r1:72,t:0,max:.35,color:'#b6d24a',w:8,light:true}); spark(e.x,e.y,'#b6d24a',20); G.shake=Math.min(14,G.shake+6);
@@ -1253,6 +1266,7 @@ function damagePlayer(amt,src){
   const p=G.player, s=G.stats; if(p.inv>0||state!=='play'||G.dying) return;
   amt=Math.max(1,Math.round(amt*(1-s.armor)*(1+s.dmgTaken)));
   p.hp-=amt; p.inv=.3; p.hurtT=.35;
+  if(src&&src.x!==undefined) G.hurtDir={a:Math.atan2(src.y-p.y,src.x-p.x),t:.7};
   if(src&&src.mod==='vampiric'&&!src.dead){src.hp=Math.min(src.maxHp,src.hp+amt*1.5); spark(src.x,src.y,'#c0101a',8);} G.shake=Math.min(14,G.shake+4+amt*.15);
   text(p.x,p.y-18,amt,'#ff4a3a',15); blood(p.x,p.y,7); play('hurt');
   if(s.thorns>0&&src&&!src.dead&&src.hp!==undefined) hitEnemy(src,amt*s.thorns,{proc:false,noKb:true,color:'#c9a0a0',quiet:true});
@@ -1318,13 +1332,13 @@ function attack(echo){
   } else {
     play('swing'); move(p,Math.cos(a)*5,Math.sin(a)*5);
     G.effects.push({type:'slash',x:p.x,y:p.y,a,arc:c.arc,reach:c.reach,t:0,max:.16,color:big?'#ff8c1a':c.slash});
-    for(const e of G.enemies){if(e.dead) continue; const d=dist(p,e); if(d>c.reach+e.r) continue;
-      if(angDiff(Math.atan2(e.y-p.y,e.x-p.x),a)>c.arc/2&&d>e.r+p.r+4) continue; strike(e,mult,a,o);}
+    for(const e of G.enemies){if(e.dead) continue; const d=dist(p,e); if(d>c.reach+e.r+6) continue; // a little forgiving at the edges
+      if(angDiff(Math.atan2(e.y-p.y,e.x-p.x),a)>c.arc/2+.15&&d>e.r+p.r+6) continue; strike(e,mult,a,o);}
     hitUrns(o=>{const d=dist(p,o); return d<c.reach+8&&(d<20||angDiff(Math.atan2(o.y-p.y,o.x-p.x),a)<=c.arc/2);},a);
   }
 }
 function useAbility(){
-  const p=G.player, s=G.stats; if(p.abilT>0) return; p.abilT=s.abilCd; castAbility();
+  const p=G.player, s=G.stats; if(p.abilT>0){ if(p.abilT<.3) p.bufAbil=.3; return; } p.bufAbil=0; p.abilT=s.abilCd; castAbility();
   if(s.u.crown) for(let i=0;i<12;i++){const a=i*Math.PI/6; // Crown of the Drowned
     G.projectiles.push({x:p.x,y:p.y,vx:Math.cos(a)*360,vy:Math.sin(a)*360,r:4,owner:'player',life:.7,color:'#cfe8f0',pierce:1,mult:.6*s.u.crown});}
   if(s.echo) G.pending.push({t:.35,fn:castAbility});
@@ -1355,7 +1369,8 @@ function castAbility(){
   }
 }
 function dash(){
-  const p=G.player, s=G.stats; if(p.dashT>0||!s.canDash||p.dashTime>0) return;
+  const p=G.player, s=G.stats; if(!s.canDash) return;
+  if(p.dashT>0||p.dashTime>0){ if(p.dashT<.25) p.bufDash=.2; return; } p.bufDash=0; // pressed a touch early: dash the moment it's ready
   let [mx,my]=moveInput(); if(!mx&&!my){mx=Math.cos(p.facing);my=Math.sin(p.facing);}
   p.dashTime=.17; p.dvx=mx*560; p.dvy=my*560; p.dashT=1; p.inv=Math.max(p.inv,.22); play('dash');
 }
@@ -1387,6 +1402,7 @@ function update(dt){
     return;
   }
   if(G.flash>0) G.flash=Math.max(0,G.flash-dt*2.5);
+  if(G.hurtDir) G.hurtDir.t-=dt;
   if(G.hitstop>0&&!G.dying){G.hitstop-=dt; G.shake=Math.max(0,G.shake-dt*10); return;}
   if(G.dying){G.dying-=dt; if(G.dying<=0){die(); return;} dt*=.3;}
   G.time+=dt;
@@ -1416,7 +1432,13 @@ function update(dt){
     else {let best=null, bd=260; for(const e of G.enemies){if(e.dead) continue; const d=dist(e,p); if(d<bd&&los(p.x,p.y,e.x,e.y)){bd=d; best=e;}}
       if(best) p.facing=Math.atan2(best.y-p.y,best.x-p.x); else if(mx||my) p.facing=Math.atan2(my,mx);}
     mw={x:p.x+Math.cos(p.facing)*120,y:p.y+Math.sin(p.facing)*120};
-  } else p.facing=Math.atan2(mw.y-p.y,mw.x-p.x);
+  } else { p.facing=Math.atan2(mw.y-p.y,mw.x-p.x);
+    // mouse aim magnetism: an enemy within ~20° of the cursor and in range pulls the aim onto it
+    const c=CLASSES[G.cls], range=c.ranged?300:c.reach+40; let best=null, bd=.35;
+    for(const e of G.enemies){ if(e.dead||dist(e,p)-e.r>range) continue; const ad=angDiff(Math.atan2(e.y-p.y,e.x-p.x),p.facing); if(ad<bd&&los(p.x,p.y,e.x,e.y)){bd=ad; best=e;} }
+    if(best) p.facing=Math.atan2(best.y-p.y,best.x-p.x); }
+  if(p.bufDash>0){p.bufDash-=dt; if(p.dashT<=0&&p.dashTime<=0&&!G.dying) dash();}
+  if(p.bufAbil>0){p.bufAbil-=dt; if(p.abilT<=0&&!G.dying) useAbility();}
   if((mouse.down||PAD.fire||TOUCH.fire||((TOUCH.active||SET.auto)&&autoTarget()))&&p.atkT<=0&&!G.dying) attack();
 
   G.flowT-=dt; if(G.flowT<=0){G.flowT=.25; G.flow=bfs(G.map,tileIdx(p.x,p.y),40);}
@@ -1460,6 +1482,7 @@ function update(dt){
     if(d.kind==='orb'){ if(dd<80){const a=Math.atan2(p.y-d.y,p.x-d.x);d.x+=Math.cos(a)*220*dt;d.y+=Math.sin(a)*220*dt;}
       if(dd<p.r+10){healP(s.maxHp*.12); G.drops.splice(i,1); play('pick');} }
     else if(dd<nd){nd=dd; G.near=d;}}
+  if(G.near&&!G.gear[G.near.item.slot]&&dist(G.near,p)<22) takeNear(); // nothing in that slot yet: just put it on
   for(const t of G.torches){ if(Math.abs(t.x-p.x)>520||Math.abs(t.y-p.y)>420||Math.random()>dt*3.5) continue;
     addP({x:t.x+rand(-3,3),y:t.y-10,vx:rand(-12,12),vy:rand(-50,-25),life:rand(.8,1.6),max:1.6,size:2,color:`rgb(${G.theme.torch})`,drag:.6,emissive:true}); }
   // ground hazards: fire and bile, a short arming delay first so they can be dodged
@@ -1620,6 +1643,18 @@ function render(){
   if(hpk<.35||p.hurtT>0){const a=(p.hurtT>0?.35:0)+(hpk<.35?(.35-hpk)*1.2*(.6+.4*Math.sin(G.time*6.6)):0);
     const rg=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*.3,W/2,H/2,Math.max(W,H)*.7); rg.addColorStop(0,'rgba(120,0,0,0)'); rg.addColorStop(1,`rgba(120,0,0,${clamp(a,0,.7)})`); ctx.fillStyle=rg; ctx.fillRect(0,0,W,H);}
   drawHUD();
+  // which way the last hit came from: a red arrowhead near the screen edge
+  if(G.hurtDir&&G.hurtDir.t>0){const r=Math.min(W,H)*.4; ctx.save(); ctx.translate(W/2,H/2); ctx.rotate(G.hurtDir.a);
+    ctx.fillStyle=`rgba(220,25,15,${G.hurtDir.t/.7*.85})`; ctx.beginPath(); ctx.moveTo(r+22,0); ctx.lineTo(r,-16); ctx.lineTo(r+6,0); ctx.lineTo(r,16); ctx.closePath(); ctx.fill(); ctx.restore();}
+  // mouse reticle: where you're aiming, with a ring that fills as your next attack becomes ready
+  const mouseAim=state==='play'&&!G.paused&&!TOUCH.active&&!PAD.active;
+  const cur=mouseAim?'none':'crosshair'; if(cv.style.cursor!==cur&&!TOUCH.active&&!PAD.active) cv.style.cursor=cur;
+  if(mouseAim){const k=1-clamp(p.atkT/G.stats.atkCd,0,1), x=mouse.x, y=mouse.y;
+    ctx.strokeStyle='rgba(0,0,0,.6)'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(x,y,9,0,7); ctx.stroke();
+    ctx.strokeStyle=k<1?'rgba(211,199,174,.35)':'rgba(211,199,174,.8)'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(x,y,9,0,7); ctx.stroke();
+    if(k<1){ctx.strokeStyle='#e07a2c'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(x,y,9,-Math.PI/2,-Math.PI/2+k*Math.PI*2); ctx.stroke();}
+    ctx.fillStyle='#e8dccb'; ctx.fillRect(x-1,y-1,2,2);
+    for(const [dx,dy] of [[0,-1],[0,1],[-1,0],[1,0]]){ctx.fillRect(x+dx*13-(dx?2:.5),y+dy*13-(dy?2:.5),dx?4:1,dy?4:1);}}
   if(G.transition){const t=G.transition.t, a=t<.55?t/.55:Math.max(0,1-(t-.55)/.55); ctx.fillStyle=`rgba(0,0,0,${a})`; ctx.fillRect(0,0,W,H);}
 }
 function drawStairs(g){
