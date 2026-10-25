@@ -189,6 +189,8 @@ h2{font-family:var(--display);font-weight:400;font-size:clamp(34px,5vw,58px);lin
   <h2 id="deadTitle"></h2>
   <p class="tag" id="deadFlavor"></p>
   <div class="deadStats" id="deadStats"></div>
+  <button class="btn ghost" id="btnCopyRun">Copy run summary for the dev</button>
+  <textarea id="runSummary" readonly hidden rows="4" style="width:min(560px,100%);background:var(--pit);color:var(--bone);border:1px solid var(--edge);font:13px/1.5 var(--body);padding:8px"></textarea>
   <button class="btn" id="btnAgain">Return to the Gate</button>
 </div>
 
@@ -720,7 +722,7 @@ const LEG_CHANCE=.006, LEG_CHANCE_BOSS=.06;
 function dropItem(x,y,slot,bias=0,force,legChance=LEG_CHANCE){
   const item=Math.random()<legChance?makeLegendary(G.depth,slot):makeItem(slot||pick(SLOTS),G.depth,bias,force);
   G.drops.push({kind:'item',x,y,t:0,item});
-  if(item.rarity==='legendary'){play('legendary'); text(x,y-30,'LEGENDARY','#ff8c1a',16); G.flash=Math.max(G.flash||0,.25);
+  if(item.rarity==='legendary'){G.legsFound=(G.legsFound||0)+1; play('legendary'); text(x,y-30,'LEGENDARY','#ff8c1a',16); G.flash=Math.max(G.flash||0,.25);
     G.effects.push({type:'ring',x,y,r0:6,r1:70,t:0,max:.7,color:'#ff8c1a',w:4,light:true});}
 }
 function itemLines(it){const lp=it.leg?legPow(it):1;
@@ -765,13 +767,21 @@ function die(){
   state='dead'; G.paused=true;
   const best=Math.max(loadBest(),G.depth); saveBest(best);
   const gained=runSouls(); META.souls+=gained; META.runs++; saveMeta();
-  const [verb,fl]=pick(DEATH);
+  const [verb,fl]=pick(DEATH), killer=G.lastHitBy||'something in the dark';
   $('deadTitle').textContent=`${verb} at depth ${G.depth}`;
-  $('deadFlavor').textContent=fl;
-  const m=Math.floor(G.time/60), s=Math.floor(G.time%60);
-  $('deadStats').innerHTML=[[G.depth,'Depth'],[G.level,'Level'],[G.kills,'Kills'],[best,'Deepest ever']].map(([v,k])=>`<div><b>${v}</b><span>${k}</span></div>`).join('')
+  $('deadFlavor').textContent=`Killed by ${killer}. ${fl}`;
+  const m=Math.floor(G.time/60), s=Math.floor(G.time%60), num=v=>Math.round(v||0).toLocaleString();
+  $('deadStats').innerHTML=[[G.depth,'Depth'],[G.level,'Level'],[G.kills,'Kills'],[best,'Deepest ever'],
+    [num(G.dmgDealt),'Damage dealt'],[num(G.dmgTaken),'Damage taken'],[num(G.bigHit),'Biggest hit'],[G.legsFound||0,'Legendaries']].map(([v,k])=>`<div><b>${v}</b><span>${k}</span></div>`).join('')
     +`<div style="grid-column:1/-1"><b style="color:var(--ember)">+${gained} souls</b><span>${META.souls} carried to the Gate</span></div>`
     +`<div style="grid-column:1/-1"><span>${CLASSES[G.cls].name} · ${m}m ${String(s).padStart(2,'0')}s in the dark</span></div>`;
+  // a one-paragraph report a tester can paste straight back to the dev
+  const gear=SLOTS.map(k=>{const it=G.gear[k]; return it?`${it.name} (${RAR[it.rarity].n}, lv ${it.level}, depth ${it.ilvl||1})`:`no ${k}`;}).join('; ');
+  const keys=[...G.alloc].map(id=>TREE.nodes[id]).filter(n=>n.ks).map(n=>n.name);
+  G.summary=`The Deepening beta ${BUILD}: ${CLASSES[G.cls].name}, level ${G.level}, died on depth ${G.depth} to ${killer} after ${m}m ${s}s. `
+    +`Kills ${G.kills}, damage dealt ${num(G.dmgDealt)}, taken ${num(G.dmgTaken)}, biggest hit ${num(G.bigHit)}, legendaries ${G.legsFound||0}. `
+    +`Gear: ${gear}. Skill points spent ${G.alloc.size-1}, keystones: ${keys.join(', ')||'none'}. Souls banked ${META.souls}.`;
+  $('runSummary').hidden=true; $('runSummary').value=G.summary; $('btnCopyRun').textContent='Copy run summary for the dev';
   setTimeout(()=>{if(state==='dead') showOnly('ovDead');},350);
 }
 
@@ -1090,7 +1100,7 @@ function hitEnemy(e,dmg,o={}){
   // a raised shield turns aside blows from the front
   if(e.T.shield&&o.angle!==undefined&&e.state!=='windup'&&angDiff(o.angle+Math.PI,e.face)<1.0){
     dmg*=.25; spark(e.x+Math.cos(e.face)*10,e.y+Math.sin(e.face)*10,'#d8cbb0',6); if(Math.random()<.5) text(e.x,e.y-e.r-12,'BLOCKED','#9a917c',11);}
-  dmg=Math.max(1,Math.round(dmg)); e.hp-=dmg; e.flash=.09; e.hurt=3;
+  dmg=Math.max(1,Math.round(dmg)); G.dmgDealt=(G.dmgDealt||0)+dmg; if(dmg>(G.bigHit||0)) G.bigHit=dmg; e.hp-=dmg; e.flash=.09; e.hurt=3;
   if(!o.noKb){const a=o.angle!==undefined?o.angle:Math.atan2(e.y-G.player.y,e.x-G.player.x);
     const k=(o.kb||160)*(e.boss||e.type==='stalker'?.12:e.T.r>15?.4:1); e.kb.x+=Math.cos(a)*k; e.kb.y+=Math.sin(a)*k;}
   text(e.x+rand(-6,6),e.y-e.r,dmg,o.crit?'#ffd36a':(o.color||'#e8dccb'),o.crit?17:12);
@@ -1127,7 +1137,7 @@ function killEnemy(e){
   if(e.boss) G.flash=.8;
   if(e.type==='bloat'){ // bursts whether you killed it or it reached you
     G.effects.push({type:'ring',x:e.x,y:e.y,r0:10,r1:72,t:0,max:.35,color:'#b6d24a',w:8,light:true}); spark(e.x,e.y,'#b6d24a',20); G.shake=Math.min(14,G.shake+6);
-    const pl=G.player; if(dist(pl,e)<72+pl.r) damagePlayer(e.dmg,null);
+    const pl=G.player; if(dist(pl,e)<72+pl.r) damagePlayer(e.dmg,null,'a bursting Bloat');
     for(const o of G.enemies) if(o!==e&&!o.dead&&dist(o,e)<72+o.r) hitEnemy(o,e.dmg*1.5,{proc:false,angle:Math.atan2(o.y-e.y,o.x-e.x),kb:240,color:'#b6d24a'});
     for(let k=0;k<3;k++) addHazard(e.x+rand(-26,26),e.y+rand(-26,26),20,3,4+G.depth,'#9acd32');}
   if(e.mod==='splitting') for(let k=0;k<2;k++){const a=rand(0,6.28), x=e.x+Math.cos(a)*16, y=e.y+Math.sin(a)*16;
@@ -1262,9 +1272,10 @@ function explosion(x,y,dmg,r){
   spark(x,y,'#ffb04a',16); G.shake=Math.min(14,G.shake+4);
   for(const e of G.enemies){if(e.dead) continue; if(dist(e,{x,y})<r+e.r) hitEnemy(e,dmg,{proc:false,angle:Math.atan2(e.y-y,e.x-x),kb:220,color:'#ffb04a'});}
 }
-function damagePlayer(amt,src){
+function damagePlayer(amt,src,label){
   const p=G.player, s=G.stats; if(p.inv>0||state!=='play'||G.dying) return;
   amt=Math.max(1,Math.round(amt*(1-s.armor)*(1+s.dmgTaken)));
+  G.dmgTaken=(G.dmgTaken||0)+amt; G.lastHitBy=label||(src&&src.name?(src.boss?src.name:'a '+src.name):'something in the dark');
   p.hp-=amt; p.inv=.3; p.hurtT=.35;
   if(src&&src.x!==undefined) G.hurtDir={a:Math.atan2(src.y-p.y,src.x-p.x),t:.7};
   if(src&&src.mod==='vampiric'&&!src.dead){src.hp=Math.min(src.maxHp,src.hp+amt*1.5); spark(src.x,src.y,'#c0101a',8);} G.shake=Math.min(14,G.shake+4+amt*.15);
@@ -1338,7 +1349,7 @@ function attack(echo){
   }
 }
 function useAbility(){
-  const p=G.player, s=G.stats; if(p.abilT>0){ if(p.abilT<.3) p.bufAbil=.3; return; } p.bufAbil=0; p.abilT=s.abilCd; castAbility();
+  const p=G.player, s=G.stats; G.usedAbility=true; if(p.abilT>0){ if(p.abilT<.3) p.bufAbil=.3; return; } p.bufAbil=0; p.abilT=s.abilCd; castAbility();
   if(s.u.crown) for(let i=0;i<12;i++){const a=i*Math.PI/6; // Crown of the Drowned
     G.projectiles.push({x:p.x,y:p.y,vx:Math.cos(a)*360,vy:Math.sin(a)*360,r:4,owner:'player',life:.7,color:'#cfe8f0',pierce:1,mult:.6*s.u.crown});}
   if(s.echo) G.pending.push({t:.35,fn:castAbility});
@@ -1409,7 +1420,7 @@ function update(dt){
   const p=G.player, s=G.stats;
   p.atkT-=dt; p.abilT-=dt; p.dashT-=dt; p.inv-=dt; p.hurtT-=dt;
   p.swing=Math.max(0,p.swing-dt/Math.max(.12,s.atkCd*.6));
-  if(!G.dying){p.hp=Math.min(s.maxHp,p.hp+(s.regen-s.drain)*dt); if(p.hp<=0){p.hp=0; startDying();}}
+  if(!G.dying){p.hp=Math.min(s.maxHp,p.hp+(s.regen-s.drain)*dt); if(p.hp<=0){p.hp=0; G.lastHitBy='your own bleeding'; startDying();}}
   p.ghost+= (p.hp-p.ghost)*Math.min(1,dt*(p.ghost>p.hp?2.5:10));
   if(p.hp<s.maxHp*.3){p.beatT-=dt; if(p.beatT<=0){p.beatT=.95; play('beat');}}
   const [mx,my]=G.dying?[0,0]:moveInput();
@@ -1422,7 +1433,7 @@ function update(dt){
   // spike traps: rest, rattle, then strike anything standing on them
   for(const t of G.traps){ const ph=(G.time+t.ph)%2.6, prev=t.state; t.state=ph<1.85?'down':ph<2.2?'warn':'up';
     if(t.state==='up'){ if(prev!=='up'&&Math.abs(t.x-p.x)<400&&Math.abs(t.y-p.y)<300) play('trap',t);
-      if(!t.hitP&&Math.abs(p.x-t.x)<15&&Math.abs(p.y-t.y)<15){t.hitP=true; damagePlayer(6+G.depth*2.5,null);}
+      if(!t.hitP&&Math.abs(p.x-t.x)<15&&Math.abs(p.y-t.y)<15){t.hitP=true; damagePlayer(6+G.depth*2.5,null,'a spike trap');}
       for(const e of G.enemies) if(!e.boss&&!e.T.phase&&!t.hitE.has(e)&&Math.abs(e.x-t.x)<15&&Math.abs(e.y-t.y)<15){t.hitE.add(e); hitEnemy(e,10+G.depth*4,{proc:false,noKb:true,color:'#d8cbb0'});}
     } else {t.hitP=false; t.hitE.clear();} }
   G.nearProp=null; {let nd=38; for(const o of G.props){ if(o.kind==='urn'||(o.kind==='chest'&&o.open)||(o.kind==='shrine'&&o.used)||(o.kind==='altar'&&o.state!=='idle')) continue; const d=dist(o,p); if(d<nd){nd=d; G.nearProp=o;}}}
@@ -1446,6 +1457,7 @@ function update(dt){
   updateAllies(dt);
   {let n=0; for(const e of G.enemies) if(e.state!=='idle'&&Math.abs(e.x-p.x)<420&&Math.abs(e.y-p.y)<320) n++; MUS.target=G.bossBar||G.stalker?1:Math.min(1,n/4);}
   updateArenas(dt);
+  checkHints(); if(G.hints&&G.hints.length){G.hints[0].t+=dt; if(G.hints[0].t>7) G.hints.shift();}
   // linger too long and something comes for you (the clock stops while a boss holds the stairs)
   if(!G.sealed) G.floorT+=dt;
   const lim=Math.max(75,150-G.depth*3);
@@ -1490,7 +1502,7 @@ function update(dt){
   for(const h of G.hazards){ if(h.delay>0){h.delay-=dt; continue;} h.t-=dt;
     if(h.owner==='player'){h.tick-=dt; if(h.tick<=0){h.tick=.5; // your fire burns them, not you
         for(const e of G.enemies) if(!e.dead&&Math.hypot(e.x-h.x,e.y-h.y)<h.r+e.r*.6) hitEnemy(e,h.dmg,{proc:false,noKb:true,color:'#ff9a3c',quiet:true});}}
-    else if(p.hazT<=0&&Math.hypot(p.x-h.x,p.y-h.y)<h.r+p.r*.4){p.hazT=.5; damagePlayer(h.dmg,null);}
+    else if(p.hazT<=0&&Math.hypot(p.x-h.x,p.y-h.y)<h.r+p.r*.4){p.hazT=.5; damagePlayer(h.dmg,null,h.color==='#ff7a2a'?'fire':'bile');}
     if(Math.random()<dt*4) addP({x:h.x+rand(-h.r,h.r)*.7,y:h.y+rand(-h.r,h.r)*.5,vx:0,vy:-35,life:.6,max:.6,size:2,color:h.color,drag:.5,emissive:true}); }
   G.hazards=G.hazards.filter(h=>h.t>0);
   for(let i=G.pending.length-1;i>=0;i--){const q=G.pending[i]; q.t-=dt; if(q.t<=0){G.pending.splice(i,1); q.fn();}}
@@ -1800,6 +1812,12 @@ function drawHUD(){
     ctx.textAlign='left'; ctx.font=`19px ${FD}`; ctx.fillStyle=col; ctx.fillText(title,X+12,Y+17);
     ctx.textAlign='right'; ctx.font=`10px ${FB}`; ctx.fillStyle='#857a72'; ctx.fillText(`${key} TO ${sh?'PRAY':al?'BEGIN':'OPEN'}`,X+bw3-12,Y+17);
     ctx.textAlign='left'; ctx.font=`13px ${FB}`; ctx.fillStyle='#d3c7ae'; ctx.fillText(fit(line,bw3-24),X+12,Y+40);}
+  // first-time tip, top centre: fades in, holds, fades out
+  if(G.hints&&G.hints.length){const h=G.hints[0], a=Math.min(1,h.t/.4,(7-h.t)/.6), bw4=Math.min(460,W-40);
+    ctx.font=`14px ${FB}`; const lines=wrapText(h.text,bw4-28), bh=24+lines.length*19, X=W/2-bw4/2, Y=G.bossBar?96:84;
+    ctx.globalAlpha=clamp(a,0,1); ctx.fillStyle='rgba(8,5,6,.92)'; ctx.fillRect(X,Y,bw4,bh); ctx.fillStyle='#e07a2c'; ctx.fillRect(X,Y,3,bh);
+    ctx.strokeStyle='#2e1c1e'; ctx.strokeRect(X+.5,Y+.5,bw4-1,bh-1); ctx.textAlign='left'; ctx.fillStyle='#d3c7ae';
+    lines.forEach((l,i)=>ctx.fillText(l,X+16,Y+21+i*19)); ctx.globalAlpha=1;}
   // the Stalker: a warning, and an arrow at the screen edge pointing where it is
   if(G.stalker&&!G.stalker.dead){const st=G.stalker, sx=(st.x-G.cam.x)*ZOOM+W/2, sy=(st.y-G.cam.y)*ZOOM+H/2, pu=.6+.4*Math.sin(G.time*5);
     ctx.textAlign='center'; ctx.font=`20px ${FD}`; ctx.fillStyle=`rgba(255,40,30,${pu})`; ctx.fillText('IT IS HUNTING YOU',W/2,G.bossBar?78:30);
@@ -2094,6 +2112,30 @@ $('btnCloseChar').onclick=()=>hideAll();
 $('btnResume').onclick=()=>hideAll();
 $('btnAbandon').onclick=()=>{ if(G){const b=Math.max(loadBest(),G.depth); saveBest(b); META.souls+=Math.floor(runSouls()/2); META.runs++; saveMeta();} showHub(); };
 $('btnAgain').onclick=()=>showHub();
+$('btnCopyRun').onclick=()=>{ const b=$('btnCopyRun'), t=$('runSummary'), shown=()=>{t.hidden=false; t.focus(); t.select();};
+  try{ navigator.clipboard.writeText(G.summary).then(()=>{b.textContent='Copied. Paste it to the dev';},()=>{b.textContent='Select the text below and copy it'; shown();}); }
+  catch(e){ b.textContent='Select the text below and copy it'; shown(); } };
+// one place for the build number: the title screen and run summaries both read it
+const BUILD='0.16';
+// ----- first-time tips: each shows once ever, worded for whatever you're playing with -----
+const HINTS=(()=>{try{return new Set(JSON.parse(localStorage.getItem('deepening.hints')||'[]'))}catch(e){return new Set()}})();
+const keyFor=a=>({dash:TOUCH.active?'Tap DASH':PAD.active?'Press A':'Press Space', use:TOUCH.active?'Tap USE':PAD.active?'Press X':'Press E',
+  tree:TOUCH.active?'Tap TREE':PAD.active?'Press Y':'Press K', skill:TOUCH.active?'Tap SKILL':PAD.active?'Press LB':'Right click or Q'})[a];
+function hint(id,text){
+  if(!G||HINTS.has(id)) return; HINTS.add(id);
+  try{localStorage.setItem('deepening.hints',JSON.stringify([...HINTS]))}catch(e){}
+  (G.hints=G.hints||[]).push({text,t:0});
+}
+function checkHints(){
+  const p=G.player, s=G.stats;
+  if(G.enemies.some(e=>e.state!=='idle'&&dist(e,p)<300)) hint('enemy',`Enemies glow red just before they strike. Dash through the blow: you can't be hurt mid-dash. ${keyFor('dash')}.`);
+  if(G.near) hint('loot',`Loot. Standing on it shows how it compares with what you carry. ${keyFor('use')} to take it.`);
+  if(G.time>25&&!G.usedAbility) hint('skill',`Your class skill is ready, and it recharges fast. ${keyFor('skill')}.`);
+  if(G.explored[tileIdx(G.stairs.x,G.stairs.y)]&&dist(G.stairs,p)<260) hint('stairs','The stairs down. Once you take them there is no coming back up, so loot first if you dare.');
+  if(p.hp<s.maxHp*.35) hint('lowhp','Low on life. Red orbs heal you: the dead drop them, and so do smashed urns.');
+  if(G.points>0) hint('points',`You have a skill point to spend. ${keyFor('tree')} to open the skill tree.`);
+}
+$('buildTag').textContent=`Beta build ${BUILD} · tell the dev what killed you`;
 
 function resize(){
   DPR=Math.min(window.devicePixelRatio||1,2); W=innerWidth; H=innerHeight;
