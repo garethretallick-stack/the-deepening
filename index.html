@@ -131,7 +131,7 @@ h2{font-family:var(--display);font-weight:400;font-size:clamp(34px,5vw,58px);lin
   <button class="btn ghost" id="btnTitleSet">Settings</button>
   <p class="small" id="bestLine"></p>
   <p class="small" id="buildTag">Beta build 0.15 · tell the dev what killed you</p>
-  <p class="small">WASD move · Mouse aim · Left click attack · Right click or Q ability · Space dash · E take loot, open chests, pray · K skill tree · Esc pause · M mute · Controllers supported</p>
+  <p class="small">WASD move · Arrow keys attack in that direction (or aim with the mouse and left click) · Right click or Q ability · Space dash · E take loot, open chests, pray · K skill tree · Esc pause · M mute · Controllers supported</p>
 </div>
 
 <div id="ovClass" class="ov" hidden>
@@ -1447,8 +1447,10 @@ function autoTarget(){
     if(c.ranged&&!los(p.x,p.y,e.x,e.y)) continue; return e; }
   return null;
 }
+// Arrow keys aim and attack in their direction, so laptops whose touchpad ignores clicks while you type still work.
+function arrowAim(){const x=(keys.ArrowRight?1:0)-(keys.ArrowLeft?1:0), y=(keys.ArrowDown?1:0)-(keys.ArrowUp?1:0); return x||y?Math.atan2(y,x):null;}
 function moveInput(){
-  let mx=((keys.KeyD||keys.ArrowRight)?1:0)-((keys.KeyA||keys.ArrowLeft)?1:0), my=((keys.KeyS||keys.ArrowDown)?1:0)-((keys.KeyW||keys.ArrowUp)?1:0);
+  let mx=(keys.KeyD?1:0)-(keys.KeyA?1:0), my=(keys.KeyS?1:0)-(keys.KeyW?1:0); // arrow keys attack instead (see arrowAim)
   if(!mx&&!my&&(TOUCH.m.x||TOUCH.m.y)) return [TOUCH.m.x,TOUCH.m.y];
   if(!mx&&!my&&(PAD.m.x||PAD.m.y)){const a=Math.atan2(PAD.m.y,PAD.m.x), l=Math.min(1,Math.hypot(PAD.m.x,PAD.m.y)); return [Math.cos(a)*l,Math.sin(a)*l];}
   const l=Math.hypot(mx,my); return l?[mx/l,my/l]:[0,0];
@@ -1575,7 +1577,9 @@ function update(dt){
   p.atkT-=dt; p.abilT-=dt; p.dashT-=dt; p.inv-=dt; p.hurtT-=dt;
   if(p.atk){const k=p.atk; k.t+=dt;
     if(!k.done&&k.t>=k.hitAt){k.done=true; releaseAttack(k);}
-    if(k.kind!=='cast'&&k.t>k.hitAt-.05&&k.t<k.hitAt+.07){const sp=k.heavy?190:k.kind==='thrust'?150:120; move(p,Math.cos(k.a)*sp*dt,Math.sin(k.a)*sp*dt);} // step into the blow
+    // step into the blow, but not while backing away from it (kiting shouldn't drag you into the enemy)
+    const [ix,iy]=moveInput(), away=(ix||iy)&&ix*Math.cos(k.a)+iy*Math.sin(k.a)<-.2;
+    if(k.kind!=='cast'&&!away&&k.t>k.hitAt-.05&&k.t<k.hitAt+.07){const sp=k.heavy?140:k.kind==='thrust'?100:80; move(p,Math.cos(k.a)*sp*dt,Math.sin(k.a)*sp*dt);}
     if(k.t>=k.dur) p.atk=null;}
   if(!G.dying){p.hp=Math.min(s.maxHp,p.hp+(s.regen-s.drain)*dt); if(p.hp<=0){p.hp=0; G.lastHitBy='your own bleeding'; startDying();}}
   p.ghost+= (p.hp-p.ghost)*Math.min(1,dt*(p.ghost>p.hp?2.5:10));
@@ -1594,8 +1598,13 @@ function update(dt){
       for(const e of G.enemies) if(!e.boss&&!e.T.phase&&!t.hitE.has(e)&&Math.abs(e.x-t.x)<15&&Math.abs(e.y-t.y)<15){t.hitE.add(e); hitEnemy(e,10+G.depth*4,{proc:false,noKb:true,color:'#d8cbb0'});}
     } else {t.hitP=false; t.hitE.clear();} }
   G.nearProp=null; {let nd=38; for(const o of G.props){ if(o.kind==='urn'||(o.kind==='chest'&&o.open)||(o.kind==='shrine'&&o.used)||(o.kind==='altar'&&o.state!=='idle')) continue; const d=dist(o,p); if(d<nd){nd=d; G.nearProp=o;}}}
-  let mw=mouseWorld();
-  if(PAD.active||TOUCH.active){ // right stick aims; otherwise aim assist toward the nearest visible enemy
+  let mw=mouseWorld(); const arrow=arrowAim();
+  if(arrow!==null){ // arrow keys win over the mouse, with a little pull toward an enemy in that direction
+    p.facing=arrow; const c=CLASSES[G.cls], range=c.ranged?300:c.reach+40; let best=null, bd=.4;
+    for(const e of G.enemies){ if(e.dead||dist(e,p)-e.r>range) continue; const ad=angDiff(Math.atan2(e.y-p.y,e.x-p.x),arrow); if(ad<bd&&los(p.x,p.y,e.x,e.y)){bd=ad; best=e;} }
+    if(best) p.facing=Math.atan2(best.y-p.y,best.x-p.x);
+    mw={x:p.x+Math.cos(p.facing)*120,y:p.y+Math.sin(p.facing)*120};
+  } else if(PAD.active||TOUCH.active){ // right stick aims; otherwise aim assist toward the nearest visible enemy
     if(PAD.a.x||PAD.a.y) p.facing=Math.atan2(PAD.a.y,PAD.a.x);
     else {let best=null, bd=260; for(const e of G.enemies){if(e.dead) continue; const d=dist(e,p); if(d<bd&&los(p.x,p.y,e.x,e.y)){bd=d; best=e;}}
       if(best) p.facing=Math.atan2(best.y-p.y,best.x-p.x); else if(mx||my) p.facing=Math.atan2(my,mx);}
@@ -1607,7 +1616,7 @@ function update(dt){
     if(best) p.facing=Math.atan2(best.y-p.y,best.x-p.x); }
   if(p.bufDash>0){p.bufDash-=dt; if(p.dashT<=0&&p.dashTime<=0&&!G.dying) dash();}
   if(p.bufAbil>0){p.bufAbil-=dt; if(p.abilT<=0&&!G.dying) useAbility();}
-  if((mouse.down||PAD.fire||TOUCH.fire||((TOUCH.active||SET.auto)&&autoTarget()))&&p.atkT<=0&&!G.dying) attack();
+  if((mouse.down||arrow!==null||PAD.fire||TOUCH.fire||((TOUCH.active||SET.auto)&&autoTarget()))&&p.atkT<=0&&!G.dying) attack();
 
   G.flowT-=dt; if(G.flowT<=0){G.flowT=.25; G.flow=bfs(G.map,tileIdx(p.x,p.y),40);}
   for(const e of G.enemies) if(!e.dead) updateEnemy(e,dt);
@@ -2020,8 +2029,8 @@ function drawHUD(){
   if(G.depth===1&&G.time<14&&!G.near&&!G.nearProp){ctx.globalAlpha=clamp((14-G.time)/2,0,1)*.9; ctx.textAlign='center'; ctx.font=`13px ${FB}`; ctx.fillStyle='#857a72';
     const hint=TOUCH.active?'Left thumb moves · you attack automatically · DASH to dodge · find the stairs down'
       :PAD.active?'Left stick moves · RT attacks · LB skill · A dashes · find the stairs down'
-      :SET.auto?'WASD move · aim with the mouse · you attack automatically · space dash · find the stairs down'
-      :'WASD move · hold left click to attack · right click skill · space dash · find the stairs down';
+      :SET.auto?'WASD move · aim with the mouse or arrow keys · you attack automatically · space dash · find the stairs down'
+      :'WASD move · arrow keys attack that way (or left click) · Q skill · space dash · find the stairs down';
     const hl=wrapText(hint,W-40); hl.forEach((l,i)=>ctx.fillText(l,W/2,by-24-(hl.length-1-i)*17)); ctx.globalAlpha=1;}
 }
 function wrapText(t,w){const out=[]; let cur=''; for(const word of t.split(' ')){const nx=cur?cur+' '+word:word; if(cur&&ctx.measureText(nx).width>w){out.push(cur); cur=word;} else cur=nx;} if(cur) out.push(cur); return out;}
@@ -2301,7 +2310,7 @@ $('btnCopyRun').onclick=()=>{ const b=$('btnCopyRun'), t=$('runSummary'), shown=
   try{ navigator.clipboard.writeText(G.summary).then(()=>{b.textContent='Copied. Paste it to the dev';},()=>{b.textContent='Select the text below and copy it'; shown();}); }
   catch(e){ b.textContent='Select the text below and copy it'; shown(); } };
 // one place for the build number: the title screen and run summaries both read it
-const BUILD='0.18';
+const BUILD='0.19';
 // ----- first-time tips: each shows once ever, worded for whatever you're playing with -----
 const HINTS=(()=>{try{return new Set(JSON.parse(localStorage.getItem('deepening.hints')||'[]'))}catch(e){return new Set()}})();
 const keyFor=a=>({dash:TOUCH.active?'Tap DASH':PAD.active?'Press A':'Press Space', use:TOUCH.active?'Tap USE':PAD.active?'Press X':'Press E',
