@@ -1453,26 +1453,54 @@ function moveInput(){
   if(!mx&&!my&&(PAD.m.x||PAD.m.y)){const a=Math.atan2(PAD.m.y,PAD.m.x), l=Math.min(1,Math.hypot(PAD.m.x,PAD.m.y)); return [Math.cos(a)*l,Math.sin(a)*l];}
   const l=Math.hypot(mx,my); return l?[mx/l,my/l]:[0,0];
 }
+// An attack plays out over time: a quick wind-up, the strike (where the damage lands), then recovery.
+// Swings sweep an arc, the rogue thrusts, casters kick their staff and fire from its tip.
 function attack(echo){
   const p=G.player, s=G.stats, c=CLASSES[G.cls], a=p.facing;
-  if(!echo){p.atkT=s.atkCd; if(s.u.twin) G.pending.push({t:.09,fn:()=>{if(state==='play'&&!G.dying) attack(true);}});}
-  p.swing=1; p.swingDir*=-1;
   const big=!echo&&s.u.butcher&&(G.atkN=(G.atkN||0)+1)%5===0; // Butcher's Hook: every fifth blow
   // Twin Fangs: two blows at 60% each at full power; as it fades the first blow takes back the difference
-  const tw=s.u.twin||0, mult=(big?1+2*s.u.butcher:1)*(tw?(echo?.6*tw:1-.4*tw):1), o={forceCrit:big};
-  if(big){G.shake=Math.min(14,G.shake+5); text(p.x,p.y-26,'BUTCHERED','#ff8c1a',12);}
-  if(c.ranged){
-    const necro=G.cls==='necro', sp=necro?420:480; // the necromancer's bone spear punches through one extra body
-    G.projectiles.push({x:p.x+Math.cos(a)*18,y:p.y+Math.sin(a)*18,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:big?7:5,owner:'player',life:1.1,
-      color:big?'#ff8c1a':necro?'#cfe8b0':'#b9a3ff',pierce:necro?1:0,mult,forceCrit:big});
-    play('bolt');
-  } else {
-    play('swing'); move(p,Math.cos(a)*5,Math.sin(a)*5);
-    G.effects.push({type:'slash',x:p.x,y:p.y,a,arc:c.arc,reach:c.reach,t:0,max:.16,color:big?'#ff8c1a':c.slash});
-    for(const e of G.enemies){if(e.dead) continue; const d=dist(p,e); if(d>c.reach+e.r+6) continue; // a little forgiving at the edges
-      if(angDiff(Math.atan2(e.y-p.y,e.x-p.x),a)>c.arc/2+.15&&d>e.r+p.r+6) continue; strike(e,mult,a,o);}
-    hitUrns(o=>{const d=dist(p,o); return d<c.reach+8&&(d<20||angDiff(Math.atan2(o.y-p.y,o.x-p.x),a)<=c.arc/2);},a);
+  const tw=s.u.twin||0, o={forceCrit:big}; let mult=(big?1+2*s.u.butcher:1)*(tw?(echo?.6*tw:1-.4*tw):1);
+  if(echo){releaseAttack({a,mult,o,heavy:false,big:false,dir:-p.swingDir,kind:c.ranged?'cast':G.cls==='rogue'?'thrust':'swing'}); return;}
+  p.atkT=s.atkCd; if(s.u.twin) G.pending.push({t:.12,fn:()=>{if(state==='play'&&!G.dying) attack(true);}});
+  // keep attacking and every third blow is a heavy one
+  p.combo=(G.time-(p.lastAtk??-9)<.75)?(p.combo||0)+1:1; p.lastAtk=G.time;
+  const heavy=!c.ranged&&p.combo>=3; if(heavy){p.combo=0; mult*=1.6;}
+  p.swingDir*=-1;
+  const dur=(c.ranged?.2:Math.min(.26,Math.max(.14,s.atkCd*.7)))*(heavy?1.25:1); // the blow lands ~80ms after the click: snappy, but still a swing
+  p.atk={t:0,dur,hitAt:dur*(c.ranged?.25:.32),done:false,a,mult,o,heavy,big,dir:p.swingDir,kind:c.ranged?'cast':G.cls==='rogue'?'thrust':'swing'};
+}
+function releaseAttack(k){
+  const p=G.player, c=CLASSES[G.cls], a=k.a;
+  if(k.big){G.shake=Math.min(14,G.shake+5); text(p.x,p.y-26,'BUTCHERED','#ff8c1a',12);}
+  if(k.kind==='cast'){
+    // the bolt leaves from your body so point-blank enemies still get hit; the flash shows at the staff tip
+    const necro=G.cls==='necro', sp=necro?420:480, tip=WEAPONS[G.cls].tip||26, x=p.x+Math.cos(a)*tip*.8, y=p.y+2+Math.sin(a)*tip*.8; // the necromancer's bone spear punches through one extra body
+    G.projectiles.push({x:p.x+Math.cos(a)*12,y:p.y+Math.sin(a)*12,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:k.big?7:5,owner:'player',life:1.1,
+      color:k.big?'#ff8c1a':necro?'#cfe8b0':'#b9a3ff',pierce:necro?1:0,mult:k.mult,forceCrit:k.big});
+    G.effects.push({type:'ring',x,y,r0:2,r1:16,t:0,max:.12,color:necro?'#9aff7a':'#b9a3ff',w:3}); spark(x,y,necro?'#9aff7a':'#c8b4ff',5);
+    play('bolt'); return;
   }
+  const reach=c.reach+(k.heavy?12:0), arc=c.arc*(k.heavy?1.35:1);
+  play(k.heavy?'whirlwind':'swing');
+  G.effects.push({type:'smear',a,arc,reach,dir:k.dir,t:0,max:k.heavy?.22:.15,color:k.big?'#ff8c1a':c.slash,thrust:k.kind==='thrust',heavy:k.heavy});
+  let hits=0;
+  for(const e of G.enemies){if(e.dead) continue; const d=dist(p,e); if(d>reach+e.r+6) continue; // a little forgiving at the edges
+    const ea=Math.atan2(e.y-p.y,e.x-p.x); if(angDiff(ea,a)>arc/2+.15&&d>e.r+p.r+6) continue;
+    strike(e,k.mult,a,Object.assign({kb:k.heavy?320:undefined},k.o)); hits++;
+    spark(e.x-Math.cos(ea)*e.r*.7,e.y-Math.sin(ea)*e.r*.7,'#f2e6d8',k.heavy?10:5);}
+  if(hits) G.shake=Math.min(14,G.shake+(k.heavy?6:2));
+  hitUrns(o=>{const d=dist(p,o); return d<reach+8&&(d<20||angDiff(Math.atan2(o.y-p.y,o.x-p.x),a)<=arc/2);},a);
+}
+// Where the weapon is right now: its angle and how far it's pushed out from the hand.
+function weaponPose(){
+  const p=G.player, k=p.atk; if(!k) return {ang:p.facing+.7,ext:0};
+  const c=CLASSES[G.cls], t=k.t/k.dur, h=k.hitAt/k.dur, out=x=>1-Math.pow(1-clamp(x,0,1),3), lerpA=(x,y,u)=>x+Math.atan2(Math.sin(y-x),Math.cos(y-x))*u;
+  if(k.kind==='cast') return {ang:lerpA(k.a+.7,k.a,out(t/h*1.5)), ext:t<h?-4*out(t/h):6*(1-out((t-h)/(1-h)))};
+  if(k.kind==='thrust') return {ang:k.a, ext:t<h?-6*out(t/h):t<h+.25?-6+22*out((t-h)/.25):16*(1-out((t-h-.25)/(.75-h)))};
+  const s0=k.a-k.dir*(c.arc/2+.35), s1=k.a+k.dir*(c.arc/2+.25), rest=k.a+.7, w=h*.75;
+  if(t<w) return {ang:lerpA(rest,s0,out(t/w)),ext:-2*out(t/w)};      // wind-up: pull back
+  if(t<h*1.5) return {ang:lerpA(s0,s1,out((t-w)/(h*1.5-w))),ext:2};    // the strike: fast, easing out
+  return {ang:lerpA(s1,rest,out((t-h*1.5)/(1-h*1.5))),ext:0};          // recovery
 }
 function useAbility(){
   const p=G.player, s=G.stats; G.usedAbility=true; if(p.abilT>0){ if(p.abilT<.3) p.bufAbil=.3; return; } p.bufAbil=0; p.abilT=s.abilCd; castAbility();
@@ -1545,7 +1573,10 @@ function update(dt){
   G.time+=dt;
   const p=G.player, s=G.stats;
   p.atkT-=dt; p.abilT-=dt; p.dashT-=dt; p.inv-=dt; p.hurtT-=dt;
-  p.swing=Math.max(0,p.swing-dt/Math.max(.12,s.atkCd*.6));
+  if(p.atk){const k=p.atk; k.t+=dt;
+    if(!k.done&&k.t>=k.hitAt){k.done=true; releaseAttack(k);}
+    if(k.kind!=='cast'&&k.t>k.hitAt-.05&&k.t<k.hitAt+.07){const sp=k.heavy?190:k.kind==='thrust'?150:120; move(p,Math.cos(k.a)*sp*dt,Math.sin(k.a)*sp*dt);} // step into the blow
+    if(k.t>=k.dur) p.atk=null;}
   if(!G.dying){p.hp=Math.min(s.maxHp,p.hp+(s.regen-s.drain)*dt); if(p.hp<=0){p.hp=0; G.lastHitBy='your own bleeding'; startDying();}}
   p.ghost+= (p.hp-p.ghost)*Math.min(1,dt*(p.ghost>p.hp?2.5:10));
   if(p.hp<s.maxHp*.3){p.beatT-=dt; if(p.beatT<=0){p.beatT=.95; play('beat');}}
@@ -1671,6 +1702,7 @@ function render(){
   for(const o of G.props) if(o.kind==='altar'&&o.state==='active') for(const i of o.openings) drawBarrier(ctx,(i%MW)*TILE,((i/MW)|0)*TILE);
   const ents=G.enemies.filter(e=>inView(e.x,e.y,e.r)); ents.push(G.player); for(const o of G.props) if(inView(o.x,o.y,20)) ents.push(o); for(const m of G.allies) ents.push(m); ents.sort((a,b)=>a.y-b.y);
   for(const e of ents) e===G.player?drawPlayer(ctx):e.kind?drawProp(ctx,e):e.ally?drawAlly(ctx,e):drawEnemy(ctx,e);
+  for(const f of G.effects) if(f.type==='smear') drawSmear(ctx,f);
   // low fog, drawn before the darkness so it only shows where there is light
   for(const [spd,al] of [[7,.11],[-5,.08]]){const fx=((G.time*spd)%256+256)%256, fy=((G.time*spd*.45)%256+256)%256;
     ctx.save(); ctx.globalAlpha=al; ctx.translate(fx,fy); ctx.fillStyle=FOG; ctx.fillRect(view.x0-fx-260,view.y0-fy-260,view.x1-view.x0+520,view.y1-view.y0+520); ctx.restore();}
@@ -1721,7 +1753,7 @@ function render(){
   }
   {const pc=SPRITE_DEFS[G.cls].pal.e; for(const q of eyeSpots(SPRITES[G.cls],p.x,p.y+9,Math.cos(p.facing)<0)){
     ctx.fillStyle=hexA(pc,.18); ctx.beginPath(); ctx.arc(q.x,q.y,5,0,7); ctx.fill(); ctx.fillStyle=hexA(pc,.9); ctx.fillRect(q.x-1,q.y-1,2,2);}}
-  if(G.cls==='mage'||G.cls==='necro'){const wa=playerWeaponAngle(), nc=G.cls==='necro', tip=WEAPONS[G.cls].tip||(nc?28:26); const x=p.x+Math.cos(wa)*tip, y=p.y+2+Math.sin(wa)*tip;
+  if(G.cls==='mage'||G.cls==='necro'){const ps=weaponPose(), wa=ps.ang, nc=G.cls==='necro', tip=(WEAPONS[G.cls].tip||(nc?28:26))+ps.ext; const x=p.x+Math.cos(wa)*tip, y=p.y+2+Math.sin(wa)*tip;
     ctx.fillStyle=nc?'rgba(120,255,100,.25)':'rgba(170,140,255,.3)'; ctx.beginPath(); ctx.arc(x,y,9,0,7); ctx.fill(); ctx.fillStyle=nc?'#d8ffd0':'#e8dcff'; ctx.fillRect(x-1.5,y-1.5,3,3);}
   for(const m of G.allies){ if(m.rise>0||!inView(m.x,m.y,20)) continue;
     for(const q of eyeSpots(SPRITES.minion,m.x,m.y+7,Math.cos(m.face)<0)){ctx.fillStyle='rgba(122,255,106,.22)'; ctx.beginPath(); ctx.arc(q.x,q.y,5,0,7); ctx.fill(); ctx.fillStyle='#7aff6a'; ctx.fillRect(q.x-1,q.y-1,2,2);}}
@@ -1843,20 +1875,23 @@ function drawTrap(g,t){
       if(t.state==='up'){g.fillStyle='rgba(140,12,12,.85)'; g.fillRect(hx-1,hy-h+2,2,2);}}}
 }
 function isMoving(o){const m=o.lx!==undefined&&Math.hypot(o.x-o.lx,o.y-o.ly)>.1; o.lx=o.x; o.ly=o.y; if(m) o.mvT=.12; else o.mvT=(o.mvT||0)-1/60; return o.mvT>0;}
-function playerWeaponAngle(){const p=G.player, c=CLASSES[G.cls]; return p.swing>0&&!c.ranged?p.facing+p.swingDir*(c.arc/2)*(p.swing*2-1):p.facing+.7;}
+function playerWeaponAngle(){return weaponPose().ang;}
 function drawPlayer(g){
   const p=G.player, sp=SPRITES[G.cls], flip=Math.cos(p.facing)<0, feet=p.y+9;
   if(G.dying){const k=Math.min(1,(2.2-G.dying)/.5); g.save(); g.translate(Math.round(p.x),Math.round(p.y+6)); g.rotate((flip?-1:1)*k*Math.PI/2);
     g.drawImage(sp.frames[0],-sp.cx*2,-sp.h*2+6,sp.w*2,sp.h*2); g.globalAlpha=.5; g.drawImage(sp.red[0],-sp.cx*2,-sp.h*2+6,sp.w*2,sp.h*2); g.restore(); return;}
-  const fr=sprFrame(sp,isMoving(p)), wa=playerWeaponAngle(), ws=WEAPONS[G.cls];
+  const fr=sprFrame(sp,isMoving(p)), pose=weaponPose(), wa=pose.ang, ws=WEAPONS[G.cls];
+  // squash and lean into the strike, peaking the moment the blow lands
+  const k=p.atk, q=k?Math.max(0,1-Math.abs(k.t-k.hitAt)/(k.dur*.45))*(k.heavy?1.4:1):0, la=k?k.a:0;
   g.save(); if(p.inv>0&&p.dashTime<=0&&p.hurtT<=0) g.globalAlpha=.7;
-  g.fillStyle='rgba(0,0,0,.5)'; g.beginPath(); g.ellipse(p.x,feet,10,4,0,0,7); g.fill();
-  const weapon=()=>{g.save(); g.translate(Math.round(p.x),Math.round(p.y+2)); g.rotate(wa); if(Math.cos(wa)<0) g.scale(1,-1);
-    g.drawImage(ws.frames[0],4,-ws.h,ws.w*2,ws.h*2); g.restore();};
+  g.fillStyle='rgba(0,0,0,.5)'; g.beginPath(); g.ellipse(p.x,feet,10+q*2,4,0,0,7); g.fill();
+  const weapon=()=>{g.save(); g.translate(Math.round(p.x+Math.cos(la)*q*3),Math.round(p.y+2+Math.sin(la)*q*2)); g.rotate(wa); if(Math.cos(wa)<0) g.scale(1,-1);
+    g.drawImage(ws.frames[0],4+pose.ext,-ws.h,ws.w*2,ws.h*2); g.restore();};
+  const body=(variant,alpha)=>{g.save(); g.translate(p.x+Math.cos(la)*q*3,feet); g.scale(1+.12*q,1-.1*q); g.translate(-p.x,-feet);
+    drawSprite(g,sp,p.x,feet,flip,fr,variant,1,alpha); g.restore();};
   const behind=Math.sin(wa)<-.2;
   if(behind) weapon();
-  drawSprite(g,sp,p.x,feet,flip,fr);
-  if(p.hurtT>0) drawSprite(g,sp,p.x,feet,flip,fr,'red',1,.6);
+  body(); if(p.hurtT>0) body('red',.6);
   if(!behind) weapon();
   g.restore();
 }
@@ -1866,14 +1901,31 @@ function drawEnemy(g,e){
   g.save(); if(e.T.phase) g.globalAlpha=.55+.25*Math.sin(G.time*6+e.ph);
   g.fillStyle='rgba(0,0,0,.45)'; g.beginPath(); g.ellipse(e.x,feet,e.r*1.1,e.r*.4,0,0,7); g.fill();
   if(e.elite){g.fillStyle=hexA(e.mod?MODS[e.mod].c:'#78080a',.3); g.beginPath(); g.ellipse(e.x,feet,e.r*1.5,e.r*.6,0,0,7); g.fill();}
-  const ox=e.state==='windup'?Math.round(Math.sin(G.time*60))*2:0;
+  let ox=e.state==='windup'?Math.round(Math.sin(G.time*60))*2:0;
+  const kbm=Math.hypot(e.kb.x,e.kb.y); if(e.flash>0&&kbm>1) ox+=Math.round(e.kb.x/kbm*3); // jolt away from the blow
   let ss=s; if(e.T.atk==='bloat'&&e.state==='windup') ss=s*(1+.35*(1-e.t/e.T.windup)); // swelling
   if(e.T.atk==='blink'&&e.state==='windup'&&!e.blinked) g.globalAlpha*=.25+.75*(e.t/e.T.windup); // fading out
   drawSprite(g,sp,e.x+ox,feet,flip,fr,e.flash>0?'white':null,ss);
   if(e.state==='windup'&&e.flash<=0) drawSprite(g,sp,e.x+ox,feet,flip,fr,'red',ss,.3+.25*Math.sin(G.time*30));
   g.restore();
 }
+// The blade smear: a crescent that sweeps open with the swing and fades, anchored to the player.
+// Thrusts leave a narrow tapered streak instead.
+function drawSmear(g,f){
+  // the crescent opens about as fast as the blade travels
+  const p=G.player, k=f.t/f.max, fade=1-k, open=Math.min(1,k*7), r0=f.reach*(f.thrust?.2:.35), r1=f.reach*.98;
+  g.save(); g.translate(p.x,p.y+2);
+  if(f.thrust){g.rotate(f.a); const len=r1*(.5+.5*open), wdt=(f.heavy?9:6)*fade;
+    g.fillStyle=hexA(f.color,.55*fade); g.beginPath(); g.moveTo(r0,-wdt); g.lineTo(len,0); g.lineTo(r0,wdt); g.closePath(); g.fill();
+    g.fillStyle=hexA('#ffffff',.5*fade); g.fillRect(r0,-1,len-r0,2); g.restore(); return;}
+  const s0=f.a-f.dir*f.arc/2, s1=s0+f.dir*f.arc*open, lo=Math.min(s0,s1), hi=Math.max(s0,s1);
+  const gr=g.createRadialGradient(0,0,r0,0,0,r1); gr.addColorStop(0,hexA(f.color,0)); gr.addColorStop(.7,hexA(f.color,.32*fade)); gr.addColorStop(1,hexA(f.color,.75*fade));
+  g.fillStyle=gr; g.beginPath(); g.arc(0,0,r1,lo,hi); g.arc(0,0,r0,hi,lo,true); g.closePath(); g.fill();
+  g.strokeStyle=hexA('#ffffff',.6*fade); g.lineWidth=f.heavy?2.5:1.5; g.beginPath(); g.arc(0,0,r1,lo,hi); g.stroke();
+  g.restore();
+}
 function drawEffect(g,f){
+  if(f.type==='smear'){g.save(); g.globalAlpha=.35; drawSmear(g,f); g.restore(); return;} // mainly drawn in the world pass; this adds a faint glow
   const k=f.t/f.max, a=1-k;
   if(f.type==='slash'){const r=f.reach*.85; g.strokeStyle=hexA(f.color,.55*a); g.lineWidth=7*a+1; g.lineCap='round';
     const s=f.a-f.arc/2, e=s+f.arc*Math.min(1,k*2.2); g.beginPath(); g.arc(f.x,f.y,r,s,e); g.stroke();
@@ -2249,7 +2301,7 @@ $('btnCopyRun').onclick=()=>{ const b=$('btnCopyRun'), t=$('runSummary'), shown=
   try{ navigator.clipboard.writeText(G.summary).then(()=>{b.textContent='Copied. Paste it to the dev';},()=>{b.textContent='Select the text below and copy it'; shown();}); }
   catch(e){ b.textContent='Select the text below and copy it'; shown(); } };
 // one place for the build number: the title screen and run summaries both read it
-const BUILD='0.17';
+const BUILD='0.18';
 // ----- first-time tips: each shows once ever, worded for whatever you're playing with -----
 const HINTS=(()=>{try{return new Set(JSON.parse(localStorage.getItem('deepening.hints')||'[]'))}catch(e){return new Set()}})();
 const keyFor=a=>({dash:TOUCH.active?'Tap DASH':PAD.active?'Press A':'Press Space', use:TOUCH.active?'Tap USE':PAD.active?'Press X':'Press E',
