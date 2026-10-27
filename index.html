@@ -506,7 +506,7 @@ function musicTick(){
 
 // ================= data: classes, affixes, keystones, tree =================
 const CLASSES={
-  warrior:{name:'Warrior',color:'#5e1d17',hood:'#3a120e',hp:140,dmg:14,atkCd:.55,speed:150,crit:.05,critMult:1.6,armor:.10,arc:1.9,reach:62,
+  warrior:{name:'Warrior',color:'#5e1d17',hood:'#3a120e',hp:140,dmg:14,atkCd:.48,speed:150,crit:.05,critMult:1.6,armor:.10,arc:1.9,reach:62,
     ability:'whirlwind',abilName:'Whirlwind',abilCd:5,light:150,slash:'#e8c8a8',startWeapon:'Rusted Cleaver',
     desc:'Built to be hit. Gets stronger the closer the teeth get.',abilDesc:'Spin and cleave everything around you.'},
   rogue:{name:'Rogue',color:'#28302a',hood:'#161c18',hp:95,dmg:10,atkCd:.32,speed:178,crit:.15,critMult:2.0,armor:.03,arc:1.1,reach:52,
@@ -515,7 +515,7 @@ const CLASSES={
   mage:{name:'Mage',color:'#2c2448',hood:'#191330',hp:80,dmg:16,atkCd:.5,speed:155,crit:.07,critMult:1.7,armor:0,ranged:true,
     ability:'nova',abilName:'Nova',abilCd:6,light:165,slash:'#b9a3ff',startWeapon:'Cracked Rod',
     desc:'Paper skin, forbidden words. Carries a little more light.',abilDesc:'Burst of violet fire that throws enemies back.'},
-  necro:{name:'Necromancer',color:'#1f2a20',hood:'#141a14',hp:85,dmg:13,atkCd:.6,speed:155,crit:.06,critMult:1.7,armor:.02,ranged:true,
+  necro:{name:'Necromancer',color:'#1f2a20',hood:'#141a14',hp:85,dmg:13,atkCd:.55,speed:155,crit:.06,critMult:1.7,armor:.02,ranged:true,
     ability:'raise',abilName:'Raise Dead',abilCd:4,light:145,slash:'#9aff7a',startWeapon:'Cracked Bone Wand',
     desc:'Never fights alone. The dead remember who woke them.',abilDesc:'Raise skeletons from nearby corpses. No corpses? It takes your blood.'},
 };
@@ -1319,7 +1319,7 @@ function descend(){
   for(const m of G.allies){m.x=p.x; m.y=p.y; m.tgt=null; for(let tr=0;tr<12;tr++){const a=rand(0,6.28), x=p.x+Math.cos(a)*30, y=p.y+Math.sin(a)*30; if(!collides(x,y,8)){m.x=x; m.y=y; break;}}}
   G.projectiles=[]; G.drops=[]; G.particles=[]; G.effects=[]; G.texts=[]; G.pending=[]; G.hazards=[]; G.darkT=0; G.turrets=[]; G.peels=[]; G.souls=[];
   later(.5,()=>firePowers('floor')); newQuest();
-  if(G.depth>1) healP(G.stats.maxHp*.08);
+  if(G.depth>1) healP(G.stats.maxHp*(G.depth<=5?.15:.08));
   // a Skill Tome lies somewhere on floor 2 and every third floor after, so new skills come early and keep coming
   if(G.depth%3===2&&!G.isBoss&&!G.isTavern){const d=bfs(G.map,tileIdx(p.x,p.y)); let far=0; for(const v of d) if(v>far) far=v;
     const opts=[]; for(let i=0;i<d.length;i++) if(d[i]>far*.45&&d[i]<far*.8) opts.push(i);
@@ -1406,11 +1406,11 @@ function genFloor(depth){
   const pickType=()=>{let r=Math.random()*avail.reduce((s,[k,t])=>s+wt(k,t),0);for(const [k,t] of avail){r-=wt(k,t);if(r<=0)return k;}return avail[0][0];};
   for(const r of rooms){ if(r===spawnRoom||(isBoss&&r===stairRoom)) continue;
     // more rooms means fewer per room, and a floor never holds more than its cap
-    const n=Math.round(Math.min(st==='maze'?6:10,ri(2,3)+Math.floor(depth/(st==='maze'?4:2.5)))*(fmod==='swarming'?1.5:1));
+    const n=Math.round(Math.min(st==='maze'?6:10,(depth<5?ri(1,2):ri(2,3))+Math.floor(depth/(st==='maze'?4:2.5)))*(fmod==='swarming'?1.5:1));
     for(let k=0;k<n;k++){const tx=ri(r.x,r.x+r.w-1), ty=ri(r.y,r.y+r.h-1), x=cw(tx), y=cw(ty);
       if(map[ty*MW+tx]||Math.hypot(x-spawn.x,y-spawn.y)<260||enemies.length>=(40+depth*1.5)*(fmod==='swarming'?1.5:1)) continue;
       // (a swarm uses up three places in the room)
-      const kind=pickType(); if(ETYPES[kind].swarm) k+=2; enemies.push(spawnEnemy(kind,x,y,depth,Math.random()<(.09+depth*.005)*(fmod==='bloodmoon'?3:1)));
+      const kind=pickType(); if(ETYPES[kind].swarm) k+=2; enemies.push(spawnEnemy(kind,x,y,depth,Math.random()<(depth<3?.03:.09+depth*.005)*(fmod==='bloodmoon'?3:1)));
       for(let s=0;s<(ETYPES[kind].swarm||0);s++){const sx=x+rand(-30,30), sy=y+rand(-30,30), stx=Math.floor(sx/TILE), sty=Math.floor(sy/TILE); if(!map[sty*MW+stx]) enemies.push(spawnEnemy(kind,sx,sy,depth,false));}}}
   if(!isBoss&&depth>=2&&Math.random()<.18){const r=pick(rooms.filter(q=>q!==spawnRoom)); if(r) enemies.push(spawnEnemy('goblin',cw(r.cx),cw(r.cy),depth,false));}
   // the Wandering Champion: a strange warrior who rides the dark from floor to floor. Beat him and take his gear.
@@ -1518,7 +1518,8 @@ function renderMap(map,theme,torches){
 }
 // ================= enemies =================
 function spawnEnemy(type,x,y,depth,elite){
-  const T=ETYPES[type], hs=(1+.3*(depth-1)+.016*(depth-1)**2)*1.1, ds=(1+.13*(depth-1))*1.2;
+  const early=Math.min(1,.65+.07*depth); // 0.72 on floor 1, full strength from floor 5
+  const T=ETYPES[type], hs=(1+.3*(depth-1)+.016*(depth-1)**2)*1.1*early, ds=(1+.13*(depth-1))*1.2*early;
   const e={type,T,x,y,r:T.r*(elite?1.25:1),maxHp:Math.round(T.hp*hs*(elite?2.6:1)),dmg:T.dmg*ds*(elite?1.4:1),speed:T.speed*(elite?1.05:1),
     xp:Math.round(T.xp*(1+.1*(depth-1))*(elite?3:1)),elite,state:'idle',t:0,cd:rand(0,1),flash:0,slow:0,burn:null,burnTick:0,face:rand(0,6.28),
     hurt:0,dead:false,kb:{x:0,y:0},ph:rand(0,6.28),name:(elite?pick(ELITE_P)+' ':'')+T.name,boss:false,aim:0,hitDone:false};
@@ -1839,7 +1840,7 @@ function killEnemy(e){
   const su=G.stats.u;
   if(su.hollow) healP(G.stats.maxHp*.03*su.hollow,true);
   if(Math.random()<(e.boss?1:e.elite?.18:.012)) dropFood(e.x,e.y);
-  if(su.hollow){} else if(Math.random()<.035) G.drops.push({kind:'orb',x:e.x+rand(-6,6),y:e.y+rand(-6,6),t:0});
+  if(su.hollow){} else if(Math.random()<(G.depth<5?.07:.035)) G.drops.push({kind:'orb',x:e.x+rand(-6,6),y:e.y+rand(-6,6),t:0});
   if(Math.random()<G.stats.explode) explosion(e.x,e.y,G.stats.dmg*1.5,75);
   if(su.ember&&e.burn) explosion(e.x,e.y,G.stats.dmg*1.2*su.ember,70);
   if(su.ossuary&&!e.boss&&Math.random()<.1*su.ossuary&&G.allies.length<maxMinions()){spawnMinion(e.x,e.y); const m=G.allies[G.allies.length-1]; if(G.cls!=='necro') m.ttl=20;}
@@ -2568,7 +2569,7 @@ const QUESTS=[
   {id:'urns',w:1,make:()=>({need:6}),title:q=>'Vandal',txt:q=>'Smash 6 urns.',ok:()=>G.props.filter(o=>o.kind==='urn').length>=6},
   {id:'skills',w:2,make:d=>({need:8+Math.floor(d*.5)}),title:q=>'Show Your Power',txt:q=>`Slay ${q.need} enemies with skills.`},
   {id:'frenzy',w:2,make:()=>({need:5,win:[]}),title:q=>'Frenzy',txt:q=>'Slay 5 enemies within 4 seconds.'},
-  {id:'crit',w:1,make:d=>({need:15+d}),title:q=>'Precision',txt:q=>`Land ${q.need} critical hits.`},
+  {id:'crit',w:1,make:d=>({need:5+d}),title:q=>'Precision',txt:q=>`Land ${q.need} critical hits.`},
   {id:'gold',w:1,make:d=>({need:25+d*6}),title:q=>'Greed',txt:q=>`Pick up ${q.need} gold.`},
 ];
 function newQuest(){
@@ -2612,13 +2613,16 @@ function updateQuest(dt){
 }
 // the System's window: navy glass, a thin glowing frame, square brackets
 function drawSysWin(){
-  const w=G.sysWin; if(!w) return; const a=Math.min(1,w.t/.25,(4.2-w.t)/.4), bw=Math.min(400,W-40), bh=74+w.lines.length*19, X=W/2-bw/2, Y=W>=960?10:118; G.sysWinBottom=Y+bh;
+  const w=G.sysWin; if(!w) return; const a=Math.min(1,w.t/.25,(4.2-w.t)/.4), bh=74+w.lines.length*19;
+  // it lives in the gap at the top, between your life bar and the depth counter; only a phone is too narrow for that
+  const L=20+Math.min(260,W*.42)+12, R=W-20-150-12, fits=R-L>=300, bw=fits?Math.min(400,R-L):Math.min(400,W-40), X=fits?(L+R)/2-bw/2:W/2-bw/2, Y=fits?8:118; G.sysWinBottom=Y+bh;
   ctx.save(); ctx.globalAlpha=clamp(a,0,1);
   ctx.fillStyle='rgba(6,14,30,.9)'; ctx.fillRect(X,Y,bw,bh);
   ctx.strokeStyle=hexA(w.col,.85); ctx.lineWidth=1.5; ctx.strokeRect(X+.5,Y+.5,bw-1,bh-1); ctx.strokeStyle=hexA(w.col,.25); ctx.strokeRect(X+4.5,Y+4.5,bw-9,bh-9);
-  ctx.shadowColor=w.col; ctx.shadowBlur=12; ctx.textAlign='center'; ctx.font=`600 12px ${FB}`; ctx.fillStyle=w.col; ctx.fillText(`[ ${w.head} ]`,W/2,Y+20);
-  ctx.shadowBlur=0; ctx.font=`24px ${FD}`; ctx.fillStyle='#e8f2ff'; ctx.fillText(w.title,W/2,Y+44);
-  ctx.font=`14px ${FB}`; ctx.fillStyle='#b8d4f0'; w.lines.forEach((l,i)=>ctx.fillText(l,W/2,Y+68+i*19));
+  const cx=X+bw/2;
+  ctx.shadowColor=w.col; ctx.shadowBlur=12; ctx.textAlign='center'; ctx.font=`600 12px ${FB}`; ctx.fillStyle=w.col; ctx.fillText(`[ ${w.head} ]`,cx,Y+20);
+  ctx.shadowBlur=0; ctx.font=`24px ${FD}`; ctx.fillStyle='#e8f2ff'; ctx.fillText(fit(w.title,bw-20),cx,Y+44);
+  ctx.font=`14px ${FB}`; ctx.fillStyle='#b8d4f0'; w.lines.forEach((l,i)=>ctx.fillText(fit(l,bw-20),cx,Y+68+i*19));
   ctx.restore();
 }
 // the tracker under your level: what you're working on
@@ -2874,7 +2878,8 @@ function update(dt){
     if(!chaining||p.atk) p.restA=cur+Math.atan2(Math.sin(want-cur),Math.cos(want-cur))*Math.min(1,dt*7);}
   p.wAng=weaponPose().ang;
   if(p.bufDash>0){p.bufDash-=dt; if(p.dashT<=0&&p.dashTime<=0&&!G.dying) dash();}
-  if((mouse.down||arrow!==null||PAD.fire||TOUCH.fire||((TOUCH.active||SET.auto)&&autoTarget()))&&p.atkT<=0&&!G.dying) attack();
+  p.atkBuf=Math.max(0,(p.atkBuf||0)-dt);
+  if((mouse.down||p.atkBuf>0||arrow!==null||PAD.fire||TOUCH.fire||((TOUCH.active||SET.auto)&&autoTarget()))&&p.atkT<=0&&!G.dying){attack(); p.atkBuf=0;}
 
   G.flowT-=dt; if(G.flowT<=0){G.flowT=.25; G.flow=bfs(G.map,tileIdx(p.x,p.y),40);}
   for(const e of G.enemies) if(!e.dead) updateEnemy(e,dt);
@@ -3926,7 +3931,7 @@ addEventListener('keydown',e=>{
 });
 addEventListener('keyup',e=>{keys[e.code]=false;});
 addEventListener('mousemove',e=>{mouse.x=e.clientX; mouse.y=e.clientY; if(PAD.active&&(Math.abs(e.movementX)+Math.abs(e.movementY)>2)){PAD.active=false; cv.style.cursor='crosshair';}});
-cv.addEventListener('mousedown',e=>{ if(state!=='play'||!G||G.paused||TOUCH.active) return; if(e.button===0) mouse.down=true; if(e.button===2&&!G.transition&&!G.dying) useAbility(); });
+cv.addEventListener('mousedown',e=>{ if(state!=='play'||!G||G.paused||TOUCH.active) return; if(e.button===0){mouse.down=true; if(G.player) G.player.atkBuf=.3;} if(e.button===2&&!G.transition&&!G.dying) useAbility(); });
 addEventListener('mouseup',e=>{if(e.button===0) mouse.down=false;});
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 addEventListener('blur',()=>{for(const k in keys) keys[k]=false; mouse.down=false; if(state==='play'&&G&&!G.paused) showOnly('ovPause');});
@@ -3941,7 +3946,7 @@ $('btnCopyRun').onclick=()=>{ const b=$('btnCopyRun'), t=$('runSummary'), shown=
   try{ navigator.clipboard.writeText(G.summary).then(()=>{b.textContent='Copied. Paste it to the dev';},()=>{b.textContent='Select the text below and copy it'; shown();}); }
   catch(e){ b.textContent='Select the text below and copy it'; shown(); } };
 // one place for the build number: the title screen and run summaries both read it
-const BUILD='0.35';
+const BUILD='0.36';
 // ----- first-time tips: each shows once ever, worded for whatever you're playing with -----
 const HINTS=(()=>{try{return new Set(JSON.parse(localStorage.getItem('deepening.hints')||'[]'))}catch(e){return new Set()}})();
 const keyFor=a=>({dash:TOUCH.active?'Tap DASH':PAD.active?'Press A':'Press Space', use:TOUCH.active?'Tap USE':PAD.active?'Press X':'Press E',
