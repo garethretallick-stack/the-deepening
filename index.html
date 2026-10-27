@@ -140,6 +140,7 @@ h2{font-family:var(--display);font-weight:400;font-size:clamp(34px,5vw,58px);lin
 .r-magic{border-color:#4a5a9a;box-shadow:inset 0 0 12px rgba(80,110,220,.25)}
 .r-rare{border-color:#a08030;box-shadow:inset 0 0 14px rgba(224,184,74,.25)}
 .r-cursed{border-color:#902a1a;box-shadow:inset 0 0 14px rgba(224,74,48,.3)}
+.r-set{border-color:#3ad06a;box-shadow:inset 0 0 16px rgba(58,208,106,.35),0 0 6px rgba(58,208,106,.3)}
 .r-legendary{border-color:#ff8c1a;box-shadow:inset 0 0 18px rgba(255,140,26,.4),0 0 8px rgba(255,140,26,.35)}
 .invRight{display:flex;flex-direction:column;gap:8px;min-width:0}
 .invRight h3{font-family:var(--display);font-weight:400;font-size:24px;margin:6px 0 2px;color:var(--bone)}
@@ -515,7 +516,20 @@ const NOUNS={weapon:{warrior:['Cleaver','Greataxe','Flail','Maul','Headsman\'s B
   armor:['Shroud','Hauberk','Grave-Wrappings','Carapace','Penitent Mail'],charm:['Amulet','Reliquary','Eye-Stone','Tooth Charm','Saint\'s Pendant'],
   helm:['Hood','Horned Helm','Skull Mask','Iron Crown','Gaol Helm'],gloves:['Gauntlets','Grave Gloves','Hand-Wraps','Talons'],belt:['Belt','Rope Girdle','Bone Sash','Chain Belt'],
   boots:['Boots','Grave-Treads','Sabatons','Foot-Wraps'],ring:['Ring','Signet','Bone Band','Coil']};
-const RAR={common:{c:'#a39a8c',n:'Common'},magic:{c:'#7b97de',n:'Magic'},rare:{c:'#e0b84a',n:'Rare'},cursed:{c:'#e04a30',n:'Cursed'},legendary:{c:'#ff8c1a',n:'Legendary'}};
+const RAR={common:{c:'#a39a8c',n:'Common'},magic:{c:'#7b97de',n:'Magic'},rare:{c:'#e0b84a',n:'Rare'},cursed:{c:'#e04a30',n:'Cursed'},legendary:{c:'#ff8c1a',n:'Legendary'},set:{c:'#3ad06a',n:'Set'}};
+// Sets: four named pieces each. Wear two for the first bonus, all four for the second. (The Dungeon Train's champion dropped his sword and helm.)
+const SETS={
+  champion:{n:'The Wandering Champion',pieces:{weapon:'Champion\'s Blade',helm:'Champion\'s Iron Helm',armor:'Champion\'s Hauberk',gloves:'Champion\'s Grips'},
+    b2:'+20% damage and +10% damage reduction.',b4:'Every fourth attack also looses a wave of three spectral blades.'},
+  gravekeeper:{n:'The Gravekeeper',pieces:{helm:'Gravekeeper\'s Hood',armor:'Gravekeeper\'s Shroud',ring:'Gravekeeper\'s Band',charm:'Gravekeeper\'s Lantern'},
+    b2:'+2 max skeletons and shadows.',b4:'Your skeletons and shadows deal 60% more damage.'},
+  stormborn:{n:'Stormborn',pieces:{weapon:'Stormborn Spear',gloves:'Stormborn Gauntlets',boots:'Stormborn Treads',ring:'Stormborn Coil'},
+    b2:'+30% lightning damage and a 15% chance to arc lightning on hit.',b4:'Dashing calls lightning down on three nearby enemies.'},
+  feaster:{n:'The Feaster',pieces:{belt:'Feaster\'s Girdle',helm:'Feaster\'s Bib',gloves:'Feaster\'s Greasy Gloves',charm:'Feaster\'s Wishbone'},
+    b2:'Food heals twice as much.',b4:'Carry 3 more food, and every meal sets off a nova around you.'},
+  monarch:{n:'The Shadow Monarch',pieces:{armor:'Monarch\'s Coat',boots:'Monarch\'s Boots',ring:'Monarch\'s Seal',charm:'Monarch\'s Heart'},
+    b2:'ARISE always works on elites and far more often on bosses. +1 max shadow.',b4:'Your shadows deal double damage, and you deal 10% more damage for each one.'},
+};
 // Legendaries: one fixed effect each that changes how a run plays. The hooks live where the effect happens (search s.u.<id>).
 const LEGS=[
   {id:'butcher',slot:'weapon',n:'The Butcher\'s Hook',d:'Every 5th attack is a critical hit for triple damage.',fl:'It remembers every one.'},
@@ -1029,6 +1043,14 @@ function recalc(){
     for(const pw of it.powers||[]) s.powers.push(pw);
     for(const m of it.sk||[]){ if(m.k==='lv') s.skLv[m.id]=(s.skLv[m.id]||0)+m.v; else if(m.k==='tag') s.tagLv[m.tag]=(s.tagLv[m.tag]||0)+m.v; else (s.mutG[m.id]=s.mutG[m.id]||[]).push(m.m);}
     if(it.grant){const sid='it_'+it.grant; s.grants.push(sid); G.itemSkillPow[sid]=1+Math.min(it.ilvl||1,60)*.04;}}
+  // set bonuses: count the pieces of each set you wear
+  s.setN={}; s.shadowMax=0; for(const k of SLOTS){const it=G.gear[k]; if(it&&it.set) s.setN[it.set]=(s.setN[it.set]||0)+1;}
+  {const sn=id=>s.setN[id]||0;
+    if(sn('champion')>=2){s.dmgPct+=.2; s.armor+=.1;}
+    if(sn('gravekeeper')>=2){s.minionMax+=2; s.shadowMax+=2;} if(sn('gravekeeper')>=4) s.minionDmg+=.6;
+    if(sn('stormborn')>=2){s.lightDmg+=.3; s.chain=Math.max(s.chain,.15);}
+    if(sn('monarch')>=2) s.shadowMax+=1;
+    if(sn('monarch')>=4&&G.allies) s.dmgPct+=.1*G.allies.filter(m=>m.shadow&&m.hp>0).length;}
   if(s.u.ember) s.ignite+=.25*s.u.ember;
   if(s.u.storm) s.chain=Math.max(s.chain,s.u.storm);
   if(s.u.night){s.lightMul*=.5; s.dmgPct+=.5*s.u.night;}
@@ -1057,7 +1079,7 @@ const itemNeed=l=>Math.round(22*Math.pow(l,1.35));
 // ================= items =================
 function makeItem(slot,depth,bias=0,force){
   let r=force;
-  if(!r){const x=Math.random()+bias; r=Math.random()<.06+depth*.002?'cursed':x>.88?'rare':x>.5?'magic':'common';}
+  if(!r){const x=Math.random()+bias+Math.min(.25,depth*.006); r=Math.random()<.06+depth*.002?'cursed':x>.88?'rare':x>.5?'magic':'common';}
   const it={slot,rarity:r,level:1,xp:0,affixes:[],ilvl:depth};
   it.noun=pick(slot==='weapon'?NOUNS.weapon[G.cls]:NOUNS[slot]);
   if(slot==='weapon') it.baseDmg=Math.round(2+depth*1.4*rand(.9,1.1));
@@ -1088,21 +1110,29 @@ function makeLegendary(depth,slot){
   const fit=LEGS.filter(l=>!slot||l.slot===slot), L=pick(fit.length?fit:LEGS), it=makeItem(L.slot,depth,0,'rare');
   it.rarity='legendary'; it.leg=L.id; it.name=L.n; if(!it.powers.length) it.powers.push(rollPower(depth)); return it;
 }
+function makeSetItem(depth,setId,slot){
+  const id=setId||pick(Object.keys(SETS)), S=SETS[id], sl=slot&&S.pieces[slot]?slot:pick(Object.keys(S.pieces)), it=makeItem(sl,depth,.3,'rare');
+  it.rarity='set'; it.set=id; it.name=S.pieces[sl]; return it;
+}
 // roll a drop, and announce legendaries as they land: 6% from bosses, 0.6% from anything else
 const LEG_CHANCE=.006, LEG_CHANCE_BOSS=.06;
 function dropItem(x,y,slot,bias=0,force,legChance=LEG_CHANCE,depth=G.depth){
-  const item=Math.random()<legChance?makeLegendary(depth,slot):makeItem(slot||pick(SLOTS),depth,bias,force);
+  const item=Math.random()<legChance?makeLegendary(depth,slot):Math.random()<.015?makeSetItem(depth,null,slot):makeItem(slot||pick(SLOTS),depth,bias,force);
   G.drops.push({kind:'item',x,y,t:0,item});
+  if(item.rarity==='set'){text(x,y-30,'SET ITEM','#3ad06a',15); play('legendary'); G.effects.push({type:'ring',x,y,r0:6,r1:60,t:0,max:.6,color:'#3ad06a',w:4,light:true});}
   if(item.rarity==='legendary'){G.legsFound=(G.legsFound||0)+1; play('legendary'); text(x,y-30,'LEGENDARY','#ff8c1a',16); G.flash=Math.max(G.flash||0,.25);
     G.effects.push({type:'ring',x,y,r0:6,r1:70,t:0,max:.7,color:'#ff8c1a',w:4,light:true});}
 }
 function itemLines(it){const lp=it.leg?legPow(it):1;
   return (it.leg?[{t:LEG[it.leg].d+(lp<1?` (fading: ${Math.round(lp*100)}% power)`:''),leg:true}]:[])
+    .concat(it.set?setLines(it):[])
     .concat(it.grant?[{t:`Grants skill: ${EFFECTS[it.grant].n}. ${cap1(EFFECTS[it.grant].t)}.`,gr:true}]:[])
     .concat((it.powers||[]).map(pw=>({t:powerText(pw),pw:true})))
     .concat((it.sk||[]).map(m=>({t:skillModText(m),skm:true})))
     .concat(baseLines(it).map(t=>({t,bad:false}))).concat(it.affixes.map(a=>({t:AFX[a.id].f(a.v),bad:!!AFX[a.id].bad})));}
-const lineCol=l=>l.leg?'#ff8c1a':l.gr?'#5affd8':l.pw?'#c9a0ff':l.skm?'#8fd8ff':l.bad?'#e04a30':'#d3c7ae';
+function setLines(it){const S=SETS[it.set], n=G&&G.stats&&G.stats.setN?G.stats.setN[it.set]||0:0;
+  return [{t:`${S.n} (${n}/4 worn)`,st:true,on:true},{t:`(2) ${S.b2}`,st:true,on:n>=2},{t:`(4) ${S.b4}`,st:true,on:n>=4}];}
+const lineCol=l=>l.st?(l.on?'#3ad06a':'#4a6a52'):l.leg?'#ff8c1a':l.gr?'#5affd8':l.pw?'#c9a0ff':l.skm?'#8fd8ff':l.bad?'#e04a30':'#d3c7ae';
 // Leveling an item mostly buys drafts; its stats only creep up, so loot from deeper down still wins.
 function growBase(it){if(it.baseDmg) it.baseDmg=Math.max(it.baseDmg+(Math.random()<.5?1:0),Math.round(it.baseDmg*1.04)); if(it.baseHp) it.baseHp=Math.round(it.baseHp*1.04+1);}
 // A legendary is at full strength on the floor it was found, then fades 6% per floor deeper, never below 25%.
@@ -1162,8 +1192,9 @@ const ICON_PAL={
   rare:{M:'#a08030',H:'#f0d070',D:'#5a4010',c:'#5a2018',L:'#5a3a1a',g:'#e0b84a'},
   cursed:{M:'#5a2020',H:'#a03a2a',D:'#2a0a0a',c:'#2a0c0c',L:'#3a1a10',g:'#e04a30'},
   legendary:{M:'#b06010',H:'#ffc060',D:'#5a2a08',c:'#3a120a',L:'#5a2a10',g:'#ff8c1a'},
+  set:{M:'#2a7a4a',H:'#7ae0a0',D:'#123a22',c:'#1a3a26',L:'#3a3a1a',g:'#3ad06a'},
 };
-const ICON_TINT={magic:[110,140,230,.3],rare:[230,190,90,.35],cursed:[220,60,40,.4],legendary:[255,150,40,.4]};
+const ICON_TINT={magic:[110,140,230,.3],rare:[230,190,90,.35],cursed:[220,60,40,.4],legendary:[255,150,40,.4],set:[60,210,110,.4]};
 const ICON_CACHE=new WeakMap();
 function itemIcon(it){
   let c=ICON_CACHE.get(it); if(c) return c;
@@ -1194,7 +1225,7 @@ function iconUrl(it){let u=ICON_URL.get(it); if(!u){u=itemIcon(it).toDataURL(); 
 // Gold drops from the dead; every 5th floor is a tavern where you rest, sell and buy.
 const BAG_MAX=30; // a 10 x 3 grid
 const isTavernDepth=d=>d%5===0, isBigBossDepth=d=>d%10===9;
-const sellPrice=it=>Math.round(({common:4,magic:10,rare:24,cursed:16,legendary:70}[it.rarity]||5)*(1+(it.ilvl||1)*.18)*(1+.1*(it.level-1)));
+const sellPrice=it=>Math.round(({common:4,magic:10,rare:24,cursed:16,legendary:70,set:45}[it.rarity]||5)*(1+(it.ilvl||1)*.18)*(1+.1*(it.level-1)));
 const buyPrice=it=>sellPrice(it)*3;
 function dropGold(x,y,n){ n=Math.max(1,Math.round(n)); for(let k=0;k<Math.min(8,Math.ceil(n/6));k++)
   G.drops.push({kind:'gold',x:x+rand(-14,14),y:y+rand(-10,10),t:0,n:Math.ceil(n/Math.min(8,Math.ceil(n/6)))}); }
@@ -1348,6 +1379,10 @@ function genFloor(depth){
       const kind=pickType(); if(ETYPES[kind].swarm) k+=2; enemies.push(spawnEnemy(kind,x,y,depth,Math.random()<.09+depth*.005));
       for(let s=0;s<(ETYPES[kind].swarm||0);s++){const sx=x+rand(-30,30), sy=y+rand(-30,30), stx=Math.floor(sx/TILE), sty=Math.floor(sy/TILE); if(!map[sty*MW+stx]) enemies.push(spawnEnemy(kind,sx,sy,depth,false));}}}
   if(!isBoss&&depth>=2&&Math.random()<.18){const r=pick(rooms.filter(q=>q!==spawnRoom)); if(r) enemies.push(spawnEnemy('goblin',cw(r.cx),cw(r.cy),depth,false));}
+  // the Wandering Champion: a strange warrior who rides the dark from floor to floor. Beat him and take his gear.
+  // Rare (3% of floors from depth 3) and tough: lots of life and a boss bar, but he hits like an ordinary elite, so a good build can take him.
+  if(!isBoss&&depth>=3&&Math.random()<.03){const r=pick(rooms.filter(q=>q!==spawnRoom)); if(r){const e=spawnEnemy('knight',cw(r.cx),cw(r.cy),depth,true);
+    e.maxHp=e.hp=Math.round(e.maxHp*1.9); e.dmg*=.9; e.name='The Wandering Champion'; e.mod='hasted'; e.speed*=1.1; e.champion=true; enemies.push(e);}}
   if(isBoss){enemies.push(spawnBoss(depth,stairs.x,stairs.y-TILE*3));
     enemies.push(spawnEnemy('husk',stairs.x-80,stairs.y,depth,false)); enemies.push(spawnEnemy('husk',stairs.x+80,stairs.y,depth,false));}
   // props: urns along the walls, maybe a chest and a shrine, spike traps from depth 2
@@ -1557,7 +1592,7 @@ function updateEnemy(e,dt){
     e.upT=(e.upT||4)-dt; if(e.upT<=0&&e.state==='chase'){e.state='under'; smoke(e.x,e.y,10); return;}}
   if(T.mud&&e.state!=='idle'){e.mudT=(e.mudT||0)-dt; if(e.mudT<=0){e.mudT=.55; addHazard(e.x,e.y+e.r*.5,18,4,0,'#5a4428',0,'mud');}}
   switch(e.state){
-    case 'idle': if(d<230*G.stats.aggro||e.hurt>0) e.state='chase'; break;
+    case 'idle': if(d<230*G.stats.aggro||e.hurt>0){e.state='chase'; if(e.champion&&!G.bossBar){G.bossBar=e; G.bossBarT=0; text(e.x,e.y-36,'THE WANDERING CHAMPION','#3ad06a',16); play('boss');}} break;
     case 'chase':
       if(T.atk==='ranged'){
         const see=d<T.range&&los(e.x,e.y,p.x,p.y);
@@ -1728,6 +1763,8 @@ function killEnemy(e){
     for(let k=0;k<3;k++) addHazard(e.x+rand(-26,26),e.y+rand(-26,26),20,3,4+G.depth,'#9acd32');}
   if(e.T.split) for(let k=0;k<2;k++){const a=rand(0,6.28), x=e.x+Math.cos(a)*12, y=e.y+Math.sin(a)*12; if(!collides(x,y,6)){const m=spawnEnemy(e.T.split,x,y,G.depth,false); m.state='chase'; m.kb={x:Math.cos(a)*200,y:Math.sin(a)*200}; G.enemies.push(m);}}
   if(e.T.shards){for(let i=0;i<8;i++){const a=i*Math.PI/4; G.projectiles.push({x:e.x,y:e.y,vx:Math.cos(a)*190,vy:Math.sin(a)*190,r:4,dmg:e.dmg*.4,owner:'enemy',life:1.4,color:'#c9a0ff',src:e});} spark(e.x,e.y,'#c9a0ff',14); play('urn',e);}
+  if(e.champion){for(let k=0;k<2;k++){const it=makeSetItem(G.depth+2,Math.random()<.6?'champion':null); G.drops.push({kind:'item',x:e.x+rand(-24,24),y:e.y+rand(-16,16),t:0,item:it});}
+    text(e.x,e.y-34,'His gear is yours','#3ad06a',15); play('legendary'); G.flash=Math.max(G.flash||0,.3);}
   if(e.type==='goblin'){dropGold(e.x,e.y,50+G.depth*14); for(let k=0;k<3;k++) dropItem(e.x+rand(-30,30),e.y+rand(-20,20),null,.65); if(Math.random()<.4) dropTome(e.x,e.y+20);
     text(e.x,e.y-34,'JACKPOT','#ffd02a',20); G.flash=Math.max(G.flash||0,.3); play('legendary');}
   if(e.mod==='splitting') for(let k=0;k<2;k++){const a=rand(0,6.28), x=e.x+Math.cos(a)*16, y=e.y+Math.sin(a)*16;
@@ -1846,7 +1883,7 @@ function raiseDead(){
   const skel=G.allies.filter(m=>!m.blade&&!m.shadow); while(skel.length>max) boneBurst(skel.shift()); // spectral swords don't count
 }
 // how hard a minion hits: your damage, minion bonuses, and the level of the skill that made it
-function minionHit(m){const s=G.stats, id=m.skill||'raise'; return s.dmg*(.55+s.minionDmg)*(m.mult||s.abilDmg*(G.skills[id]?skillLvMul(id):1))*rand(.9,1.1);}
+function minionHit(m){const s=G.stats, id=m.skill||'raise'; return s.dmg*(.55+s.minionDmg)*(m.mult||s.abilDmg*(G.skills[id]?skillLvMul(id):1))*(m.shadow&&setOn('monarch',4)?2:1)*rand(.9,1.1);}
 function spawnMinion(x,y){
   if(collides(x,y,8)){x=G.player.x; y=G.player.y;}
   const hp=Math.round((25+G.depth*6+G.stats.maxHp*.2)*(skillHas('raise','armor')?2:1));
@@ -1984,6 +2021,8 @@ function attack(echo){
   p.combo=(G.time-(p.lastAtk??-9)<.75)?(p.combo||0)+1:1; p.lastAtk=G.time;
   const heavy=!c.ranged&&p.combo>=3; if(heavy){p.combo=0; mult*=1.6;}
   p.swingDir*=-1;
+  if(setOn('champion',4)&&(p.atkCount=(p.atkCount||0)+1)%4===0) for(let i=-1;i<=1;i++){const b=a+i*.25; // the Champion's blade wave
+    G.projectiles.push({x:p.x,y:p.y,vx:Math.cos(b)*420,vy:Math.sin(b)*420,r:6,owner:'player',life:.6,color:'#8fd8ff',pierce:3,mult:.7,proc:false});}
   const dur=(c.ranged?.2:Math.min(.3,Math.max(.18,s.atkCd*.75)))*(heavy?1.25:1); // the blow lands ~70-95ms after the click: snappy, but you see the swing
   // the swing starts from wherever the weapon is right now, so blow after blow flows back and forth instead of resetting
   p.atk={t:0,dur,hitAt:dur*(c.ranged?.25:.32),done:false,a,mult,o,heavy,big,dir:p.swingDir,kind:c.ranged?'cast':G.cls==='rogue'?'thrust':'swing',from:p.wAng??p.facing+.7};
@@ -2445,13 +2484,14 @@ function drawTurret(g,t){const x=Math.round(t.x/2)*2, y=Math.round(t.y/2)*2, k=t
 // ================= ARISE: shadow extraction =================
 // Elites and bosses leave their shadow behind for a few seconds after they die. Stand on it and command it to rise:
 // three tries, and if it answers it fights for you for the rest of the run, following you down. (After Solo Leveling.)
-const maxShadows=()=>2+Math.floor(G.level/8)+(G.cls==='necro'?2:0);
+const maxShadows=()=>2+Math.floor(G.level/8)+(G.cls==='necro'?2:0)+(G.stats.shadowMax||0);
+const setOn=(id,n)=>(G.stats.setN&&G.stats.setN[id]||0)>=n;
 const shadowCount=()=>G.allies.filter(m=>m.shadow&&m.hp>0).length;
 function leaveShadow(e){ if(!(e.elite||e.boss)||e.type==='mimic'||e.type==='stalker') return;
   (G.souls=G.souls||[]).push({x:e.x,y:e.y,shape:e.shape||e.T.shape,name:e.boss?e.name:e.T.name,boss:!!e.boss,r:e.r,tries:3,t:12});
   hint('arise',`That one left its shadow behind. Stand on it and ${TOUCH.active?'tap USE':PAD.active?'press X':'press E'}: ARISE.`);}
 function arise(sl){
-  const p=G.player, ch=(sl.boss?.35:.6)+(G.cls==='necro'?.2:0); sl.tries--;
+  const p=G.player, ch=setOn('monarch',2)?(sl.boss?.7:1):(sl.boss?.35:.6)+(G.cls==='necro'?.2:0); sl.tries--;
   G.effects.push({type:'ring',x:sl.x,y:sl.y,r0:40,r1:6,t:0,max:.4,color:'#b06aff',w:4,light:true}); play('raise');
   if(Math.random()<ch){
     G.souls.splice(G.souls.indexOf(sl),1);
@@ -2546,7 +2586,7 @@ function drawQuestTracker(x,y){
 // ================= food =================
 // You carry up to five. Eating heals a little at once, then a slow trickle for a few seconds.
 // It's what keeps you going between the rare healing orbs, not a way to tank a fight.
-const FOOD_MAX=5;
+const FOOD_MAX=5, foodMax=()=>FOOD_MAX+(setOn('feaster',4)?3:0);
 const FOODS={
   bread:{n:'Stale Bread',heal:.04,rate:.012,t:7,c:'#c8a060',w:4},
   shroom:{n:'Grave Mushroom',heal:.02,rate:.01,t:12,c:'#a08aa0',w:3},
@@ -2561,9 +2601,10 @@ function eatFood(){
   const p=G.player; if(G.dying||state!=='play') return;
   if(!G.food.length){text(p.x,p.y-30,'Nothing to eat','#857a72',12); return;}
   if((p.eatCd||0)>0) return; p.eatCd=3; // one mouthful at a time: you can't chain-eat through a fight
-  const id=G.food.shift(), f=FOODS[id], s=G.stats; healP(s.maxHp*f.heal);
+  const id=G.food.shift(), f=FOODS[id], s=G.stats, fx=setOn('feaster',2)?2:1; healP(s.maxHp*f.heal*fx);
+  if(setOn('feaster',4)) boomAt(p.x,p.y,100,1.4,'#e0b84a',{kb:300});
   // a new meal replaces the trickle if it's better, otherwise tops up how long it lasts
-  if(!p.meal||p.meal.t<=0||f.rate>=p.meal.rate) p.meal={rate:f.rate,t:f.t,t0:f.t,c:f.c}; else {p.meal.t=Math.max(p.meal.t,f.t); p.meal.t0=Math.max(p.meal.t0,p.meal.t);}
+  if(!p.meal||p.meal.t<=0||f.rate*fx>=p.meal.rate) p.meal={rate:f.rate*fx,t:f.t,t0:f.t,c:f.c}; else {p.meal.t=Math.max(p.meal.t,f.t); p.meal.t0=Math.max(p.meal.t0,p.meal.t);}
   text(p.x,p.y-34,f.n,f.c,12); play('pick');
   for(let i=0;i<10;i++) addP({x:p.x+rand(-4,4),y:p.y-12,vx:rand(-40,40),vy:rand(-50,10),life:.5,max:.5,size:2,color:f.c,drag:3});
 }
@@ -2648,7 +2689,7 @@ function interact(){ if(G.nearShadow&&!G.near) arise(G.nearShadow); else if(G.ne
 function dash(){
   const p=G.player, s=G.stats; if(!s.canDash) return;
   if(p.dashT>0||p.dashTime>0||p.leap){ if(p.dashT<.25) p.bufDash=.2; return; } p.bufDash=0; // pressed a touch early: dash the moment it's ready
-  firePowers('dash');
+  firePowers('dash'); if(setOn('stormborn',4)) EFFECTS.bolts.run({x:p.x,y:p.y,p:1.2,n:1});
   if(s.u.leapdash){p.dashT=1; SKILLS.leap.cast(Object.assign(skillCtx('leap'),{tp:aimPoint(220)})); play('dash'); return;} // Hammerfall Greaves
   let [mx,my]=moveInput(); if(!mx&&!my){mx=Math.cos(p.facing);my=Math.sin(p.facing);}
   p.dashTime=.17; p.dvx=mx*560; p.dvy=my*560; p.dashT=1; p.inv=Math.max(p.inv,.22); play('dash');
@@ -2799,7 +2840,7 @@ function update(dt){
   G.near=null; let nd=36;
   for(let i=G.drops.length-1;i>=0;i--){const d=G.drops[i]; d.t+=dt; const dd=Math.hypot(d.x-p.x,d.y-p.y);
     if(d.kind==='tome'){ if(dd<p.r+16){G.drops.splice(i,1); learnSkill(d.skill);} continue; }
-    if(d.kind==='food'){ if(dd<p.r+12&&d.t>.3){ if(G.food.length<FOOD_MAX){G.food.push(d.food); G.drops.splice(i,1); play('pick'); text(p.x,p.y-26,FOODS[d.food].n,FOODS[d.food].c,11);}
+    if(d.kind==='food'){ if(dd<p.r+12&&d.t>.3){ if(G.food.length<foodMax()){G.food.push(d.food); G.drops.splice(i,1); play('pick'); text(p.x,p.y-26,FOODS[d.food].n,FOODS[d.food].c,11);}
         else if(!d.full){d.full=true; text(d.x,d.y-16,'Your food pouch is full','#857a72',11);} } continue; } // walk over a Skill Tome to read it
     if(d.kind==='gold'){ if(dd<90&&d.t>.4){const a=Math.atan2(p.y-d.y,p.x-d.x); d.x+=Math.cos(a)*300*dt; d.y+=Math.sin(a)*300*dt;}
       if(dd<p.r+8&&d.t>.4){G.gold+=d.n; G.drops.splice(i,1); play('pick'); text(p.x+rand(-8,8),p.y-24,`+${d.n}`,'#e0b84a',11); firePowers('gold'); questEvent('gold',d.n);
@@ -3449,7 +3490,7 @@ function tipButtons(where,i){
 function showTip(el){
   const where=el.dataset.where, i=el.dataset.i, it=where==='eq'?G.gear[i]:where==='shop'?G.shop.stock[+i]:where==='bag'?G.bag[+i]:null, tip=$('itemTip');
   if(where==='food'){const fd=G.shop.food[+i], F=FOODS[fd.id];
-    tip.innerHTML=`<div class="tn" style="color:${F.c}">${F.n}</div><div class="tm">Food · you carry ${G.food.length} / ${FOOD_MAX}</div><div class="tl">Heals ${Math.round(F.heal*100)}% at once, then ${Math.round(F.rate*100*F.t)}% more over ${F.t} seconds.</div><div class="th">Click: buy for ${fd.price} gold</div>`;}
+    tip.innerHTML=`<div class="tn" style="color:${F.c}">${F.n}</div><div class="tm">Food · you carry ${G.food.length} / ${foodMax()}</div><div class="tl">Heals ${Math.round(F.heal*100)}% at once, then ${Math.round(F.rate*100*F.t)}% more over ${F.t} seconds.</div><div class="th">Click: buy for ${fd.price} gold</div>`;}
   else if(where==='tome'){const t=G.shop.tome, I=SKILL_INFO[t.skill];
     tip.innerHTML=`<div class="tn" style="color:${I.c}">Skill Tome: ${I.n}</div><div class="tm">${G.skills[t.skill]?'You know it: reading levels it up':'Teaches you a new skill'}</div><div class="tl">${SKILLS[t.skill].d}</div><div class="th">Click: buy for ${t.price} gold</div>`;}
   else if(!it){hideTip(); return;}
@@ -3492,7 +3533,7 @@ function invAct(act,where,i,el){
     case 'sell': {const it=G.bag.splice(n,1)[0]; if(!it) break; G.gold+=sellPrice(it); for(const s of G.sets) if(s) for(const k of SLOTS) if(s[k]===it) s[k]=null; play('pick'); break;}
     case 'buy': {const it=G.shop.stock[n], pr=buyPrice(it); if(G.gold<pr){text(p.x,p.y-30,'Not enough gold','#e04a30',12); break;} if(!bagAdd(it)) break; G.gold-=pr; G.shop.stock.splice(n,1); play('legendary'); break;}
     case 'tome': {const t=G.shop.tome; if(G.gold<t.price) break; G.gold-=t.price; G.shop.tome=null; hideAll(); hideTip(); learnSkill(t.skill); return;}
-    case 'food': {const fd=G.shop.food[n]; if(!fd) break; if(G.gold<fd.price){text(p.x,p.y-30,'Not enough gold','#e04a30',12); break;} if(G.food.length>=FOOD_MAX){text(p.x,p.y-30,'Your food pouch is full','#857a72',12); break;}
+    case 'food': {const fd=G.shop.food[n]; if(!fd) break; if(G.gold<fd.price){text(p.x,p.y-30,'Not enough gold','#e04a30',12); break;} if(G.food.length>=foodMax()){text(p.x,p.y-30,'Your food pouch is full','#857a72',12); break;}
       G.gold-=fd.price; G.food.push(fd.id); G.shop.food.splice(n,1); play('pick'); break;}
     case 'close': hideTip(); return;
   }
@@ -3794,7 +3835,7 @@ $('btnCopyRun').onclick=()=>{ const b=$('btnCopyRun'), t=$('runSummary'), shown=
   try{ navigator.clipboard.writeText(G.summary).then(()=>{b.textContent='Copied. Paste it to the dev';},()=>{b.textContent='Select the text below and copy it'; shown();}); }
   catch(e){ b.textContent='Select the text below and copy it'; shown(); } };
 // one place for the build number: the title screen and run summaries both read it
-const BUILD='0.28';
+const BUILD='0.29';
 // ----- first-time tips: each shows once ever, worded for whatever you're playing with -----
 const HINTS=(()=>{try{return new Set(JSON.parse(localStorage.getItem('deepening.hints')||'[]'))}catch(e){return new Set()}})();
 const keyFor=a=>({dash:TOUCH.active?'Tap DASH':PAD.active?'Press A':'Press Space', use:TOUCH.active?'Tap USE':PAD.active?'Press X':'Press E',
