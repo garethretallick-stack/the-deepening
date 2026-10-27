@@ -2078,7 +2078,7 @@ function releaseAttack(k){
   if(k.big){G.shake=Math.min(14,G.shake+5); text(p.x,p.y-26,'BUTCHERED','#ff8c1a',12);}
   if(k.kind==='cast'){
     // the bolt leaves from your body so point-blank enemies still get hit; the flash shows at the staff tip
-    const necro=G.cls==='necro', sp=necro?420:480, tip=WEAPONS[G.cls].tip||26, x=p.x+Math.cos(a)*tip*.8, y=p.y+2+Math.sin(a)*tip*.8; // the necromancer's bone spear punches through one extra body
+    const necro=G.cls==='necro', sp=necro?420:480, tip=heldWeapon().tip, x=p.x+Math.cos(a)*tip*.9, y=p.y-LIFT+4+Math.sin(a)*tip*.9; // the necromancer's bone spear punches through one extra body
     G.projectiles.push({x:p.x+Math.cos(a)*12,y:p.y+Math.sin(a)*12,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:k.big?7:5,owner:'player',life:1.1,
       color:k.big?'#ff8c1a':necro?'#cfe8b0':'#b9a3ff',pierce:necro?1:0,mult:k.mult,forceCrit:k.big});
     G.effects.push({type:'ring',x,y,r0:2,r1:16,t:0,max:.12,color:necro?'#9aff7a':'#b9a3ff',w:3}); spark(x,y,necro?'#9aff7a':'#c8b4ff',5);
@@ -3064,7 +3064,7 @@ function render(){
   if(p.hasteT>0&&Math.random()<.5) addP({x:p.x+rand(-6,6),y:p.y+rand(-4,8),vx:0,vy:0,life:.25,max:.25,size:2,color:'#8fd8ff',drag:0,emissive:true});
   {const pc=SPRITE_DEFS[G.cls].pal.e; for(const q of eyeSpots(SPRITES[G.cls],p.x,p.y+9,Math.cos(p.facing)<0)){
     ctx.fillStyle=hexA(pc,.18); ctx.beginPath(); ctx.arc(q.x,q.y,5,0,7); ctx.fill(); ctx.fillStyle=hexA(pc,.9); ctx.fillRect(q.x-1,q.y-1,2,2);}}
-  if(G.cls==='mage'||G.cls==='necro'){const ps=weaponPose(), wa=ps.ang, nc=G.cls==='necro', tip=(WEAPONS[G.cls].tip||(nc?28:26))+ps.ext; const x=p.x+Math.cos(wa)*tip, y=p.y+2+Math.sin(wa)*tip;
+  if(G.cls==='mage'||G.cls==='necro'){const ps=weaponPose(), wa=ps.ang, nc=G.cls==='necro', tip=heldWeapon().tip+ps.ext; const x=p.x+Math.cos(wa)*tip, y=p.y-LIFT+4+Math.sin(wa)*tip;
     ctx.fillStyle=nc?'rgba(120,255,100,.25)':'rgba(170,140,255,.3)'; ctx.beginPath(); ctx.arc(x,y,9,0,7); ctx.fill(); ctx.fillStyle=nc?'#d8ffd0':'#e8dcff'; ctx.fillRect(x-1.5,y-1.5,3,3);}
   for(const m of G.allies){ if(m.rise>0||!inView(m.x,m.y,20)) continue;
     for(const q of eyeSpots(SPRITES.minion,m.x,m.y+7,Math.cos(m.face)<0)){ctx.fillStyle='rgba(122,255,106,.22)'; ctx.beginPath(); ctx.arc(q.x,q.y,5,0,7); ctx.fill(); ctx.fillStyle='#7aff6a'; ctx.fillRect(q.x-1,q.y-1,2,2);}}
@@ -3243,17 +3243,29 @@ function drawTrap(g,t){
 }
 function isMoving(o){const m=o.lx!==undefined&&Math.hypot(o.x-o.lx,o.y-o.ly)>.1; o.lx=o.x; o.ly=o.y; if(m) o.mvT=.12; else o.mvT=(o.mvT||0)-1/60; return o.mvT>0;}
 function playerWeaponAngle(){return weaponPose().ang;}
+// The weapon in your hand: your equipped weapon's own picture where there is one, sized to your body (a 56-tall hero).
+// Swords about 34 long, staves 32, daggers 20 (the hero stands about 40), so nothing towers over the one holding it.
+const HELD_LEN={warrior:34,rogue:20,mage:32,necro:32}, HELD_CACHE={};
+function heldWeapon(){
+  const it=G.gear.weapon, key=it&&ARTX.atlas?(it.rarity==='legendary'?['golden_sword','lavish_sword','anime_sword','red_gem_sword'][it.name.length%4]:WEAPON_ART[it.noun]):null;
+  let base=WEAPONS[G.cls];
+  if(key&&A72_WPN[key]){ if(!HELD_CACHE[key]){const src=artCut(ARTX.atlas,...A72_WPN[key]), c=document.createElement('canvas'); c.width=src.height; c.height=src.width;
+      const g=c.getContext('2d'); g.translate(c.width,0); g.rotate(Math.PI/2); g.drawImage(src,0,0); const cv=artMap(c,artGrade()); HELD_CACHE[key]={w:cv.width,h:cv.height,frames:[cv]};}
+    base=HELD_CACHE[key]; }
+  const sc=HELD_LEN[G.cls]/(base.w*2);
+  return {cv:base.frames[0],w:base.w*2*sc,h:base.h*2*sc,tip:4+base.w*2*sc};
+}
 function drawPlayer(g){
   const p=G.player, sp=SPRITES[G.cls], flip=Math.cos(p.facing)<0, feet=p.y+9;
   if(G.dying){const k=Math.min(1,(2.2-G.dying)/.5); g.save(); g.translate(Math.round(p.x),Math.round(p.y+6)); g.rotate((flip?-1:1)*k*Math.PI/2);
     g.drawImage(sp.frames[0],-sp.cx*2,-sp.h*2+6,sp.w*2,sp.h*2); g.globalAlpha=.5; g.drawImage(sp.red[0],-sp.cx*2,-sp.h*2+6,sp.w*2,sp.h*2); g.restore(); return;}
-  const fr=sprFrame(sp,isMoving(p)), pose=weaponPose(), wa=pose.ang, ws=WEAPONS[G.cls];
+  const fr=sprFrame(sp,isMoving(p)), pose=weaponPose(), wa=pose.ang, hw=heldWeapon();
   // squash and lean into the strike, peaking the moment the blow lands
   const k=p.atk, q=k?Math.max(0,1-Math.abs(k.t-k.hitAt)/(k.dur*.45))*(k.heavy?1.4:1):0, la=k?k.a:0;
   g.save(); if(p.inv>0&&p.dashTime<=0&&p.hurtT<=0) g.globalAlpha=.7;
   g.fillStyle='rgba(0,0,0,.5)'; g.beginPath(); g.ellipse(p.x,feet,10+q*2,4,0,0,7); g.fill();
   const weapon=()=>{g.save(); g.translate(Math.round(p.x+Math.cos(la)*q*3),Math.round(p.y-LIFT+4+Math.sin(la)*q*2)); g.rotate(wa); if(Math.cos(wa)<0) g.scale(1,-1);
-    g.drawImage(ws.frames[0],4+pose.ext,-ws.h,ws.w*2,ws.h*2); g.restore();};
+    g.drawImage(hw.cv,4+pose.ext,-hw.h/2,hw.w,hw.h); g.restore();};
   const body=(variant,alpha)=>{g.save(); g.translate(p.x+Math.cos(la)*q*3,feet); g.scale(1+.12*q,1-.1*q); g.translate(-p.x,-feet);
     drawSprite(g,sp,p.x,feet,flip,fr,variant,1,alpha); g.restore();};
   const behind=Math.sin(wa)<-.2;
@@ -3946,7 +3958,7 @@ $('btnCopyRun').onclick=()=>{ const b=$('btnCopyRun'), t=$('runSummary'), shown=
   try{ navigator.clipboard.writeText(G.summary).then(()=>{b.textContent='Copied. Paste it to the dev';},()=>{b.textContent='Select the text below and copy it'; shown();}); }
   catch(e){ b.textContent='Select the text below and copy it'; shown(); } };
 // one place for the build number: the title screen and run summaries both read it
-const BUILD='0.36';
+const BUILD='0.37';
 // ----- first-time tips: each shows once ever, worded for whatever you're playing with -----
 const HINTS=(()=>{try{return new Set(JSON.parse(localStorage.getItem('deepening.hints')||'[]'))}catch(e){return new Set()}})();
 const keyFor=a=>({dash:TOUCH.active?'Tap DASH':PAD.active?'Press A':'Press Space', use:TOUCH.active?'Tap USE':PAD.active?'Press X':'Press E',
