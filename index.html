@@ -2598,7 +2598,7 @@ function updateQuest(dt){
 }
 // the System's window: navy glass, a thin glowing frame, square brackets
 function drawSysWin(){
-  const w=G.sysWin; if(!w) return; const a=Math.min(1,w.t/.25,(4.2-w.t)/.4), bw=Math.min(420,W-40), bh=74+w.lines.length*19, X=W/2-bw/2, Y=Math.min(H*.3+104,H-bh-120);
+  const w=G.sysWin; if(!w) return; const a=Math.min(1,w.t/.25,(4.2-w.t)/.4), bw=Math.min(400,W-40), bh=74+w.lines.length*19, X=W/2-bw/2, Y=W>=960?10:118; G.sysWinBottom=Y+bh;
   ctx.save(); ctx.globalAlpha=clamp(a,0,1);
   ctx.fillStyle='rgba(6,14,30,.9)'; ctx.fillRect(X,Y,bw,bh);
   ctx.strokeStyle=hexA(w.col,.85); ctx.lineWidth=1.5; ctx.strokeRect(X+.5,Y+.5,bw-1,bh-1); ctx.strokeStyle=hexA(w.col,.25); ctx.strokeRect(X+4.5,Y+4.5,bw-9,bh-9);
@@ -3333,7 +3333,7 @@ function drawHUD(){
     ctx.textAlign='left'; ctx.font=`13px ${FB}`; ctx.fillStyle='#d3c7ae'; ctx.fillText(fit(line,bw3-24),X+12,Y+40);}
   // first-time tip, top centre: fades in, holds, fades out
   if(G.hints&&G.hints.length){const h=G.hints[0], a=Math.min(1,h.t/.4,(7-h.t)/.6), bw4=Math.min(460,W-40);
-    ctx.font=`14px ${FB}`; const lines=wrapText(h.text,bw4-28), bh=24+lines.length*19, X=W/2-bw4/2, Y=G.bossBar?96:84;
+    ctx.font=`14px ${FB}`; const lines=wrapText(h.text,bw4-28), bh=24+lines.length*19, X=W/2-bw4/2, Y=G.sysWin?(G.sysWinBottom||0)+10:G.bossBar?96:84;
     ctx.globalAlpha=clamp(a,0,1); ctx.fillStyle='rgba(8,5,6,.92)'; ctx.fillRect(X,Y,bw4,bh); ctx.fillStyle='#e07a2c'; ctx.fillRect(X,Y,3,bh);
     ctx.strokeStyle='#2e1c1e'; ctx.strokeRect(X+.5,Y+.5,bw4-1,bh-1); ctx.textAlign='left'; ctx.fillStyle='#d3c7ae';
     lines.forEach((l,i)=>ctx.fillText(l,X+16,Y+21+i*19)); ctx.globalAlpha=1;}
@@ -3876,7 +3876,7 @@ $('btnCopyRun').onclick=()=>{ const b=$('btnCopyRun'), t=$('runSummary'), shown=
   try{ navigator.clipboard.writeText(G.summary).then(()=>{b.textContent='Copied. Paste it to the dev';},()=>{b.textContent='Select the text below and copy it'; shown();}); }
   catch(e){ b.textContent='Select the text below and copy it'; shown(); } };
 // one place for the build number: the title screen and run summaries both read it
-const BUILD='0.33';
+const BUILD='0.34';
 // ----- first-time tips: each shows once ever, worded for whatever you're playing with -----
 const HINTS=(()=>{try{return new Set(JSON.parse(localStorage.getItem('deepening.hints')||'[]'))}catch(e){return new Set()}})();
 const keyFor=a=>({dash:TOUCH.active?'Tap DASH':PAD.active?'Press A':'Press Space', use:TOUCH.active?'Tap USE':PAD.active?'Press X':'Press E',
