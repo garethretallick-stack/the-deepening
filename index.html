@@ -480,6 +480,7 @@ const PROG=[[0,3,7],[1,5,8],[0,3,7],[-2,2,5]];
 function pad(t,notes,dur){for(const n of notes) for(const dt of [-7,7]) tone(note(n+12),dur,'sawtooth',.011,0,{t,att:dur*.3,detune:dt,lp:700,bus:SND.music,wet:.5});}
 function musicTick(){
   const ac=SND.ac; if(!ac||SND.muted) return; const now=ac.currentTime;
+  if(G&&G.isTavern&&state==='play'){tavernTick(); MUS.next=now+.05; return;} // in the tavern the dark score rests and the room plays instead
   MUS.I+=(MUS.target-MUS.I)*.015;
   const fast=G&&G.bossBar, spb=60/(fast?116:88)/2;
   if(MUS.next<now) MUS.next=now+.05;
@@ -964,7 +965,10 @@ const A72={ // [x,y,w,h,frames] in the 0x72 atlas; frames sit side by side
   orcShaman:{idle:[368,201,16,23,4],run:[432,201,16,23,4]}, swampy:{idle:[432,112,16,16,4]},
   chort:{idle:[368,273,16,23,4],run:[432,273,16,23,4]}, maskedOrc:{idle:[368,153,16,23,4],run:[432,153,16,23,4]},
   mimic:{idle:[304,432,16,16,3]}, goblin:{idle:[368,40,16,16,4],run:[432,40,16,16,4]}, slug:{idle:[368,369,16,23,4]}, tinySlug:{idle:[432,376,16,16,4]},
-  muddy:{idle:[368,112,16,16,4]}, iceZombie:{idle:[432,136,16,16,4]}, imp:{idle:[368,64,16,16,4],run:[432,64,16,16,4]}, chest:{idle:[304,416,16,16,1]}, chestOpen:{idle:[336,416,16,16,1]},
+  muddy:{idle:[368,112,16,16,4]}, iceZombie:{idle:[432,136,16,16,4]},
+  // tavern folk
+  knightF:{idle:[128,68,16,28,4]}, elfF:{idle:[128,4,16,28,4]}, wizF:{idle:[128,132,16,28,4]}, dwarfM:{idle:[128,292,16,28,4]}, dwarfF:{idle:[128,260,16,28,4]},
+  lizardM:{idle:[128,228,16,28,4]}, lizardF:{idle:[128,196,16,28,4]}, doc:{idle:[368,345,16,23,4]}, pumpkin:{idle:[368,321,16,23,4]}, imp:{idle:[368,64,16,16,4],run:[432,64,16,16,4]}, chest:{idle:[304,416,16,16,1]}, chestOpen:{idle:[336,416,16,16,1]},
 };
 const A72_ONE={flask:[288,352,16,16], stairs:[80,192,16,16], spikes:[16,192,16,16,4]};
 const A72_WEAPON={warrior:[339,98,10,29], rogue:[293,10,6,13], mage:[324,129,8,30], necro:[340,129,8,30]};
@@ -975,7 +979,7 @@ const ART_USE={warrior:['knight'],rogue:['elf'],mage:['wizard'],necro:['necroman
   ant:['imp',[120,210,255,.6]], geode:['maskedOrc',[170,120,240,.5]], spitter:['swampy',[210,240,60,.55]], burrower:['imp',[255,140,50,.5]],
   drowned:['iceZombie',[80,170,200,.45]], caller:['necromancer',[230,60,50,.45]], leech:['tinySlug',[180,160,255,.7]],mimic:['mimic'],chest:['chest'],chestOpen:['chestOpen'],
   boss0:['ogre',[200,40,30,.25]],boss1:['bigZombie',[150,210,60,.3]],boss2:['bigDemon',[80,160,230,.45]],boss3:['bigDemon',[255,120,30,.3]],boss4:['bigZombie',[120,90,200,.5],.6]};
-const ARTX={ready:false}; // extra art: flask, stairs, spikes, torch frames, weapon art, map textures
+const ARTX={ready:false}; const PATRONS=[]; // tavern folk sprites, built when the art loads // extra art: flask, stairs, spikes, torch frames, weapon art, map textures
 
 function artCut(img,x,y,w,h){const c=document.createElement('canvas'); c.width=w; c.height=h; c.getContext('2d').drawImage(img,x,y,w,h,0,0,w,h); return c;}
 function artStrip(img,[x,y,w,h,n=1]){const out=[]; for(let i=0;i<n;i++) out.push(artCut(img,x+i*w,y,w,h)); return out;}
@@ -1024,6 +1028,9 @@ function loadArt(){
       g.translate(c.width,0); g.rotate(Math.PI/2); g.drawImage(src,0,0);
       const cv=artMap(c,artGrade()); WEAPONS[cls]={w:cv.width,h:cv.height,frames:[cv],art:true,tip:4+cv.width*2-4};}
     ARTX.atlas=atlas; // item icons cut their weapon pictures from it
+    PATRONS.length=0; const outfits=[null,[180,60,50,.3],[60,110,180,.3],[70,150,70,.3],[200,170,90,.3],[130,80,170,.3]];
+    for(const base of ['knight','knightF','elf','elfF','wizard','wizF','dwarfM','dwarfF','lizardM','lizardF','necromancer','orcWarrior','maskedOrc','orcShaman','goblin','doc','pumpkin','wogol'])
+      for(let k=0;k<2;k++){const a=A72[base], key='pat_'+base+k; SPRITES[key]=artSprite(artStrip(atlas,a.idle),[],pick(outfits),1.05); PATRONS.push(key);}
     ARTX.flask=artSprite([artCut(atlas,...A72_ONE.flask)],[]); ARTX.stairs=artCut(atlas,...A72_ONE.stairs);
     ARTX.spikes=artStrip(atlas,A72_ONE.spikes); ARTX.torch=[t1,t2,t3,t4];
     // floors: three rows of six 32px stone slabs; walls: the long brick strip
@@ -1267,7 +1274,13 @@ function genTavern(depth){
   for(let tx=x0+1;tx<x0+w-1;tx+=3) torches.push({tx,ty:y0-1,x:tx*TILE+16,y:(y0-1)*TILE+22,ph:rand(0,6.28)});
   const spawn={x:cw(x0+1),y:cw(room.cy)}, stairs={x:cw(x0+w-2),y:cw(room.cy)};
   const props=[{kind:'keeper',x:cw(room.cx),y:cw(y0+1)},{kind:'hearth',x:cw(room.cx),y:cw(y0+h-3),used:false}];
-  for(const [tx,ty] of [[x0+4,y0+3],[x0+4,y0+h-4],[x0+w-6,y0+3],[x0+w-6,y0+h-4]]) props.push({kind:'table',x:cw(tx),y:cw(ty)});
+  const tables=[[x0+4,y0+3],[x0+4,y0+h-4],[x0+w-6,y0+3],[x0+w-6,y0+h-4],[x0+9,y0+h-5]];
+  for(const [tx,ty] of tables) props.push({kind:'table',x:cw(tx),y:cw(ty)});
+  // a full house: folk of every kind at the tables, a couple of regulars at the counter, a bard by the fire
+  if(PATRONS.length){const seat=(x,y,flip,o={})=>props.push(Object.assign({kind:'patron',x,y,spr:pick(PATRONS),flip,ph:rand(0,6.28),chatT:rand(1,10),drinkT:rand(1,8)},o));
+    for(const [tx,ty] of tables){ seat(cw(tx)-24,cw(ty)-2,false); seat(cw(tx)+24,cw(ty)-2,true); if(Math.random()<.6) seat(cw(tx),cw(ty)+22,Math.random()<.5); }
+    seat(cw(room.cx)-44,cw(y0+2)+6,false); seat(cw(room.cx)+44,cw(y0+2)+6,true);
+    seat(cw(room.cx)+46,cw(y0+h-3),true,{bard:true});}
   // the keeper's stock: rolled a little deeper than here, so it's worth buying
   const stock=[]; for(let k=0;k<8;k++) stock.push(makeItem(SLOTS[k],depth+2,.35,k<2?'rare':undefined));
   if(Math.random()<.08) stock.push(makeLegendary(depth+1));
@@ -1890,6 +1903,7 @@ function useProp(o){
     G.effects.push({type:'ring',x:o.x,y:o.y,r0:10,r1:120,t:0,max:.6,color:o.type.c,w:5,light:true});
     G.banner={t:0,lines:[o.type.n,msg,'']};
   } else if(o.kind==='keeper') openBag(true);
+  else if(o.kind==='patron') talkTo(o);
   else if(o.kind==='hearth'&&!o.used){ // rest: whole again, your dead mended, and a warmth that lasts through the next floor
     o.used=true; healP(G.stats.maxHp); for(const m of G.allies) m.hp=m.maxHp; G.restedFor=G.depth+1; recalc(); play('shrine'); G.flash=.3;
     G.effects.push({type:'ring',x:o.x,y:o.y,r0:10,r1:140,t:0,max:.8,color:'#ffb04a',w:6,light:true});
@@ -2322,7 +2336,7 @@ function updateSkills(dt){
       for(const e of near(bx,by,10)){ if((o.hits.get(e)||0)>G.time) continue; o.hits.set(e,G.time+.25);
         strike(e,o.mult,a+Math.PI/2,{skill:'blades',noKb:true,critBonus:G.stats.skillCrit}); if(o.fire&&!e.dead) e.burn={t:3,dps:G.stats.dmg*.25};}}}
   if(G.orbits) G.orbits=G.orbits.filter(o=>o.t<o.ttl);
-  updatePowers(dt); updateSouls(dt); updateQuest(dt); updateZone(dt); updateFood(dt);
+  updatePowers(dt); updateSouls(dt); updateQuest(dt); updateZone(dt); updateFood(dt); updateTavern(dt);
   {let n=0; for(const e of G.enemies) if(!e.dead&&e.T.leech&&dist(e,p)<180) n++; const want=1-.2*Math.min(3,n); p.lightK=(p.lightK||1)+(want-(p.lightK||1))*Math.min(1,dt*3);}
   // legendaries that tick on their own
   const u=G.stats.u;
@@ -2655,6 +2669,56 @@ function drawFoodIcon(g,id,x,y,s=1){
 }
 const FOOD_URL={};
 function foodUrl(id){ if(!FOOD_URL[id]){const c=document.createElement('canvas'); c.width=c.height=32; const g=c.getContext('2d'); drawFoodIcon(g,id,16,18,2); FOOD_URL[id]=c.toDataURL();} return FOOD_URL[id];}
+// ================= tavern life =================
+// Patrons drink, idle and chatter in little speech bubbles. Walk up and talk: they trade rumours, mostly true.
+const CHATTER=['Another round!','Ha! No, really!','...and then it SPLIT in two.','To the deep!','Keep your torch lit, friend.','I lost a whole hand down there.',
+  'Shh, the keeper\'s listening.','Did you see the size of it?','My round? Again?','Cheers!','*hic*','The Warrens stink worse every year.','Never trust a chest.',
+  'One more floor, I said. One more.','Who ordered the rat?','Stop humming that song.','I swear the Hollow moved.','Sing it again!'];
+const RUMOURS=['Something big guards every floor ending in nine. Bring food.','Chests bite. Not all of them. Enough of them.','Elites leave their shadow when they die. Command it fast: it fades.',
+  'The Drowned sleep under the Chapel pools. Wade carefully.','Grave Callers keep raising rats. Kill the caller first.','Spore puffs pop when you get close. Hit them from range.',
+  'The little gold-sack goblins run. Catch one and you\'ll eat well for a week.','A champion walks the dark some nights. He carries a whole set of gear.',
+  'Burrowers come up right under your feet. When the ground shakes, move.','Light Leeches drink your light. Kill them and it comes back.',
+  'Gear that drinks enough blood grows. Choose what it becomes.','Some say the System is watching. Do its tasks and it pays.','Rested at the hearth? Then you hit harder on the next floor.',
+  'The Hollow is darker than it should be. Bring something that glows.','Stack powers on every piece you wear. Strange things start happening.','Frostbound elites slow you down. Do not stand and trade.'];
+function updateTavern(dt){
+  if(!G.isTavern) return; G.bubbles=G.bubbles||[];
+  for(const o of G.props){ if(o.kind!=='patron') continue;
+    o.drinkT-=dt; if(o.drinkT<-1.1) o.drinkT=rand(3,9); // a long pull, then a while before the next
+    o.chatT-=dt; if(o.chatT<=0){o.chatT=rand(5,14); if(Math.abs(o.x-G.player.x)<420&&Math.abs(o.y-G.player.y)<300&&G.bubbles.length<4) G.bubbles.push({x:o.x,y:o.y-44,text:o.bard?pick(['♪ la la laaa ♪','♪ down, down, down ♪','♪ hey-ho ♪']):pick(CHATTER),t:0});}
+    if(o.bard&&Math.random()<dt*2) addP({x:o.x+rand(-6,6),y:o.y-30,vx:rand(-10,10),vy:-30,life:1.2,max:1.2,size:2,color:'#ffe08a',drag:.3,emissive:true});}
+  for(const b of G.bubbles) b.t+=dt; G.bubbles=G.bubbles.filter(b=>b.t<3);
+}
+function talkTo(o){ (G.bubbles=G.bubbles||[]).push({x:o.x,y:o.y-44,text:pick(RUMOURS),t:-1.5,big:true}); play('pick'); o.chatT=rand(8,14); }
+function drawPatron(g,o){
+  const sp=SPRITES[o.spr]; if(!sp) return; const feet=o.y+10, fr=sprFrame(sp,false,o.ph);
+  g.fillStyle='rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(o.x,feet,9,3.5,0,0,7); g.fill();
+  drawSprite(g,sp,o.x,feet,o.flip,fr);
+  const hx=o.x+(o.flip?-8:8), lift=o.drinkT<0?-10:0; // a mug in hand; tipped up to the mouth while drinking
+  if(o.bard){g.fillStyle='#6a3a1a'; g.beginPath(); g.ellipse(hx,o.y-6,6,8,.5,0,7); g.fill(); g.fillStyle='#3a2010'; g.fillRect(hx+(o.flip?-12:4),o.y-20,2,14); g.fillStyle='#1a0a06'; g.fillRect(hx-1,o.y-8,3,3);}
+  else {g.fillStyle='#6a4a2a'; g.fillRect(hx-3,o.y-8+lift,6,7); g.fillStyle='#f2ead8'; g.fillRect(hx-3,o.y-9+lift,6,2);}
+}
+// speech bubbles, drawn on top in screen space so the words stay crisp
+function drawBubbles(){
+  for(const b of G.bubbles||[]){ if(b.t<0&&!b.big) continue; const a=Math.min(1,(b.t+(b.big?1.5:0))/.2,(3-b.t)/.4), sx=(b.x-G.cam.x)*ZOOM+W/2, sy=(b.y-G.cam.y)*ZOOM+H/2;
+    ctx.font=`${b.big?14:12}px ${FB}`; const lines=b.big?wrapText(b.text,240):[b.text], tw=Math.max(...lines.map(l=>ctx.measureText(l).width))+18, th=8+lines.length*17;
+    ctx.globalAlpha=clamp(a,0,1); ctx.fillStyle='rgba(242,234,216,.95)'; ctx.fillRect(sx-tw/2,sy-th,tw,th); ctx.beginPath(); ctx.moveTo(sx-5,sy); ctx.lineTo(sx,sy+7); ctx.lineTo(sx+5,sy); ctx.fill();
+    ctx.fillStyle='#1a0e0a'; ctx.textAlign='center'; lines.forEach((l,i)=>ctx.fillText(l,sx,sy-th+16+i*17)); ctx.globalAlpha=1;}
+}
+// the sound of a full room: a murmur built from many soft syllables, mugs clinking, the odd laugh, and the bard's lute
+function tavernTick(){
+  const ac=SND.ac; if(!ac||SND.muted||!G||!G.isTavern||state!=='play') return; const now=ac.currentTime;
+  if(!MUS.tav||MUS.tav<now) MUS.tav=now+.05;
+  while(MUS.tav<now+.25){const t=MUS.tav; MUS.tav+=rand(.04,.11);
+    noise(rand(.08,.22),rand(.008,.02),rand(220,900),rand(3,7),{t,pan:rand(-.8,.8),wet:.35,att:.03});           // voices
+    if(Math.random()<.025) for(let k=0;k<2;k++) tone(rand(1900,3200),.12,'triangle',.018,0,{t:t+k*.05,pan:rand(-.7,.7),wet:.4}); // clink
+    if(Math.random()<.008){const f=rand(320,520); for(let k=0;k<4;k++) noise(.09,.03,f*(1-k*.04),5,{t:t+k*.13,pan:rand(-.6,.6),wet:.3});} // a laugh: ha-ha-ha-ha
+  }
+  // the bard: a warm little tune in D major, one note every half beat
+  if(!MUS.lute||MUS.lute<now) MUS.lute=now+.05;
+  const TUNE=[12,14,16,19,16,14,12,9,11,12,14,12,9,7,9,12];
+  while(MUS.lute<now+.25){const t=MUS.lute; MUS.lute+=.34; const n=TUNE[(MUS.lutei=(MUS.lutei||0)+1)%TUNE.length];
+    if(Math.random()<.9){tone(note(n+12),.6,'triangle',.03,0,{t,wet:.45,bus:SND.music,att:.003}); if(MUS.lutei%4===0) tone(note(n),.9,'triangle',.02,0,{t,wet:.5,bus:SND.music});}}
+}
 // ================= skill icons =================
 // a small glowing symbol for every skill, drawn with paths so it stays crisp at any size
 function skillGlyph(g,id,cx,cy,S,col,dim){
@@ -2783,7 +2847,7 @@ function update(dt){
     if(s.u.gravewalk){p.fireT=(p.fireT||0)-dt; if(p.fireT<=0){p.fireT=.035; addHazard(p.x,p.y+6,16,2.6,s.dmg*.45*s.u.gravewalk,'#ff7a2a',0,'player');}} addP({x:p.x,y:p.y,vx:0,vy:0,life:.25,max:.25,size:9,color:CLASSES[G.cls].color,drag:0,fade:true});}
   else { const spd=s.speed*(p.hasteT>0?1.3:1)*(p.spinT>0?.6:1)*(p.mudT>0?.55:1)*(p.wetT>0?.7:1); p.mudT=(p.mudT||0)-dt; move(p,mx*spd*dt,my*spd*dt);
     if(mx||my){p.stepT=(p.stepT||0)-dt; if(p.stepT<=0){p.stepT=48/s.speed; play('step');}} }
-  for(const o of G.props){ if(o.kind==='urn'||o.kind==='puff') continue; const R=o.kind==='table'||o.kind==='hearth'?15:o.kind==='shrine'||o.kind==='altar'?13:11, dx=p.x-o.x, dy=p.y-o.y, d=Math.hypot(dx,dy);
+  for(const o of G.props){ if(o.kind==='urn'||o.kind==='puff') continue; const R=o.kind==='patron'?9:o.kind==='table'||o.kind==='hearth'?15:o.kind==='shrine'||o.kind==='altar'?13:11, dx=p.x-o.x, dy=p.y-o.y, d=Math.hypot(dx,dy);
     if(d<R+p.r&&d>.01) move(p,dx/d*(R+p.r-d),dy/d*(R+p.r-d)); }
   // spike traps: rest, rattle, then strike anything standing on them
   for(const t of G.traps){ const ph=(G.time+t.ph)%2.6, prev=t.state; t.state=ph<1.85?'down':ph<2.2?'warn':'up';
@@ -2943,7 +3007,7 @@ function render(){
 
   // ----- darkness -----
   lctx.setTransform(1,0,0,1,0,0); lctx.globalCompositeOperation='source-over';
-  lctx.fillStyle='rgba(2,1,1,.975)'; lctx.fillRect(0,0,lightCv.width,lightCv.height);
+  lctx.fillStyle=G.isTavern?'rgba(2,1,1,.72)':'rgba(2,1,1,.975)'; lctx.fillRect(0,0,lightCv.width,lightCv.height); // a tavern is warm and lit; the deep is not
   lctx.globalCompositeOperation='destination-out'; lctx.setTransform(sc,0,0,sc,ox,oy);
   const L=(x,y,r,i)=>{ if(!inView(x,y,r)) return; const g=lctx.createRadialGradient(x,y,0,x,y,r);
     g.addColorStop(0,`rgba(0,0,0,${i})`); g.addColorStop(.45,`rgba(0,0,0,${i*.72})`); g.addColorStop(1,'rgba(0,0,0,0)'); lctx.fillStyle=g; lctx.fillRect(x-r,y-r,r*2,r*2); };
@@ -3100,6 +3164,7 @@ function drawDrop(g,d){
   g.drawImage(itemIcon(d.item),Math.round(d.x)-12,Math.round(d.y)-14+bob,24,24);
 }
 function drawProp(g,o){
+  if(o.kind==='patron'){drawPatron(g,o); return;}
   if(o.kind==='puff'){ // a spore puffball: swells and shakes when it's about to go
     const x=Math.round(o.x/2)*2, y=Math.round(o.y/2)*2, sw=o.fuse?1+(.55-o.fuse)*.8:1+.05*Math.sin(G.time*2+o.x), j=o.fuse?Math.round(Math.sin(G.time*50))*2:0;
     g.fillStyle='rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(x,y+6,10*sw,4,0,0,7); g.fill();
@@ -3324,12 +3389,12 @@ function drawHUD(){
     ctx.textAlign='left'; ctx.font=`13px ${FB}`; ctx.fillStyle='#d3c7ae'; ctx.fillText(`${sl.tries} ${sl.tries>1?'tries':'try'} · ${Math.ceil(sl.t)}s before it fades · shadows ${shadowCount()} / ${maxShadows()}`,X+12,Y+40);}
   // prompt for a chest or shrine within reach
   else if(!G.near&&G.nearProp){const o=G.nearProp, sh=o.kind==='shrine', al=o.kind==='altar', kp=o.kind==='keeper', hr=o.kind==='hearth';
-    const title=sh?o.type.n:al?'Blood Arena':kp?'The Keeper':hr?'The Hearth':'An old chest',
-      line=sh?o.type.d:al?'Seal yourself in. Survive three waves for a rare reward.':kp?'Sells what the dead left behind. Buys what you don\'t need.':hr?'Rest by the fire: full life, and its warmth goes down with you.':'Open it. Probably.', bw3=Math.min(380,W-40), X=W/2-bw3/2, Y=by-14-62;
-    const col=sh?o.type.c:al?'#e0301a':kp||hr?'#ffb04a':'#e0b84a', key=TOUCH.active?'TAP USE':PAD.active?'X':'E';
+    const pt=o.kind==='patron', title=pt?(o.bard?'The Bard':'A drinker'):sh?o.type.n:al?'Blood Arena':kp?'The Keeper':hr?'The Hearth':'An old chest',
+      line=pt?(o.bard?'Sings for coins. Knows every rumour in the deep.':'Talk to them. Rumours, mostly true.'):sh?o.type.d:al?'Seal yourself in. Survive three waves for a rare reward.':kp?'Sells what the dead left behind. Buys what you don\'t need.':hr?'Rest by the fire: full life, and its warmth goes down with you.':'Open it. Probably.', bw3=Math.min(380,W-40), X=W/2-bw3/2, Y=by-14-62;
+    const col=sh?o.type.c:al?'#e0301a':kp||hr||pt?'#ffb04a':'#e0b84a', key=TOUCH.active?'TAP USE':PAD.active?'X':'E';
     ctx.fillStyle='rgba(8,5,6,.92)'; ctx.fillRect(X,Y,bw3,58); ctx.strokeStyle=sh||al?hexA(col,.7):'#5a4020'; ctx.strokeRect(X+.5,Y+.5,bw3-1,57);
     ctx.textAlign='left'; ctx.font=`19px ${FD}`; ctx.fillStyle=col; ctx.fillText(title,X+12,Y+17);
-    ctx.textAlign='right'; ctx.font=`10px ${FB}`; ctx.fillStyle='#857a72'; ctx.fillText(`${key} TO ${sh?'PRAY':al?'BEGIN':kp?'TRADE':hr?'REST':'OPEN'}`,X+bw3-12,Y+17);
+    ctx.textAlign='right'; ctx.font=`10px ${FB}`; ctx.fillStyle='#857a72'; ctx.fillText(`${key} TO ${pt?'TALK':sh?'PRAY':al?'BEGIN':kp?'TRADE':hr?'REST':'OPEN'}`,X+bw3-12,Y+17);
     ctx.textAlign='left'; ctx.font=`13px ${FB}`; ctx.fillStyle='#d3c7ae'; ctx.fillText(fit(line,bw3-24),X+12,Y+40);}
   // first-time tip, top centre: fades in, holds, fades out
   if(G.hints&&G.hints.length){const h=G.hints[0], a=Math.min(1,h.t/.4,(7-h.t)/.6), bw4=Math.min(460,W-40);
@@ -3361,7 +3426,7 @@ function drawHUD(){
   } else if(G.bossBar){const b=G.bossBar, bw2=Math.min(520,W*.6), X=W/2-bw2/2, Y=26;
     ctx.textAlign='center'; ctx.font=`22px ${FD}`; ctx.fillStyle='#e04a30'; ctx.fillText(b.name,W/2,Y-2);
     ctx.fillStyle='rgba(0,0,0,.7)'; ctx.fillRect(X,Y+12,bw2,8); ctx.fillStyle='#9a1a10'; ctx.fillRect(X,Y+12,bw2*b.hp/b.maxHp,8); ctx.strokeStyle='#3a1414'; ctx.strokeRect(X+.5,Y+12.5,bw2-1,7);}
-  drawSysWin();
+  drawBubbles(); drawSysWin();
   // banner
   if(G.banner){const t=G.banner.t, a=t<.6?t/.6:t>3.4?Math.max(0,1-(t-3.4)/1.1):1, [l1,l2,l3]=G.banner.lines;
     ctx.globalAlpha=a; ctx.textAlign='center'; ctx.font=`${Math.min(84,W*.12)}px ${FD}`; ctx.fillStyle='#000'; ctx.fillText(l1,W/2+2,H*.3+3); ctx.fillStyle='#d3c7ae'; ctx.fillText(l1,W/2,H*.3);
@@ -3876,7 +3941,7 @@ $('btnCopyRun').onclick=()=>{ const b=$('btnCopyRun'), t=$('runSummary'), shown=
   try{ navigator.clipboard.writeText(G.summary).then(()=>{b.textContent='Copied. Paste it to the dev';},()=>{b.textContent='Select the text below and copy it'; shown();}); }
   catch(e){ b.textContent='Select the text below and copy it'; shown(); } };
 // one place for the build number: the title screen and run summaries both read it
-const BUILD='0.34';
+const BUILD='0.35';
 // ----- first-time tips: each shows once ever, worded for whatever you're playing with -----
 const HINTS=(()=>{try{return new Set(JSON.parse(localStorage.getItem('deepening.hints')||'[]'))}catch(e){return new Set()}})();
 const keyFor=a=>({dash:TOUCH.active?'Tap DASH':PAD.active?'Press A':'Press Space', use:TOUCH.active?'Tap USE':PAD.active?'Press X':'Press E',
