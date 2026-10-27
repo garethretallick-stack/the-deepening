@@ -30,9 +30,14 @@ html,body{height:100%;margin:0;background:var(--void);color:var(--bone);overflow
 .tbtn.mid{width:68px;height:68px;font-size:16px}
 .tbtn.small{width:48px;height:48px;font-size:14px;border-color:rgba(211,199,174,.3)}
 #tAttack{right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(28px + env(safe-area-inset-bottom,0px))}
-#tAbility{right:calc(122px + env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px))}
-#tDash{right:calc(30px + env(safe-area-inset-right,0px));bottom:calc(134px + env(safe-area-inset-bottom,0px))}
-#tUse{right:calc(120px + env(safe-area-inset-right,0px));bottom:calc(106px + env(safe-area-inset-bottom,0px));border-color:rgba(224,184,74,.85)}
+/* the four skills sit in an arc around ATTACK so the right thumb rolls between them */
+.tbtn.tsk{width:58px;height:58px;font-size:11px;line-height:1.05;padding:0 4px;letter-spacing:0}
+#tSk0{right:calc(143px + env(safe-area-inset-right,0px));bottom:calc(45px + env(safe-area-inset-bottom,0px))}
+#tSk1{right:calc(123px + env(safe-area-inset-right,0px));bottom:calc(107px + env(safe-area-inset-bottom,0px))}
+#tSk2{right:calc(72px + env(safe-area-inset-right,0px));bottom:calc(146px + env(safe-area-inset-bottom,0px))}
+#tSk3{right:calc(7px + env(safe-area-inset-right,0px));bottom:calc(149px + env(safe-area-inset-bottom,0px))}
+#tDash{right:calc(177px + env(safe-area-inset-right,0px));bottom:calc(143px + env(safe-area-inset-bottom,0px))}
+#tUse{right:calc(222px + env(safe-area-inset-right,0px));bottom:calc(30px + env(safe-area-inset-bottom,0px));border-color:rgba(224,184,74,.85)}
 #tPause{left:calc(18px + env(safe-area-inset-left,0px));top:calc(96px + env(safe-area-inset-top,0px))}
 #tTree{left:calc(74px + env(safe-area-inset-left,0px));top:calc(96px + env(safe-area-inset-top,0px));font-size:11px}
 .ov{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
@@ -95,7 +100,20 @@ h2{font-family:var(--display);font-weight:400;font-size:clamp(34px,5vw,58px);lin
 #ptsPill{font-family:var(--display);font-size:22px;color:var(--ember)}
 .charBody{display:flex;gap:16px;width:min(1240px,100%);flex:1;min-height:0}
 .treeWrap{flex:1;min-width:0;position:relative;min-height:340px;border:1px solid var(--edge);background:rgba(5,3,4,.6)}
-#treeCv{position:absolute;inset:0;width:100%;height:100%;cursor:pointer}
+#treeCv{position:absolute;inset:0;width:100%;height:100%;cursor:grab;touch-action:none}
+.treeTools{position:absolute;right:8px;bottom:8px;display:flex;gap:6px;z-index:2}
+.treeTools .btn{min-width:36px;padding:6px 10px}
+.treeHelp{position:absolute;left:10px;bottom:8px;font-size:12px;color:var(--ash);pointer-events:none}
+.sk{padding:8px 0;border-bottom:1px solid rgba(46,28,30,.6)}
+.sk-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.sk-n{font-family:var(--display);font-size:20px;line-height:1.1}
+.sk-l{font-size:12px;color:var(--ash)}
+.sk-bar{height:3px;background:#1a1012;margin:4px 0}
+.sk-bar i{display:block;height:100%;background:var(--ember)}
+.sk-m{font-size:12px;color:var(--bone);line-height:1.45}
+.sk-slots{display:flex;gap:4px;margin-top:5px}
+.sk-slots button{flex:1;padding:3px 0;font:inherit;font-size:12px;background:#120c0d;color:var(--ash);border:1px solid var(--edge);cursor:pointer}
+.sk-slots button.on{color:var(--bone);border-color:var(--blood-hi);background:#2a0e0c}
 #statPanel{width:300px;flex:none;overflow-y:auto;text-align:left;font-size:14px;display:flex;flex-direction:column;gap:16px}
 .sp-h{font-family:var(--display);font-size:24px;margin-bottom:6px;color:var(--bone)}
 .sp-row{display:flex;justify-content:space-between;gap:12px;padding:3px 0;border-bottom:1px solid rgba(46,28,30,.6);font-variant-numeric:tabular-nums}
@@ -116,7 +134,10 @@ h2{font-family:var(--display);font-weight:400;font-size:clamp(34px,5vw,58px);lin
 <div id="touchUI" hidden>
   <div id="stick"><div id="knob"></div></div>
   <button class="tbtn" id="tAttack" aria-label="Attack">ATTACK</button>
-  <button class="tbtn mid" id="tAbility" aria-label="Ability">SKILL</button>
+  <button class="tbtn tsk" id="tSk0" aria-label="Skill 1">1</button>
+  <button class="tbtn tsk" id="tSk1" aria-label="Skill 2">2</button>
+  <button class="tbtn tsk" id="tSk2" aria-label="Skill 3">3</button>
+  <button class="tbtn tsk" id="tSk3" aria-label="Skill 4">4</button>
   <button class="tbtn mid" id="tDash" aria-label="Dash">DASH</button>
   <button class="tbtn mid" id="tUse" aria-label="Use" hidden>USE</button>
   <button class="tbtn small" id="tPause" aria-label="Pause">II</button>
@@ -131,7 +152,7 @@ h2{font-family:var(--display);font-weight:400;font-size:clamp(34px,5vw,58px);lin
   <button class="btn ghost" id="btnTitleSet">Settings</button>
   <p class="small" id="bestLine"></p>
   <p class="small" id="buildTag">Beta build 0.15 · tell the dev what killed you</p>
-  <p class="small">WASD move · Arrow keys attack in that direction (or aim with the mouse and left click) · Right click or Q ability · Space dash · E take loot, open chests, pray · K skill tree · Esc pause · M mute · Controllers supported</p>
+  <p class="small">WASD move · Arrow keys attack in that direction (or aim with the mouse and left click) · 1–4 skills (Q or right click also casts skill 1) · Space dash · E take loot, open chests, pray · K skill tree · Esc pause · M mute · Controllers supported</p>
 </div>
 
 <div id="ovClass" class="ov" hidden>
@@ -150,7 +171,7 @@ h2{font-family:var(--display);font-weight:400;font-size:clamp(34px,5vw,58px);lin
 </div>
 
 <div id="ovDraft" class="ov" hidden>
-  <p class="eyebrow">Your gear has grown</p>
+  <p class="eyebrow" id="draftEyebrow">Your gear has grown</p>
   <h2 id="draftTitle"></h2>
   <p class="tag" id="draftSub"></p>
   <div class="cards" id="draftCards"></div>
@@ -160,7 +181,9 @@ h2{font-family:var(--display);font-weight:400;font-size:clamp(34px,5vw,58px);lin
 <div id="ovChar" class="ov char" hidden>
   <div class="charHead"><h2>Skill Tree</h2><span id="ptsPill"></span><button class="btn sm" id="btnCloseChar">Close (K)</button></div>
   <div class="charBody">
-    <div class="treeWrap"><canvas id="treeCv"></canvas></div>
+    <div class="treeWrap"><canvas id="treeCv"></canvas>
+      <div class="treeHelp" id="treeHelp">Drag to move · wheel to zoom · click a far node to take the whole path</div>
+      <div class="treeTools"><button class="btn sm" id="treeOut" aria-label="Zoom out">−</button><button class="btn sm" id="treeIn" aria-label="Zoom in">+</button><button class="btn sm" id="treeHome">Me</button></div></div>
     <aside id="statPanel"></aside>
   </div>
 </div>
@@ -410,7 +433,7 @@ const LEGS=[
   {id:'twin',slot:'weapon',n:'Twin Fangs',d:'Every attack strikes twice, each at 60% damage.',fl:'Two mouths, one hunger.'},
   {id:'storm',slot:'weapon',n:'Stormcaller\'s Rod',d:'Every hit arcs lightning. Lightning deals 40% less.',fl:'The sky is very far away. It reaches anyway.'},
   {id:'bleed',slot:'weapon',n:'Bloodletter',d:'Hits bleed for 50% more over 3s. You drink the blood.',fl:'Thirsty work.'},
-  {id:'crown',slot:'charm',n:'Crown of the Drowned',d:'Your ability also looses a ring of 12 bone shards.',fl:'Pulled from the chapel floor, still wet.'},
+  {id:'crown',slot:'charm',n:'Crown of the Drowned',d:'Every skill you cast also looses a ring of 12 bone shards.',fl:'Pulled from the chapel floor, still wet.'},
   {id:'gravewalk',slot:'armor',n:'Gravewalker\'s Shroud',d:'Dashing leaves a trail of fire that burns enemies.',fl:'Where you walk, nothing grows.'},
   {id:'mirror',slot:'armor',n:'Mirror of the Gaoler',d:'30% of projectiles that would hit you fly back at their owner.',fl:'He liked to watch them try.'},
   {id:'hollow',slot:'charm',n:'Heart of the Hollow',d:'Kills heal you for 3% of max life. Healing orbs never appear.',fl:'It beats, but not for you.'},
@@ -431,8 +454,8 @@ const AFX={
   armor:{n:'Ironbound',base:.05,cap:.3,f:v=>`+${pct(v)} damage reduction`},
   speedPct:{n:'Fleet',base:.06,cap:.4,f:v=>`+${pct(v)} move speed`},
   lifesteal:{n:'Leeching',base:.025,cap:.15,f:v=>`Heal ${(v*100).toFixed(1)}% of damage dealt`},
-  cdr:{n:'Restless',base:.08,cap:.5,f:v=>`${pct(v)} faster ability cooldown`},
-  abilDmg:{n:'Ruinous',base:.15,f:v=>`+${pct(v)} ability damage`},
+  cdr:{n:'Restless',base:.08,cap:.5,f:v=>`${pct(v)} faster skill cooldowns`},
+  abilDmg:{n:'Ruinous',base:.15,f:v=>`+${pct(v)} skill damage`},
   light:{n:'Lantern',base:18,flat:true,cap:120,f:v=>`+${Math.round(v)} light radius`},
   regen:{n:'Knitting',base:.8,flat:true,f:v=>`Regenerate ${v.toFixed(1)} life per second`},
   thorns:{n:'Barbed',base:.4,f:v=>`Reflect ${pct(v)} of damage taken`},
@@ -441,7 +464,11 @@ const AFX={
   explode:{n:'Bursting',base:.15,cap:.7,f:v=>`${pct(v)} chance foes burst when they die`},
   frost:{n:'Gravecold',base:.15,cap:.7,f:v=>`${pct(v)} chance to chill on hit`},
   minionDmg:{n:'Commanding',cls:'necro',base:.2,f:v=>`+${pct(v)} skeleton damage`},
-  minionMax:{n:'Legion',cls:'necro',base:1,flat:true,noScale:true,cap:3,f:v=>`+${Math.round(v)} max skeleton${Math.round(v)===1?'':'s'}`},
+  minionMax:{n:'Legion',cls:'necro',base:1,flat:true,noScale:true,cap:3,f:v=>`+${Math.round(v)} max minion${Math.round(v)===1?'':'s'}`},
+  fireDmg:{n:'Searing',base:.12,f:v=>`+${pct(v)} fire damage`}, coldDmg:{n:'Frozen',base:.12,f:v=>`+${pct(v)} cold damage`},
+  lightDmg:{n:'Charged',base:.12,f:v=>`+${pct(v)} lightning damage`}, physDmg:{n:'Brutal',base:.12,f:v=>`+${pct(v)} physical skill damage`},
+  chaosDmg:{n:'Rotten',base:.12,f:v=>`+${pct(v)} chaos damage`}, area:{n:'Vast',base:.08,cap:.6,f:v=>`+${pct(v)} skill area`},
+  dur:{n:'Enduring',base:.1,cap:.8,f:v=>`+${pct(v)} skill duration`}, skillCrit:{n:'Sorcerous',base:.04,cap:.4,f:v=>`+${pct(v)} skill critical chance`},
   c_hp:{n:'Withered',bad:true,base:-.2,f:v=>`${pct(v)} max life`},
   c_taken:{n:'Marked',bad:true,base:.2,f:v=>`Take ${pct(v)} more damage`},
   c_slow:{n:'Shackled',bad:true,base:-.12,f:v=>`${pct(v)} move speed`},
@@ -466,46 +493,102 @@ function applyStat(s,id,v){
 }
 
 const KEYSTONES={
-  echo:{n:'Echoing Rite',d:['Your ability casts twice.','Ability cooldown is 40% longer.'],apply:s=>{s.echo=true;s.cdrPenalty+=.4}},
+  echo:{n:'Echoing Rite',d:['Every skill casts twice.','Skill cooldowns are 40% longer.'],apply:s=>{s.echo=true;s.cdrPenalty+=.4}},
   lantern:{n:'Lantern Bearer',d:['+70 light radius and +15% damage.','Enemies notice you from much farther away.'],apply:s=>{s.light+=70;s.dmgPct+=.15;s.aggro*=1.6}},
   executioner:{n:'Executioner',d:['Double damage to foes below 30% life.','15% slower attacks.'],apply:s=>{s.execute=true;s.atkSpd-=.15}},
   bloodbound:{n:'Bloodbound',d:['Heal 4% of all damage dealt.','Lose 1.5 life every second.'],apply:s=>{s.lifesteal+=.04;s.drain+=1.5}},
   juggernaut:{n:'Juggernaut',d:['+50% max life, +15% damage reduction.','You can no longer dash.'],apply:s=>{s.hpPct+=.5;s.armor+=.15;s.canDash=false}},
   glass:{n:'Glass Cannon',d:['+60% damage.','40% less max life.'],apply:s=>{s.dmgPct+=.6;s.hpPct-=.4}},
+  arcane:{n:'Arcane Surge',d:['Skills recharge 40% faster.','25% less max life.'],apply:s=>{s.cdr+=.4;s.hpPct-=.25}},
+  legion:{n:'Legion Lord',d:['+3 max minions, and they deal 40% more damage.','You deal 30% less damage yourself.'],apply:s=>{s.minionMax+=3;s.minionDmg+=.4;s.dmgPct-=.3}},
+  spellblade:{n:'Spellblade',d:['Every basic attack that lands takes 0.3s off all skill cooldowns.','Skills deal 15% less damage.'],apply:s=>{s.spellblade=true;s.abilDmg-=.15}},
+};
+// Supports change every skill you own; that's how builds snowball.
+const SUPPORTS={
+  proj:{n:'Split Volley',d:'Projectile skills fire 1 extra projectile.',apply:s=>{s.proj+=1}},
+  area:{n:'Widening Rift',d:'Skill areas are 30% larger.',apply:s=>{s.area+=.3}},
+  chainx:{n:'Forked Current',d:'Chaining skills chain 2 more times.',apply:s=>{s.chainX+=2}},
+  dur:{n:'Lingering Doom',d:'Skill effects last 40% longer.',apply:s=>{s.dur+=.4}},
+  ranks:{n:'Swollen Ranks',d:'+1 max minion, and minions deal 20% more damage.',apply:s=>{s.minionMax+=1;s.minionDmg+=.2}},
+  haste:{n:'Quickened Rites',d:'Skills recharge 15% faster.',apply:s=>{s.cdr+=.15}},
+  keen:{n:'Keen Sorcery',d:'Skills have +12% critical chance.',apply:s=>{s.skillCrit+=.12}},
+  cruel:{n:'Cruel Arts',d:'Skills deal 25% more damage.',apply:s=>{s.abilDmg+=.25}},
+  siphon:{n:'Siphoning Arts',d:'Skill hits heal 2% of the damage they deal.',apply:s=>{s.skillLeech+=.02}},
+};
+// The learnable skills, by name and the region of the tree they live near. Their behaviour is in SKILLS further down.
+const SKILL_INFO={
+  whirlwind:{n:'Whirlwind',tags:['melee','phys','area'],c:'#e8c8a8'}, shadowstep:{n:'Shadow Step',tags:['melee','phys','move'],c:'#9ab89a'},
+  nova:{n:'Nova',tags:['spell','fire','area'],c:'#a68cff'}, raise:{n:'Raise Dead',tags:['summon','chaos'],c:'#7aff6a'},
+  fireball:{n:'Fireball',tags:['spell','fire','proj','area'],c:'#ff7a2a',home:'mage'}, iceshards:{n:'Ice Shards',tags:['spell','cold','proj'],c:'#9fd6ff',home:'mage'},
+  lightning:{n:'Chain Lightning',tags:['spell','lightning','chain'],c:'#cfe8ff',home:'mage'}, slam:{n:'Ground Slam',tags:['melee','phys','area'],c:'#c8a070',home:'warrior'},
+  blades:{n:'Orbiting Blades',tags:['phys','dur'],c:'#d8d8e0',home:'rogue'}, spikes:{n:'Bone Spikes',tags:['spell','phys','area'],c:'#e8dcc0',home:'necro'},
+  bloodnova:{n:'Blood Nova',tags:['spell','chaos','area'],c:'#ff2a2a',home:'warrior'}, meteor:{n:'Meteor',tags:['spell','fire','area'],c:'#ff5a1a',home:'mage'},
+  spectral:{n:'Spectral Swords',tags:['summon','phys','dur'],c:'#8fd8ff',home:'rogue'}, leap:{n:'Leap Slam',tags:['melee','phys','area','move'],c:'#c89060',home:'warrior'},
+  plague:{n:'Plague Cloud',tags:['spell','chaos','area','dur'],c:'#9acd32',home:'necro'}, voidorb:{n:'Void Orb',tags:['spell','chaos','proj'],c:'#b06aff',home:'necro'},
+  deathmark:{n:'Death Mark',tags:['spell','chaos','area','dur'],c:'#c0101a',home:'rogue'},
 };
 const STAT_NAMES={maxHp:'Thick Blood',armor:'Scarred Hide',dmgPct:'Malice',regen:'Stubborn Flesh',crit:'Precision',critMult:'Cruelty',
   speedPct:'Light Feet',atkSpd:'Quick Hands',abilDmg:'Forbidden Words',cdr:'Restless Mind',light:'Inner Flame',
-  minionDmg:'Grave Authority',minionMax:'Legion',lifesteal:'Corpse Feeding'};
+  minionDmg:'Grave Authority',minionMax:'Legion',lifesteal:'Corpse Feeding',fireDmg:'Kindling',coldDmg:'Hoarfrost',lightDmg:'Static',
+  physDmg:'Brutality',chaosDmg:'Rot',area:'Reach',dur:'Patience',skillCrit:'Focus'};
 const ZONES=[
-  {cls:'necro',a:Math.PI/2,pool:[['minionDmg',.12],['abilDmg',.08],['maxHp',10],['cdr',.04]]},
-  {cls:'mage',a:-Math.PI/2,pool:[['abilDmg',.08],['cdr',.04],['light',10],['dmgPct',.04]]},
-  {cls:'rogue',a:Math.PI/6,pool:[['crit',.025],['critMult',.10],['speedPct',.03],['atkSpd',.05]]},
-  {cls:'warrior',a:Math.PI*5/6,pool:[['maxHp',10],['armor',.025],['dmgPct',.04],['regen',.3]]},
+  {cls:'necro',a:Math.PI/2,pool:[['minionDmg',.1],['chaosDmg',.1],['maxHp',10],['lifesteal',.008],['dur',.06]],
+    notables:['Gravecaller','Rot Tender','Bone Choir','The Hungry Earth','Pallbearer','Cold Hands','Black Sacrament']},
+  {cls:'mage',a:-Math.PI/2,pool:[['fireDmg',.1],['coldDmg',.1],['lightDmg',.1],['abilDmg',.06],['cdr',.03],['area',.05]],
+    notables:['Pyromancer','Frostweaver','Stormcaller','Arcane Depths','Ember Mind','Glacial Heart','Thunderhead']},
+  {cls:'rogue',a:Math.PI/6,pool:[['crit',.025],['critMult',.1],['speedPct',.03],['atkSpd',.05],['skillCrit',.03]],
+    notables:['Knife Saint','Quickening','Throat Opener','Ghost Step','Hollow Point','Last Breath','Red Ledger']},
+  {cls:'warrior',a:Math.PI*5/6,pool:[['physDmg',.1],['maxHp',12],['armor',.02],['dmgPct',.04],['regen',.3]],
+    notables:['Iron Will','Bonebreaker','Unyielding','Butcher\'s Arm','Siegeborn','Old Scars','Anvil Heart']},
 ];
-// One shared tree: concentric rings. Each class starts on the third ring; keystones sit on the outer edge.
+// One big shared tree in the style of Path of Exile: wheels of nodes on four rings, joined by paths.
+// Each class starts on the inner ring in its own region. Built from a fixed seed, so every run has the same tree.
 const TREE=(()=>{
-  const rings=[1,6,12,18,12], radii=[0,72,142,214,290], nodes=[], edges=[], ring=[];
-  rings.forEach((cnt,r)=>{ring[r]=[];for(let i=0;i<cnt;i++){const a=cnt===1?0:-Math.PI/2+i*Math.PI*2/cnt;
-    const n={id:nodes.length,r,i,a,x:Math.cos(a)*radii[r],y:Math.sin(a)*radii[r],adj:[]};nodes.push(n);ring[r].push(n.id);}});
-  const link=(a,b)=>{if(a===b||nodes[a].adj.includes(b))return;nodes[a].adj.push(b);nodes[b].adj.push(a);edges.push([a,b]);};
-  for(let r=1;r<rings.length;r++){
-    const cnt=rings[r];
-    if(r<4) for(let i=0;i<cnt;i++) link(ring[r][i],ring[r][(i+1)%cnt]);
-    for(const id of ring[r]){let best=null,bd=9;for(const j of ring[r-1]){const d=r===1?0:angDiff(nodes[id].a,nodes[j].a);if(d<bd-1e-6){bd=d;best=j;}}link(id,best);}
+  const nodes=[], edges=[], starts={};
+  const add=(x,y,kind,o={})=>{const n=Object.assign({id:nodes.length,x,y,a:Math.atan2(y,x),kind,adj:[],stats:[]},o); nodes.push(n); return n;};
+  const link=(a,b)=>{if(a===b||a.adj.includes(b.id)) return; a.adj.push(b.id); b.adj.push(a.id); edges.push([a.id,b.id]);};
+  const zoneOf=a=>{let z=ZONES[0],bd=9; for(const Z of ZONES){const d=angDiff(a,Z.a); if(d<bd){bd=d; z=Z;}} return z;};
+  let seed=1337; const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+  const hub=add(0,0,'heart',{name:'Heart of the Deep',stats:[['dmgPct',.05],['maxHp',10]]});
+  const RINGS=[{r:210,n:8},{r:400,n:14},{r:590,n:20},{r:780,n:26}], clusters=[];
+  RINGS.forEach((R,ri)=>{for(let i=0;i<R.n;i++){
+    const a=-Math.PI/2+(i+(ri%2?.5:0))*Math.PI*2/R.n, cx=Math.cos(a)*R.r, cy=Math.sin(a)*R.r, cl={ri,i,a,ring:[]};
+    cl.center=add(cx,cy,'notable');
+    for(let j=0;j<6;j++){const b=a+j*Math.PI/3; cl.ring.push(add(cx+Math.cos(b)*50,cy+Math.sin(b)*50,'small'));}
+    cl.ring.forEach((n,j)=>link(n,cl.ring[(j+1)%6])); link(cl.center,cl.ring[0]); link(cl.center,cl.ring[3]);
+    clusters.push(cl);}});
+  const pair=(A,B)=>{let best=null,bd=1e9; for(const x of A.ring) for(const y of B.ring){const d=Math.hypot(x.x-y.x,x.y-y.y); if(d<bd){bd=d; best=[x,y];}} return best;};
+  const path=(x,y)=>{const steps=Math.max(0,Math.round(Math.hypot(x.x-y.x,x.y-y.y)/70)-1); let prev=x;
+    for(let s=1;s<=steps;s++){const t=s/(steps+1), n=add(x.x+(y.x-x.x)*t,x.y+(y.y-x.y)*t,'small'); link(prev,n); prev=n;} link(prev,y);};
+  for(const cl of clusters){
+    const next=clusters.find(o=>o.ri===cl.ri&&o.i===(cl.i+1)%RINGS[cl.ri].n); path(...pair(cl,next));
+    if(cl.ri===0) path(cl.ring.reduce((b,n)=>Math.hypot(n.x,n.y)<Math.hypot(b.x,b.y)?n:b),hub);
+    else {const inner=clusters.filter(o=>o.ri===cl.ri-1).sort((p,q)=>angDiff(p.a,cl.a)-angDiff(q.a,cl.a))[0]; path(...pair(cl,inner));}
   }
-  // keystones sit between class starts, so none is reachable with a single point
-  const KS={1:'echo',3:'lantern',5:'executioner',7:'bloodbound',9:'juggernaut',11:'glass'};
-  nodes.forEach(n=>{
-    if(n.r===0){n.kind='heart';n.name='Heart of the Deep';n.stats=[['dmgPct',.05],['maxHp',10]];return;}
-    if(n.r===4&&n.i%2===1){n.kind='key';n.ks=KS[n.i];n.name=KEYSTONES[n.ks].n;return;}
-    let z=ZONES[0],bd=9;for(const Z of ZONES){const d=angDiff(n.a,Z.a);if(d<bd){bd=d;z=Z;}}
-    const st=z.pool[(n.id*7+n.r*3)%z.pool.length], notable=n.r===4;
-    n.kind=notable?'notable':'small'; n.stats=[[st[0],st[1]*(notable?2.5:1)]]; n.name=(notable?'Greater ':'')+STAT_NAMES[st[0]];
-    if(notable&&z.cls==='necro'){n.stats=[['minionMax',1]]; n.name='Legion';}
-  });
-  return {nodes,edges,ring};
+  // special centres: class starts, keystones on the rim, skills and supports through the middle rings
+  const free=new Set(clusters);
+  for(const Z of ZONES){const cl=clusters.filter(c=>c.ri===0).sort((p,q)=>angDiff(p.a,Z.a)-angDiff(q.a,Z.a))[0]; free.delete(cl);
+    Object.assign(cl.center,{kind:'start',cls:Z.cls,name:`The ${CLASSES[Z.cls].name}'s Door`,stats:[['maxHp',10]]}); starts[Z.cls]=cl.center.id;}
+  const outer=clusters.filter(c=>c.ri===3), ks=Object.keys(KEYSTONES);
+  ks.forEach((k,j)=>{const cl=outer[Math.round(j*outer.length/ks.length)%outer.length]; free.delete(cl); Object.assign(cl.center,{kind:'key',ks:k,name:KEYSTONES[k].n});});
+  const homeA={mage:-Math.PI/2,rogue:Math.PI/6,necro:Math.PI/2,warrior:Math.PI*5/6};
+  for(const [id,info] of Object.entries(SKILL_INFO)){ if(!info.home) continue;
+    const want=homeA[info.home]+(rnd()-.5)*1.1;
+    const cl=[...free].filter(c=>c.ri===1||c.ri===2).sort((p,q)=>angDiff(p.a,want)-angDiff(q.a,want))[0];
+    free.delete(cl); Object.assign(cl.center,{kind:'skill',skill:id,name:info.n});}
+  const sups=Object.keys(SUPPORTS); let si=0;
+  for(const cl of [...free].filter(c=>c.ri>=1).sort(()=>rnd()-.5).slice(0,sups.length*2)){
+    const k=sups[si++%sups.length]; free.delete(cl); Object.assign(cl.center,{kind:'support',sup:k,name:SUPPORTS[k].n});}
+  // everything else gets stats from its region; notables are the cluster centres left over
+  const used={};
+  for(const n of nodes){ if(n.kind!=='small'&&n.kind!=='notable') continue;
+    const z=zoneOf(n.a+(rnd()-.5)*.3), pool=z.pool;
+    if(n.kind==='small'){const st=pool[Math.floor(rnd()*pool.length)]; n.stats=[[st[0],st[1]]]; n.name=STAT_NAMES[st[0]]||st[0];}
+    else {const a=pool[Math.floor(rnd()*pool.length)]; let b=pool[Math.floor(rnd()*pool.length)]; if(b===a) b=pool[(pool.indexOf(a)+1)%pool.length];
+      n.stats=[[a[0],a[1]*3],[b[0],b[1]*2.5]]; used[z.cls]=(used[z.cls]||0)+1; n.name=z.notables[(used[z.cls]-1)%z.notables.length];}}
+  return {nodes,edges,starts};
 })();
-const CLASS_START={mage:TREE.ring[3][0],rogue:TREE.ring[3][6],necro:TREE.ring[3][9],warrior:TREE.ring[3][12]};
+const CLASS_START=TREE.starts;
 
 // ================= data: enemies, themes, words =================
 const ETYPES={
@@ -790,7 +873,8 @@ function recalc(){
   const s={maxHp:c.hp+(G.level-1)*6,dmg:c.dmg,dmgPct:(G.level-1)*.03,atkSpd:0,crit:c.crit,critMult:c.critMult,armor:c.armor,speedPct:0,
     lifesteal:0,cdr:0,cdrPenalty:0,abilDmg:0,minionDmg:0,minionMax:0,light:c.light,regen:0,thorns:0,ignite:0,chain:0,explode:0,frost:0,hpPct:0,dmgTaken:0,drain:0,
     canDash:true,echo:false,execute:false,aggro:1};
-  for(const id of G.alloc){const n=TREE.nodes[id]; if(n.ks) KEYSTONES[n.ks].apply(s); else for(const [k,v] of n.stats) applyStat(s,k,v);}
+  Object.assign(s,{fireDmg:0,coldDmg:0,lightDmg:0,physDmg:0,chaosDmg:0,area:0,dur:0,proj:0,chainX:0,skillCrit:0,skillLeech:0,spellblade:false});
+  for(const id of G.alloc){const n=TREE.nodes[id]; if(n.ks) KEYSTONES[n.ks].apply(s); else if(n.sup) SUPPORTS[n.sup].apply(s); else for(const [k,v] of n.stats) applyStat(s,k,v);}
   for(const k of SLOTS){const it=G.gear[k]; if(!it) continue;
     if(it.baseDmg) s.dmg+=it.baseDmg; if(it.baseHp) s.maxHp+=it.baseHp; if(it.baseArmor) s.armor+=it.baseArmor;
     for(const a of it.affixes) applyStat(s,a.id,a.v);}
@@ -805,7 +889,7 @@ function recalc(){
   s.dmg*=Math.max(.1,1+s.dmgPct); s.maxHp=Math.max(10,Math.round(s.maxHp*Math.max(.2,1+s.hpPct)));
   s.armor=clamp(s.armor,0,.75); s.crit=clamp(s.crit,0,.95); s.critMult=c.critMult+(s.critMult-c.critMult);
   s.speed=c.speed*Math.max(.4,1+s.speedPct); s.atkCd=c.atkCd/Math.max(.3,1+s.atkSpd);
-  s.abilCd=c.abilCd*(1-Math.min(.6,s.cdr))*(1+s.cdrPenalty); s.abilDmg=1+s.abilDmg; s.light=Math.max(60,s.light*s.lightMul);
+  s.cdMul=(1-Math.min(.7,s.cdr))*(1+s.cdrPenalty); s.abilCd=c.abilCd*s.cdMul; s.abilDmg=1+s.abilDmg; s.light=Math.max(60,s.light*s.lightMul);
   const prev=G.stats; G.stats=s;
   if(prev&&G.player){const d=s.maxHp-prev.maxHp; G.player.hp=clamp(G.player.hp+Math.max(0,d),1,s.maxHp);}
 }
@@ -853,7 +937,8 @@ function newRun(cls){
   G={cls,depth:0,level:1,xp:0,points:0,bonus:{dmgPct:0,light:0},alloc:new Set([CLASS_START[cls]]),gear:{weapon:null,armor:null,charm:null},kills:0,time:0,paused:false,
     draftQueue:[],stats:null,
     player:{x:0,y:0,r:10,hp:1,ghost:1,atkT:0,abilT:0,dashT:0,dashTime:0,inv:0,facing:0,swing:0,swingDir:1,dvx:0,dvy:0,hurtT:0,beatT:0},
-    allies:[],corpses:[],cam:{x:0,y:0},shake:0,particles:[],texts:[],effects:[],projectiles:[],drops:[],enemies:[],pending:[],banner:null,transition:null,near:null};
+    allies:[],corpses:[],skills:{},slots:[null,null,null,null],orbits:[],cam:{x:0,y:0},shake:0,particles:[],texts:[],effects:[],projectiles:[],drops:[],enemies:[],pending:[],banner:null,transition:null,near:null};
+  {const cs=CLASSES[cls].ability; G.skills[cs]={lvl:1,xp:0,cdT:0,muts:[]}; G.slots[0]=cs;} // your class skill starts on key 1
   G.gear.weapon=rank('arms')?makeItem('weapon',2,0,'magic'):makeItem('weapon',1,0,'common');
   if(!rank('arms')) G.gear.weapon.name=CLASSES[cls].startWeapon;
   G.points=rank('bless'); G.revives=rank('wind'); G.bossKills=0;
@@ -873,6 +958,10 @@ function descend(){
   for(const m of G.allies){m.x=p.x; m.y=p.y; m.tgt=null; for(let tr=0;tr<12;tr++){const a=rand(0,6.28), x=p.x+Math.cos(a)*30, y=p.y+Math.sin(a)*30; if(!collides(x,y,8)){m.x=x; m.y=y; break;}}}
   G.projectiles=[]; G.drops=[]; G.particles=[]; G.effects=[]; G.texts=[]; G.pending=[]; G.hazards=[]; G.darkT=0;
   if(G.depth>1) healP(G.stats.maxHp*.2);
+  // a Skill Tome lies somewhere on floor 2 and every third floor after, so new skills come early and keep coming
+  if(G.depth%3===2&&!G.isBoss){const d=bfs(G.map,tileIdx(p.x,p.y)); let far=0; for(const v of d) if(v>far) far=v;
+    const opts=[]; for(let i=0;i<d.length;i++) if(d[i]>far*.45&&d[i]<far*.8) opts.push(i);
+    if(opts.length){const i=pick(opts); dropTome((i%MW)*TILE+16,((i/MW)|0)*TILE+16);}}
   const lines=[`Depth ${G.depth}`,G.theme.name,pick(FLAVOR)];
   if(G.isBoss) lines[2]='Something guards the way down. The stairs will not open while it lives.';
   G.banner={t:0,lines};
@@ -896,7 +985,8 @@ function die(){
   const keys=[...G.alloc].map(id=>TREE.nodes[id]).filter(n=>n.ks).map(n=>n.name);
   G.summary=`The Deepening beta ${BUILD}: ${CLASSES[G.cls].name}, level ${G.level}, died on depth ${G.depth} to ${killer} after ${m}m ${s}s. `
     +`Kills ${G.kills}, damage dealt ${num(G.dmgDealt)}, taken ${num(G.dmgTaken)}, biggest hit ${num(G.bigHit)}, legendaries ${G.legsFound||0}. `
-    +`Gear: ${gear}. Skill points spent ${G.alloc.size-1}, keystones: ${keys.join(', ')||'none'}. Souls banked ${META.souls}.`;
+    +`Gear: ${gear}. Skills: ${Object.entries(G.skills).map(([k,v])=>`${SKILL_INFO[k].n} ${v.lvl}${v.muts.length?' ('+v.muts.join('/')+')':''}`).join(', ')}. `
+    +`Skill points spent ${G.alloc.size-1}, keystones: ${keys.join(', ')||'none'}. Souls banked ${META.souls}.`;
   $('runSummary').hidden=true; $('runSummary').value=G.summary; $('btnCopyRun').textContent='Copy run summary for the dev';
   setTimeout(()=>{if(state==='dead') showOnly('ovDead');},350);
 }
@@ -1108,12 +1198,12 @@ function doCharge(e,dt,spd){
   return e.t<=0||stuck;
 }
 function updateEnemy(e,dt){
-  e.flash-=dt; e.slow-=dt; e.hurt-=dt; e.cd-=dt;
+  e.flash-=dt; e.slow-=dt; e.hurt-=dt; e.cd-=dt; if(e.markT>0) e.markT-=dt; if(e.plagueT>0) e.plagueT-=dt;
   if(e.mod==='burning'&&e.state!=='idle'){e.trailT=(e.trailT||0)-dt; if(e.trailT<=0){e.trailT=.45; addHazard(e.x,e.y+e.r*.5,14,2.2,3+G.depth*.8,'#ff7a2a');}}
   if(e.burn){e.burn.t-=dt; e.burnTick-=dt;
     if(e.burnTick<=0){e.burnTick=.5; hitEnemy(e,e.burn.dps*.5,{proc:false,color:'#ff9a3c',noKb:true,quiet:true}); spark(e.x,e.y,'#ff8a2a',3);}
     if(e.burn&&e.burn.t<=0) e.burn=null; if(e.dead) return;}
-  if(e.bleed){e.bleed.t-=dt; e.bleedTick-=dt; // Bloodletter: the wound keeps giving, and you drink it
+  if(e.bleed){e.bleed.t-=dt; e.bleedTick=(e.bleedTick||0)-dt; // Bloodletter: the wound keeps giving, and you drink it
     if(e.bleedTick<=0){e.bleedTick=.5; const b=e.bleed.dps*.5; hitEnemy(e,b,{proc:false,color:'#c0101a',noKb:true,quiet:true}); healP(b*.35,true); blood(e.x,e.y,2);}
     if(e.bleed&&e.bleed.t<=0) e.bleed=null; if(e.dead) return;}
   if(e.kb.x||e.kb.y){ if(e.T.phase){e.x+=e.kb.x*dt;e.y+=e.kb.y*dt;} else move(e,e.kb.x*dt,e.kb.y*dt);
@@ -1214,7 +1304,7 @@ function updateBoss(e,dt,d,a,sp){
 }
 // ================= combat =================
 function strike(e,mult,a,o={}){
-  const s=G.stats; let dmg=s.dmg*mult*rand(.9,1.1); const crit=o.forceCrit||Math.random()<s.crit; if(crit) dmg*=s.critMult;
+  const s=G.stats; let dmg=s.dmg*mult*rand(.9,1.1); const crit=o.forceCrit||Math.random()<s.crit+(o.critBonus||0); if(crit) dmg*=s.critMult;
   hitEnemy(e,dmg,Object.assign({crit,angle:a},o));
 }
 // A tiny freeze sells a big hit, but back-to-back freezes feel like lag: at most one every quarter second.
@@ -1223,6 +1313,8 @@ function hitEnemy(e,dmg,o={}){
   if(e.dead) return; const s=G.stats;
   if(s.execute&&e.hp<e.maxHp*.3) dmg*=2;
   if(s.u.saint&&dist(e,G.player)<s.light) dmg*=1+.15*s.u.saint;
+  if(e.markT>0) dmg*=1+e.markAmp; // Death Mark, static, plague wither
+  if(o.skill){e.lastSkill=o.skill; if(s.skillLeech) healP(dmg*s.skillLeech,true);}
   // a raised shield turns aside blows from the front
   if(e.T.shield&&o.angle!==undefined&&e.state!=='windup'&&angDiff(o.angle+Math.PI,e.face)<1.0){
     dmg*=.25; spark(e.x+Math.cos(e.face)*10,e.y+Math.sin(e.face)*10,'#d8cbb0',6); if(Math.random()<.5) text(e.x,e.y-e.r-12,'BLOCKED','#9a917c',11);}
@@ -1271,7 +1363,15 @@ function killEnemy(e){
   if(e.type==='mimic') dropItem(e.x,e.y,null,.5);
   if(e.type==='stalker'){G.stalker=null; G.bonusSouls=(G.bonusSouls||0)+100; dropItem(e.x,e.y,null,.8,'rare'); G.flash=.8;
     G.banner={t:0,lines:['It is dead','For now.','+100 souls']};}
-  gainXp(e.xp); itemXp(e.xp);
+  gainXp(e.xp); itemXp(e.xp); if(e.lastSkill) skillXp(e.lastSkill,e.xp);
+  // skill side effects that fire on a death
+  if(e.slow>0&&skillHas('iceshards','shatter')){G.effects.push({type:'ring',x:e.x,y:e.y,r0:6,r1:55,t:0,max:.25,color:'#9fd6ff',w:5}); spark(e.x,e.y,'#cfefff',12);
+    for(const o of near(e.x,e.y,55)) if(o!==e) strike(o,.8*G.stats.abilDmg,Math.atan2(o.y-e.y,o.x-e.x),{proc:false,skill:'iceshards',color:'#9fd6ff'});}
+  if(e.markT>0&&e.markSpread){const t=G.enemies.filter(o=>!o.dead&&o!==e).sort((p,q)=>dist(p,e)-dist(q,e)).slice(0,2).filter(o=>dist(o,e)<140);
+    for(const o of t) mark(o,e.markT,e.markAmp,{markSpread:true,markPact:e.markPact});}
+  if(e.markT>0&&e.markPact&&Math.random()<.25) G.drops.push({kind:'orb',x:e.x,y:e.y,t:0});
+  if(e.plagueT>0&&e.plagueSpread) playerHazard(e.x,e.y,45*(1+G.stats.area),3,G.stats.dmg*.35,'#9acd32',{skill:'plague',spread:true});
+  if(e.boss) dropTome(e.x+rand(-20,20),e.y+30); else if(Math.random()<(e.elite?.06:.008)) dropTome(e.x,e.y);
   if(e.boss){
     for(let k=0;k<2;k++) dropItem(e.x+rand(-30,30),e.y+rand(-20,20),null,.5,Math.random()<.5?'rare':undefined,LEG_CHANCE_BOSS);
     G.sealed=false; G.bossBar=null; G.shake=16; G.bossKills++;
@@ -1331,7 +1431,7 @@ function useProp(o){
     if(Math.random()<.12+G.depth*.005){
       G.props.splice(G.props.indexOf(o),1); const m=spawnEnemy('mimic',o.x,o.y,G.depth,false); m.state='chase'; m.cd=.4; G.enemies.push(m);
       play('boss'); G.shake=10; text(o.x,o.y-30,'IT WAS HUNGRY','#ff3a1c',16); return;}
-    dropItem(o.x,o.y+22,null,.45);
+    dropItem(o.x,o.y+22,null,.45); if(Math.random()<.15) dropTome(o.x+18,o.y+24);
     if(Math.random()<.5) G.drops.push({kind:'orb',x:o.x+18,y:o.y+20,t:0});
     spark(o.x,o.y,'#e0b84a',14);
   } else if(o.kind==='altar'&&o.state==='idle'){
@@ -1345,7 +1445,7 @@ function useProp(o){
   }
 }
 // ----- the necromancer's dead -----
-const maxMinions=()=>3+Math.round(G.stats.minionMax||0);
+const maxMinions=()=>3+Math.round(G.stats.minionMax||0)+(skillHas('raise','army')?2:0);
 function raiseDead(){
   const p=G.player, s=G.stats, max=maxMinions();
   const near=G.corpses.filter(c=>dist(c,p)<180).sort((a,b)=>dist(a,p)-dist(b,p)).slice(0,max);
@@ -1354,13 +1454,17 @@ function raiseDead(){
     p.hp=Math.max(1,p.hp-s.maxHp*.1); blood(p.x,p.y,14); text(p.x,p.y-22,'BLOOD PRICE','#c0101a',12);
     const a=rand(0,6.28); spawnMinion(p.x+Math.cos(a)*26,p.y+Math.sin(a)*26);
   }
-  for(const c of near){G.corpses.splice(G.corpses.indexOf(c),1); spawnMinion(c.x,c.y);}
-  while(G.allies.length>max) boneBurst(G.allies.shift());
+  for(const c of near){G.corpses.splice(G.corpses.indexOf(c),1); spawnMinion(c.x,c.y);
+    if(skillHas('raise','explode')) explosion(c.x,c.y,s.dmg*1.2*s.abilDmg,60);}
+  const skel=G.allies.filter(m=>!m.blade); while(skel.length>max) boneBurst(skel.shift()); // spectral swords don't count
 }
+// how hard a minion hits: your damage, minion bonuses, and the level of the skill that made it
+function minionHit(m){const s=G.stats, id=m.skill||'raise'; return s.dmg*(.55+s.minionDmg)*(m.mult||s.abilDmg*(G.skills[id]?skillLvMul(id):1))*rand(.9,1.1);}
 function spawnMinion(x,y){
   if(collides(x,y,8)){x=G.player.x; y=G.player.y;}
-  const hp=Math.round(25+G.depth*6+G.stats.maxHp*.2);
-  G.allies.push({ally:true,x,y,r:8,hp,maxHp:hp,T:{phase:false},face:0,rise:.5,cd:.3,wind:0,flash:0,tgt:null,ph:rand(0,6.28),hurt:0});
+  const hp=Math.round((25+G.depth*6+G.stats.maxHp*.2)*(skillHas('raise','armor')?2:1));
+  G.allies.push({ally:true,x,y,r:8,hp,maxHp:hp,T:{phase:false},face:0,rise:.5,cd:.3,wind:0,flash:0,tgt:null,ph:rand(0,6.28),hurt:0,skill:'raise',
+    atkCd:skillHas('raise','fury')?.45:.75,spd:140});
   spark(x,y,'#7aff6a',10); smoke(x,y,6);
 }
 function boneBurst(m){m.hp=0; gibs(SPRITES.minion,m.x,m.y+6,1,false,rand(0,6.28),.7); play('urn',m);}
@@ -1374,19 +1478,20 @@ function updateAllies(dt){
   for(const m of G.allies){
     if(m.hp<=0) continue;
     m.rise=Math.max(0,m.rise-dt); m.flash-=dt; m.cd-=dt; m.hurt-=dt; if(m.rise>0) continue;
-    if(m.ttl!==undefined){m.ttl-=dt; if(m.ttl<=0){boneBurst(m); continue;}}
+    if(m.ttl!==undefined){m.ttl-=dt; if(m.ttl<=0){
+      if(m.blade){m.hp=0; spark(m.x,m.y,'#8fd8ff',10); if(m.boomEnd) explosion(m.x,m.y,minionHit(m)*2,55);} else boneBurst(m); continue;}}
     if(dist(m,p)>520){m.x=p.x; m.y=p.y; smoke(m.x,m.y,6);}
     if(!m.tgt||m.tgt.dead||dist(m,m.tgt)>320){m.tgt=null; let bd=240;
       for(const e of G.enemies){if(e.dead||dist(e,p)>340) continue; const d=dist(m,e); if(d<bd){bd=d; m.tgt=e;}}}
     if(m.tgt){
       const e=m.tgt, a=Math.atan2(e.y-m.y,e.x-m.x), d=dist(m,e); m.face=a;
       if(m.wind>0){m.wind-=dt;
-        if(m.wind<=0){m.cd=.75;
-          G.effects.push({type:'slash',x:m.x,y:m.y,a,arc:1.4,reach:22,t:0,max:.12,color:'#9aff7a'});
-          if(dist(m,e)<e.r+m.r+22) hitEnemy(e,s.dmg*(.55+s.minionDmg)*s.abilDmg*rand(.9,1.1),{angle:a,proc:false,kb:90,color:'#b6ff9a',quiet:true});}}
-      else if(d<e.r+m.r+14&&m.cd<=0) m.wind=.22;
-      else if(d>e.r+m.r+8) move(m,Math.cos(a)*140*dt,Math.sin(a)*140*dt);
-    } else if(dist(m,p)>56) chaseMove(m,150,dt);
+        if(m.wind<=0){m.cd=m.atkCd||.75;
+          G.effects.push({type:'slash',x:m.x,y:m.y,a,arc:1.4,reach:22,t:0,max:.12,color:m.blade?'#8fd8ff':'#9aff7a'});
+          if(dist(m,e)<e.r+m.r+22) hitEnemy(e,minionHit(m),{angle:a,proc:false,kb:90,color:m.blade?'#bfe8ff':'#b6ff9a',quiet:true,skill:m.skill});}}
+      else if(d<e.r+m.r+14&&m.cd<=0) m.wind=m.blade?.1:.22;
+      else if(d>e.r+m.r+8){const sp=m.spd||140; if(m.blade){m.x+=Math.cos(a)*sp*dt; m.y+=Math.sin(a)*sp*dt;} else move(m,Math.cos(a)*sp*dt,Math.sin(a)*sp*dt);}
+    } else if(dist(m,p)>56) chaseMove(m,m.blade?(m.spd||150):150,dt);
   }
   // keep the dead from stacking on each other or on you
   for(const a of G.allies) for(const b of G.allies.concat([p])){ if(a===b||a.hp<=0) continue;
@@ -1463,7 +1568,7 @@ function attack(echo){
   // Twin Fangs: two blows at 60% each at full power; as it fades the first blow takes back the difference
   const tw=s.u.twin||0, o={forceCrit:big}; let mult=(big?1+2*s.u.butcher:1)*(tw?(echo?.6*tw:1-.4*tw):1);
   if(echo){releaseAttack({a,mult,o,heavy:false,big:false,dir:-p.swingDir,kind:c.ranged?'cast':G.cls==='rogue'?'thrust':'swing'}); return;}
-  p.atkT=s.atkCd; if(s.u.twin) G.pending.push({t:.12,fn:()=>{if(state==='play'&&!G.dying) attack(true);}});
+  p.atkT=s.atkCd*(p.frenzyT>0?.7:1); if(s.u.twin) G.pending.push({t:.12,fn:()=>{if(state==='play'&&!G.dying) attack(true);}});
   // keep attacking and every third blow is a heavy one
   p.combo=(G.time-(p.lastAtk??-9)<.75)?(p.combo||0)+1:1; p.lastAtk=G.time;
   const heavy=!c.ranged&&p.combo>=3; if(heavy){p.combo=0; mult*=1.6;}
@@ -1491,6 +1596,7 @@ function releaseAttack(k){
     strike(e,k.mult,a,Object.assign({kb:k.heavy?320:undefined},k.o)); hits++;
     spark(e.x-Math.cos(ea)*e.r*.7,e.y-Math.sin(ea)*e.r*.7,'#f2e6d8',k.heavy?10:5);}
   if(hits) G.shake=Math.min(14,G.shake+(k.heavy?6:2));
+  if(hits&&G.stats.spellblade) for(const id in G.skills) G.skills[id].cdT-=.3; // Spellblade: landing a blow speeds every skill
   hitUrns(o=>{const d=dist(p,o); return d<reach+8&&(d<20||angDiff(Math.atan2(o.y-p.y,o.x-p.x),a)<=arc/2);},a);
 }
 // Where the weapon is right now: its angle and how far it's pushed out from the hand.
@@ -1504,36 +1610,213 @@ function weaponPose(){
   if(t<h*1.5) return {ang:lerpA(s0,s1,out((t-w)/(h*1.5-w))),ext:2};    // the strike: fast, easing out
   return {ang:lerpA(s1,rest,out((t-h*1.5)/(1-h*1.5))),ext:0};          // recovery
 }
-function useAbility(){
-  const p=G.player, s=G.stats; G.usedAbility=true; if(p.abilT>0){ if(p.abilT<.3) p.bufAbil=.3; return; } p.bufAbil=0; p.abilT=s.abilCd; castAbility();
-  if(s.u.crown) for(let i=0;i<12;i++){const a=i*Math.PI/6; // Crown of the Drowned
-    G.projectiles.push({x:p.x,y:p.y,vx:Math.cos(a)*360,vy:Math.sin(a)*360,r:4,owner:'player',life:.7,color:'#cfe8f0',pierce:1,mult:.6*s.u.crown});}
-  if(s.echo) G.pending.push({t:.35,fn:castAbility});
+// ================= skills =================
+// Four slots on 1-4. Your class skill starts in slot 1; others come from skill nodes in the tree and from Skill Tomes.
+// Skills level up from what they kill. At levels 3, 6, 10 and 15 you choose one of three mutations for that skill.
+// Damage flows through strike(), so tree stats, gear, crits, procs, legendaries and keystones all apply to skills.
+const MUT_LV=[3,6,10,15];
+const SKILL_SFX={whirlwind:'whirlwind',shadowstep:'shadowstep',nova:'nova',raise:'raise',fireball:'bolt',iceshards:'arrow',lightning:'blink',slam:'whirlwind',
+  blades:'dash',spikes:'urn',bloodnova:'hurt',meteor:'boss',spectral:'raise',leap:'dash',plague:'splat',voidorb:'shadowstep',deathmark:'shrine'};
+const later=(t,fn)=>G.pending.push({t,fn:()=>{if(state==='play'&&!G.dying) fn();}});
+const near=(x,y,R)=>G.enemies.filter(e=>!e.dead&&Math.hypot(e.x-x,e.y-y)<R+e.r);
+function pullIn(x,y,R,str){for(const e of near(x,y,R)){ if(e.boss) continue; const a=Math.atan2(y-e.y,x-e.x); e.kb.x+=Math.cos(a)*str; e.kb.y+=Math.sin(a)*str; }}
+function stun(e,t){ if(!e.boss&&e.type!=='stalker'){e.state='recover'; e.t=Math.max(e.t||0,t);} }
+function mark(e,t,amp,o={}){ e.markT=Math.max(e.markT||0,t); e.markAmp=Math.max(e.markAmp||0,amp); Object.assign(e,o); }
+// where a targeted skill lands: the mouse (within range), otherwise an enemy you're facing, otherwise ahead of you
+function aimPoint(max){
+  const p=G.player;
+  if(!PAD.active&&!TOUCH.active&&arrowAim()===null){const m=mouseWorld(), d=Math.hypot(m.x-p.x,m.y-p.y), k=d>max?max/d:1; return {x:p.x+(m.x-p.x)*k,y:p.y+(m.y-p.y)*k};}
+  let best=null, bd=max; for(const e of G.enemies){ if(e.dead) continue; const d=dist(e,p); if(d<bd&&angDiff(Math.atan2(e.y-p.y,e.x-p.x),p.facing)<.7&&los(p.x,p.y,e.x,e.y)){bd=d; best=e;} }
+  return best?{x:best.x,y:best.y}:{x:p.x+Math.cos(p.facing)*max*.6,y:p.y+Math.sin(p.facing)*max*.6};
 }
-function castAbility(){
-  if(state!=='play') return;
-  const c=CLASSES[G.cls], p=G.player, s=G.stats; play(c.ability);
-  if(c.ability==='raise'){raiseDead(); return;}
-  if(c.ability==='whirlwind'){
-    const R=100; G.effects.push({type:'ring',x:p.x,y:p.y,r0:20,r1:R,t:0,max:.25,color:'#e8c8a8',w:8});
-    for(let i=0;i<3;i++) G.effects.push({type:'slash',x:p.x,y:p.y,a:i*2.1+G.time*8,arc:2.2,reach:R*.9,t:0,max:.22,color:'#e8c8a8'});
-    for(const e of G.enemies){if(!e.dead&&dist(p,e)<R+e.r) strike(e,2.2*s.abilDmg,Math.atan2(e.y-p.y,e.x-p.x),{kb:280});}
-    hitUrns(o=>dist(p,o)<R+8);
-    G.shake=Math.min(14,G.shake+6);
-  } else if(c.ability==='shadowstep'){
-    const a=p.facing, sx=p.x, sy=p.y; smoke(sx,sy,10);
-    for(let d=0;d<240;d+=6){const nx=p.x+Math.cos(a)*6, ny=p.y+Math.sin(a)*6; if(collides(nx,ny,p.r)) break; p.x=nx; p.y=ny;}
-    p.inv=Math.max(p.inv,.4); smoke(p.x,p.y,10);
-    G.effects.push({type:'streak',x:sx,y:sy,x2:p.x,y2:p.y,t:0,max:.3});
-    for(const e of G.enemies){if(e.dead) continue; if(segDist(e.x,e.y,sx,sy,p.x,p.y)<e.r+18) strike(e,2.6*s.abilDmg,a);}
-    hitUrns(o=>segDist(o.x,o.y,sx,sy,p.x,p.y)<24,a);
-  } else {
-    const R=160; G.effects.push({type:'ring',x:p.x,y:p.y,r0:10,r1:R,t:0,max:.35,color:'#a68cff',w:10,light:true});
-    spark(p.x,p.y,'#b9a3ff',24);
-    for(const e of G.enemies){if(!e.dead&&dist(p,e)<R+e.r) strike(e,2.5*s.abilDmg,Math.atan2(e.y-p.y,e.x-p.x),{kb:320});}
-    hitUrns(o=>dist(p,o)<R+8);
-    G.shake=Math.min(14,G.shake+7);
-  }
+function skillHas(id,k){const sk=G.skills[id]; return !!(sk&&sk.muts.includes(k));}
+function tagMul(id){const t=SKILL_INFO[id].tags, s=G.stats; let m=1;
+  if(t.includes('fire')) m+=s.fireDmg; if(t.includes('cold')) m+=s.coldDmg; if(t.includes('lightning')) m+=s.lightDmg;
+  if(t.includes('phys')) m+=s.physDmg; if(t.includes('chaos')) m+=s.chaosDmg; return m;}
+const skillLvMul=id=>1+.12*(G.skills[id].lvl-1);
+function skillCtx(id){
+  const sk=G.skills[id], s=G.stats, p=G.player, M=s.abilDmg*skillLvMul(id)*tagMul(id);
+  return {id,p,s,a:p.facing,tp:aimPoint(300),M,A:1+s.area,D:1+s.dur,P:s.proj,C:s.chainX,m:k=>sk.muts.includes(k),
+    hit:(e,base,ang,o={})=>strike(e,base*M,ang===undefined?Math.atan2(e.y-p.y,e.x-p.x):ang,Object.assign({skill:id,critBonus:s.skillCrit},o))};
+}
+// hazards you create (fire, rot) burn enemies; the extra fields carry a skill's mutations
+function playerHazard(x,y,r,t,dmg,color,extra){addHazard(x,y,r,t,dmg,color,0,'player'); Object.assign(G.hazards[G.hazards.length-1],extra||{});}
+function fireProj(o){G.projectiles.push(Object.assign({owner:'player',life:1.2,r:6,pierce:0},o));}
+// a skill projectile has stopped (hit, wall or out of range): blasts, burning ground, splitting
+function projEnd(pr){
+  if(pr.boom){const b=pr.boom; G.effects.push({type:'ring',x:pr.x,y:pr.y,r0:6,r1:b.r,t:0,max:.3,color:b.color,w:10,light:true}); spark(pr.x,pr.y,b.color,16);
+    play('splat',pr); G.shake=Math.min(14,G.shake+3);
+    for(const e of near(pr.x,pr.y,b.r)){strike(e,b.m,Math.atan2(e.y-pr.y,e.x-pr.x),{skill:pr.skill,kb:180,critBonus:G.stats.skillCrit}); if(b.ignite&&!e.dead&&Math.random()<b.ignite) e.burn={t:3,dps:G.stats.dmg*.3};}
+    hitUrns(o=>Math.hypot(o.x-pr.x,o.y-pr.y)<b.r);}
+  if(pr.ground&&!solidAt(pr.x,pr.y)) playerHazard(pr.x,pr.y,pr.ground.r,pr.ground.t,G.stats.dmg*pr.ground.m,'#ff7a2a',{skill:pr.skill});
+  if(pr.split) for(let k=0;k<3;k++){const a=Math.atan2(pr.vy,pr.vx)+(k-1)*.7, bx=pr.x-Math.cos(a)*4, by=pr.y-Math.sin(a)*4;
+    fireProj({x:bx,y:by,vx:Math.cos(a)*340,vy:Math.sin(a)*340,r:4,life:.45,color:pr.color,mult:pr.mult*.5,skill:pr.skill,critBonus:pr.critBonus,
+      boom:pr.boom?{r:pr.boom.r*.55,m:pr.boom.m*.5,color:pr.boom.color}:null});}
+}
+function warn(x,y,r,t,color){G.effects.push({type:'warn',x,y,r,t:0,max:t,color});}
+
+const SKILLS={
+  whirlwind:{cd:5,d:'Spin and cleave everything around you.',
+    muts:{vortex:'Pulls nearby enemies in before the blades land.',twice:'Spins a second time half a second later.',bleed:'Everything hit bleeds heavily.',wide:'50% larger.'},
+    cast(x){const p=x.p, R=100*x.A*(x.m('wide')?1.5:1);
+      const spin=()=>{G.effects.push({type:'ring',x:p.x,y:p.y,r0:20,r1:R,t:0,max:.25,color:'#e8c8a8',w:8});
+        for(let i=0;i<3;i++) G.effects.push({type:'slash',x:p.x,y:p.y,a:i*2.1+G.time*8,arc:2.2,reach:R*.9,t:0,max:.22,color:'#e8c8a8'});
+        if(x.m('vortex')) pullIn(p.x,p.y,R*1.6,260);
+        for(const e of near(p.x,p.y,R)){x.hit(e,2.2,undefined,{kb:280}); if(x.m('bleed')) e.bleed={t:3,dps:G.stats.dmg*.7*x.M};}
+        hitUrns(o=>dist(p,o)<R+8); G.shake=Math.min(14,G.shake+6);};
+      spin(); if(x.m('twice')) later(.5,()=>{play('whirlwind'); spin();});}},
+  shadowstep:{cd:4,d:'Blink forward through enemies, cutting all of them.',
+    muts:{twin:'Steps a second time, a moment later.',venom:'Everything you pass through is poisoned.',vanish:'You stay untouchable for a second after.',reset:'A kill with it resets its cooldown.'},
+    cast(x){const step=()=>{const p=x.p, a=p.facing, sx=p.x, sy=p.y; smoke(sx,sy,10);
+        for(let d=0;d<240;d+=6){const nx=p.x+Math.cos(a)*6, ny=p.y+Math.sin(a)*6; if(collides(nx,ny,p.r)) break; p.x=nx; p.y=ny;}
+        p.inv=Math.max(p.inv,x.m('vanish')?1.2:.4); smoke(p.x,p.y,10); G.effects.push({type:'streak',x:sx,y:sy,x2:p.x,y2:p.y,t:0,max:.3});
+        for(const e of G.enemies){ if(e.dead||segDist(e.x,e.y,sx,sy,p.x,p.y)>=e.r+18) continue; x.hit(e,2.6,a);
+          if(x.m('venom')&&!e.dead) e.bleed={t:4,dps:G.stats.dmg*.5*x.M}; if(e.dead&&x.m('reset')) G.skills.shadowstep.cdT=0;}
+        hitUrns(o=>segDist(o.x,o.y,sx,sy,p.x,p.y)<24,a);};
+      step(); if(x.m('twin')) later(.25,()=>{play('shadowstep'); step();});}},
+  nova:{cd:6,d:'A burst of violet fire that throws enemies back.',
+    muts:{frost:'Chills everything it hits.',double:'A second ring follows.',wide:'40% larger.',flame:'Leaves a ring of fire on the ground.'},
+    cast(x){const p=x.p, R=160*x.A*(x.m('wide')?1.4:1);
+      const ring=(m)=>{G.effects.push({type:'ring',x:p.x,y:p.y,r0:10,r1:R,t:0,max:.35,color:'#a68cff',w:10,light:true}); spark(p.x,p.y,'#b9a3ff',24);
+        for(const e of near(p.x,p.y,R)){x.hit(e,2.5*m,undefined,{kb:320}); if(x.m('frost')) e.slow=2.5;}
+        hitUrns(o=>dist(p,o)<R+8); G.shake=Math.min(14,G.shake+7);};
+      ring(1); if(x.m('double')) later(.4,()=>{play('nova'); ring(.7);});
+      if(x.m('flame')) for(let i=0;i<10;i++){const a=i*Math.PI/5; playerHazard(p.x+Math.cos(a)*R*.7,p.y+Math.sin(a)*R*.7,20,3*x.D,G.stats.dmg*.35*x.M,'#ff7a2a');}}},
+  raise:{cd:4,d:'Raise skeletons from nearby corpses. No corpses? It takes your blood.',
+    muts:{army:'+2 max skeletons.',explode:'Corpses burst violently as they rise.',armor:'Skeletons have double life.',fury:'Skeletons attack 60% faster.'},
+    cast(){raiseDead();}},
+  fireball:{cd:1.4,d:'Hurl a fireball that explodes on impact.',
+    muts:{split:'Bursts into three smaller fireballs.',ground:'Leaves burning ground where it lands.',big:'Huge and slow, with a 60% bigger, harder blast.',multi:'Fires 2 more fireballs in a fan.'},
+    cast(x){const p=x.p, big=x.m('big'), n=1+x.P+(x.m('multi')?2:0);
+      for(let i=0;i<n;i++){const a=x.a+(i-(n-1)/2)*.2, sp=big?260:380;
+        fireProj({x:p.x+Math.cos(a)*12,y:p.y+Math.sin(a)*12,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:big?10:7,color:'#ff7a2a',mult:x.M,skill:'fireball',critBonus:x.s.skillCrit,
+          boom:{r:55*x.A*(big?1.6:1),m:x.M*1.4*(big?1.6:1),color:'#ff7a2a',ignite:.4},
+          ground:x.m('ground')?{r:24*x.A,t:3*x.D,m:x.M*.35}:null, split:x.m('split')});}}},
+  iceshards:{cd:1.6,d:'A fan of ice shards that pierce and chill.',
+    muts:{more:'3 more shards.',nova:'Shards fly out in every direction.',shatter:'Chilled enemies shatter when they die.',pierce:'Shards pierce 2 more enemies.'},
+    cast(x){const p=x.p, n=5+x.P*2+(x.m('more')?3:0), all=x.m('nova'), spread=all?Math.PI*2/n:.9/(n-1||1);
+      for(let i=0;i<n;i++){const a=all?x.a+i*spread:x.a+(i-(n-1)/2)*spread;
+        fireProj({x:p.x+Math.cos(a)*10,y:p.y+Math.sin(a)*10,vx:Math.cos(a)*460,vy:Math.sin(a)*460,r:4,life:.8,color:'#9fd6ff',mult:x.M*.7,skill:'iceshards',critBonus:x.s.skillCrit,pierce:1+(x.m('pierce')?2:0),chill:2});}}},
+  lightning:{cd:2,d:'Lightning leaps between enemies.',
+    muts:{fork:'Chains 3 more times.',storm:'Three more bolts strike nearby enemies.',overload:'The first enemy takes 80% more.',static:'Struck enemies take 20% more damage for 4 seconds.'},
+    cast(x){const p=x.p; let first=null, bd=320;
+      for(const e of G.enemies){ if(e.dead) continue; const d=dist(e,p); if(d<bd&&angDiff(Math.atan2(e.y-p.y,e.x-p.x),x.a)<.8&&los(p.x,p.y,e.x,e.y)){bd=d; first=e;} }
+      if(!first){G.effects.push({type:'zap',pts:[{x:p.x,y:p.y},{x:p.x+Math.cos(x.a)*120,y:p.y+Math.sin(x.a)*120}],t:0,max:.2}); return;}
+      const chain=(start,jumps,m)=>{const pts=[{x:p.x,y:p.y}], hit=new Set(); let cur=start;
+        for(let j=0;j<=jumps&&cur;j++){hit.add(cur); pts.push({x:cur.x,y:cur.y}); x.hit(cur,1.3*m*(j===0&&x.m('overload')?1.8:1),undefined,{noKb:true,color:'#cfe8ff'});
+          if(x.m('static')) mark(cur,4,.2); let nx=null, nd=170; for(const e of G.enemies){ if(e.dead||hit.has(e)) continue; const d=dist(e,cur); if(d<nd){nd=d; nx=e;}} cur=nx;}
+        G.effects.push({type:'zap',pts,t:0,max:.25});};
+      chain(first,4+x.C+(x.m('fork')?3:0),1);
+      if(x.m('storm')) later(.2,()=>{for(let k=0;k<3;k++){const c=near(p.x,p.y,260); if(!c.length) break; chain(pick(c),1,.8);}});}},
+  slam:{cd:3,d:'Smash the ground in front of you, hurling enemies back.',
+    muts:{quake:'An aftershock hits again for 70%.',wide:'Hits all around you.',fissure:'Rips a burning fissure in the ground.',stun:'Stuns everything hit.'},
+    cast(x){const p=x.p, R=110*x.A, arc=x.m('wide')?Math.PI*2:1.6, a=x.a;
+      const smash=m=>{G.effects.push({type:'slash',x:p.x,y:p.y,a,arc:Math.min(arc,6.2),reach:R,t:0,max:.25,color:'#c8a070'});
+        G.effects.push({type:'ring',x:p.x+Math.cos(a)*R*.4,y:p.y+Math.sin(a)*R*.4,r0:10,r1:R*.7,t:0,max:.3,color:'#c8a070',w:6});
+        for(let i=0;i<14;i++) dust(p.x+Math.cos(a)*R*.5+rand(-30,30),p.y+Math.sin(a)*R*.5+rand(-20,20));
+        for(const e of near(p.x,p.y,R)){ if(arc<6&&angDiff(Math.atan2(e.y-p.y,e.x-p.x),a)>arc/2) continue;
+          x.hit(e,2.4*m,a,{kb:360}); e.slow=2; if(x.m('stun')) stun(e,1.2);}
+        hitUrns(o=>dist(p,o)<R); G.shake=Math.min(14,G.shake+8);};
+      smash(1); if(x.m('quake')) later(.45,()=>{play('whirlwind'); smash(.7);});
+      if(x.m('fissure')) for(let i=1;i<=5;i++) playerHazard(p.x+Math.cos(a)*i*34,p.y+Math.sin(a)*i*34,18,2.5*x.D,G.stats.dmg*.4*x.M,'#ff7a2a');}},
+  blades:{cd:7,d:'Blades orbit you, cutting anything they touch.',
+    muts:{more:'2 more blades.',wide:'The orbit is 50% wider.',long:'Lasts 75% longer.',fire:'The blades set enemies burning.'},
+    cast(x){(G.orbits=G.orbits||[]).push({t:0,ttl:4*x.D*(x.m('long')?1.75:1),n:3+x.P+(x.m('more')?2:0),r:46*x.A*(x.m('wide')?1.5:1),ang:0,mult:x.M*.55,fire:x.m('fire'),hits:new Map()});}},
+  spikes:{cd:2.5,d:'Bone spikes erupt beneath your target.',
+    muts:{prison:'Enemies hit are nearly rooted for 3 seconds.',double:'Erupts a second time.',wide:'40% larger.',marrow:'Each enemy hit heals you 1% of your life.'},
+    cast(x){const {x:tx,y:ty}=x.tp, R=60*x.A*(x.m('wide')?1.4:1);
+      const erupt=m=>{warn(tx,ty,R,.35,'#e8dcc0'); later(.35,()=>{G.effects.push({type:'spikes',x:tx,y:ty,r:R,t:0,max:.45}); play('urn',{x:tx,y:ty});
+        for(const e of near(tx,ty,R)){x.hit(e,1.9*m,Math.atan2(e.y-ty,e.x-tx),{kb:120}); if(x.m('prison')) e.slow=3; if(x.m('marrow')) healP(G.stats.maxHp*.01,true);}
+        hitUrns(o=>Math.hypot(o.x-tx,o.y-ty)<R);});};
+      erupt(1); if(x.m('double')) later(.55,()=>erupt(.8));}},
+  bloodnova:{cd:5,d:'Spend 8% of your life on a nova of blood that heals you for each enemy it hits.',
+    muts:{frenzy:'You attack 30% faster for 4 seconds after.',drain:'Heals twice as much per enemy.',wide:'40% larger.',free:'Costs no life.'},
+    cast(x){const p=x.p, R=130*x.A*(x.m('wide')?1.4:1);
+      if(!x.m('free')){p.hp=Math.max(1,p.hp-p.hp*.08); blood(p.x,p.y,16);}
+      G.effects.push({type:'ring',x:p.x,y:p.y,r0:10,r1:R,t:0,max:.35,color:'#ff2a2a',w:12,light:true});
+      for(const e of near(p.x,p.y,R)){x.hit(e,3,undefined,{kb:260}); healP(G.stats.maxHp*(x.m('drain')?.04:.02),true);}
+      if(x.m('frenzy')) p.frenzyT=4; G.shake=Math.min(14,G.shake+6);}},
+  meteor:{cd:7,d:'Call down a meteor on your target, leaving the ground burning.',
+    muts:{shower:'Three smaller meteors fall around it.',molten:'The ground burns twice as long.',fast:'Lands almost at once.',crater:'Stuns everything it hits.'},
+    cast(x){const {x:tx,y:ty}=x.tp, R=90*x.A, delay=x.m('fast')?.3:.8;
+      const drop=(mx,my,r,m)=>{warn(mx,my,r,delay,'#ff5a1a'); later(delay,()=>{
+        G.effects.push({type:'ring',x:mx,y:my,r0:8,r1:r,t:0,max:.4,color:'#ff7a2a',w:14,light:true}); spark(mx,my,'#ffb04a',30); play('splat',{x:mx,y:my});
+        G.shake=Math.min(14,G.shake+10*m); G.flash=Math.max(G.flash||0,.2*m);
+        for(const e of near(mx,my,r)){x.hit(e,4.5*m,Math.atan2(e.y-my,e.x-mx),{kb:300}); if(x.m('crater')) stun(e,1.5);}
+        hitUrns(o=>Math.hypot(o.x-mx,o.y-my)<r);
+        for(let i=0;i<5;i++){const a=i*1.26; playerHazard(mx+Math.cos(a)*r*.45,my+Math.sin(a)*r*.45,22,3*x.D*(x.m('molten')?2:1),G.stats.dmg*.4*x.M,'#ff7a2a');}});};
+      drop(tx,ty,R,1);
+      if(x.m('shower')) for(let k=0;k<3;k++){const a=k*2.1+rand(0,1); drop(tx+Math.cos(a)*R*.9,ty+Math.sin(a)*R*.9,R*.5,.4);}}},
+  spectral:{cd:10,d:'Summon spectral swords that hunt for you.',
+    muts:{more:'2 more swords.',long:'They last 60% longer.',explode:'They explode when they fade.',fast:'They fly and strike far faster.'},
+    cast(x){const p=x.p, n=3+(x.m('more')?2:0);
+      for(let k=0;k<n;k++){const a=k*Math.PI*2/n; spawnMinion(p.x+Math.cos(a)*24,p.y+Math.sin(a)*24);
+        Object.assign(G.allies[G.allies.length-1],{blade:true,rise:0,ttl:12*x.D*(x.m('long')?1.6:1),T:{phase:true},spd:x.m('fast')?260:190,atkCd:x.m('fast')?.35:.6,
+          boomEnd:x.m('explode'),skill:'spectral',mult:x.M});}}},
+  leap:{cd:4,d:'Leap to your target and crash down on everything there.',
+    muts:{quake:'The landing is 50% bigger.',twice:'Cooldown is halved.',fire:'Leaves a ring of fire where you land.',stun:'Stuns everything you land on.'},
+    cast(x){const p=x.p; let tx=x.tp.x, ty=x.tp.y; const a=Math.atan2(ty-p.y,tx-p.x), L=Math.hypot(tx-p.x,ty-p.y); let d=0;
+      for(;d<L;d+=6) if(collides(p.x+Math.cos(a)*(d+6),p.y+Math.sin(a)*(d+6),p.r)) break;
+      p.leap={t:0,dur:.35,sx:p.x,sy:p.y,tx:p.x+Math.cos(a)*d,ty:p.y+Math.sin(a)*d,x}; p.inv=Math.max(p.inv,.45);}},
+  plague:{cd:6,d:'A cloud of rot settles on your target, eating at anything inside.',
+    muts:{wide:'40% larger.',long:'Lingers 60% longer.',spread:'Enemies that die inside it spread the cloud.',wither:'Enemies inside take 25% more damage.'},
+    cast(x){const {x:tx,y:ty}=x.tp; playerHazard(tx,ty,70*x.A*(x.m('wide')?1.4:1),5*x.D*(x.m('long')?1.6:1),G.stats.dmg*.45*x.M,'#9acd32',
+      {skill:'plague',wither:x.m('wither'),spread:x.m('spread')}); smoke(tx,ty,14);}},
+  voidorb:{cd:4,d:'A slow orb of nothing that tears at everything near it.',
+    muts:{pull:'Drags enemies toward it.',bigger:'50% larger.',twin:'Fires a second orb.',collapse:'Collapses in a blast when it ends.'},
+    cast(x){const p=x.p, n=1+x.P+(x.m('twin')?1:0);
+      for(let i=0;i<n;i++){const a=x.a+(i-(n-1)/2)*.3;
+        fireProj({x:p.x+Math.cos(a)*14,y:p.y+Math.sin(a)*14,vx:Math.cos(a)*140,vy:Math.sin(a)*140,r:9,life:3*x.D,color:'#b06aff',pierce:999,noHit:true,skill:'voidorb',
+          pulse:{every:.25,acc:0,r:42*x.A*(x.m('bigger')?1.5:1),m:x.M*.45,pull:x.m('pull')},
+          boom:x.m('collapse')?{r:90*x.A,m:x.M*2.5,color:'#b06aff',endOnly:true}:null});}}},
+  deathmark:{cd:8,d:'Mark everything around your target: marked enemies take 35% more damage.',
+    muts:{spread:'The mark jumps to two nearby enemies when its bearer dies.',wide:'40% larger.',long:'Lasts 60% longer.',pact:'Marked enemies often drop healing when they die.'},
+    cast(x){const {x:tx,y:ty}=x.tp, R=110*x.A*(x.m('wide')?1.4:1), t=6*x.D*(x.m('long')?1.6:1);
+      G.effects.push({type:'ring',x:tx,y:ty,r0:R,r1:R*.2,t:0,max:.45,color:'#c0101a',w:4,light:true});
+      for(const e of near(tx,ty,R)) mark(e,t,.35,{markSpread:x.m('spread'),markPact:x.m('pact')});}},
+};
+
+function castSlot(i){
+  const id=G.slots[i]; if(!id) return; const sk=G.skills[id], p=G.player, s=G.stats; G.usedAbility=true;
+  if(sk.cdT>0){ if(sk.cdT<.3){p.bufSlot=i; p.bufT=.3;} return; } // pressed a touch early: cast the moment it's ready
+  p.bufT=0; sk.cdT=SKILLS[id].cd*s.cdMul*(id==='leap'&&skillHas('leap','twice')?.5:1);
+  fireSkill(id);
+  if(s.u.crown) for(let k=0;k<12;k++){const a=k*Math.PI/6; // Crown of the Drowned
+    G.projectiles.push({x:p.x,y:p.y,vx:Math.cos(a)*360,vy:Math.sin(a)*360,r:4,owner:'player',life:.7,color:'#cfe8f0',pierce:1,mult:.6*s.u.crown});}
+  if(s.echo) later(.35,()=>fireSkill(id));
+}
+function fireSkill(id){ if(state!=='play'||G.dying) return; play(SKILL_SFX[id]); SKILLS[id].cast(skillCtx(id)); }
+const useAbility=()=>castSlot(0); // Q, right click and the old ability button all mean slot 1
+function learnSkill(id){
+  if(G.skills[id]){skillLevelUp(id); text(G.player.x,G.player.y-34,`${SKILL_INFO[id].n} grows stronger`,SKILL_INFO[id].c,13); return;}
+  G.skills[id]={lvl:1,xp:0,cdT:0,muts:[]}; const slot=G.slots.indexOf(null); if(slot>=0) G.slots[slot]=id;
+  G.banner={t:0,lines:['New skill',SKILL_INFO[id].n,slot>=0?`On key ${slot+1}. ${SKILLS[id].d}`:'Your slots are full: swap it in from the skill tree screen.']};
+  play('legendary'); G.flash=Math.max(G.flash||0,.25);
+}
+const skillNeed=l=>Math.round(10*Math.pow(l,1.6));
+function skillLevelUp(id){const sk=G.skills[id]; sk.lvl++; sk.xp=0; if(MUT_LV.includes(sk.lvl)&&Object.keys(SKILLS[id].muts).length>sk.muts.length) G.draftQueue.push({skill:id});}
+function skillXp(id,x){const sk=G.skills[id]; if(!sk) return; sk.xp+=x; while(sk.xp>=skillNeed(sk.lvl)){sk.xp-=skillNeed(sk.lvl); const keep=sk.xp; skillLevelUp(id); sk.xp=keep;
+  text(G.player.x,G.player.y-40,`${SKILL_INFO[id].n} level ${sk.lvl}`,SKILL_INFO[id].c,12);}}
+// a random skill you don't know yet, or failing that one you do
+function tomeSkill(){const unknown=Object.keys(SKILL_INFO).filter(k=>SKILL_INFO[k].home&&!G.skills[k]); return unknown.length?pick(unknown):pick(Object.keys(G.skills));}
+function dropTome(x,y){G.drops.push({kind:'tome',skill:tomeSkill(),x,y,t:0});}
+// per-frame upkeep: cooldowns, buffered presses, orbiting blades, leaps, short buffs
+function updateSkills(dt){
+  const p=G.player;
+  for(const id in G.skills) G.skills[id].cdT-=dt;
+  if(p.bufT>0){p.bufT-=dt; const id=G.slots[p.bufSlot]; if(id&&G.skills[id].cdT<=0&&!G.dying) castSlot(p.bufSlot);}
+  p.frenzyT=Math.max(0,(p.frenzyT||0)-dt);
+  if(p.leap){const L=p.leap; L.t+=dt; const k=Math.min(1,L.t/L.dur); p.x=L.sx+(L.tx-L.sx)*k; p.y=L.sy+(L.ty-L.sy)*k;
+    if(k>=1){const x=L.x, R=80*x.A*(x.m('quake')?1.5:1); p.leap=null;
+      G.effects.push({type:'ring',x:p.x,y:p.y,r0:10,r1:R,t:0,max:.3,color:'#c89060',w:10}); for(let i=0;i<16;i++) dust(p.x+rand(-R,R)*.6,p.y+rand(-R,R)*.4);
+      for(const e of near(p.x,p.y,R)){x.hit(e,2.2,undefined,{kb:300}); if(x.m('stun')) stun(e,1.2);}
+      hitUrns(o=>dist(p,o)<R); G.shake=Math.min(14,G.shake+9); play('splat');
+      if(x.m('fire')) for(let i=0;i<8;i++){const a=i*Math.PI/4; playerHazard(p.x+Math.cos(a)*R*.6,p.y+Math.sin(a)*R*.6,20,3*x.D,G.stats.dmg*.35*x.M,'#ff7a2a');}}}
+  if(G.orbits) for(const o of G.orbits){o.t+=dt; o.ang+=5*dt;
+    for(let i=0;i<o.n;i++){const a=o.ang+i*Math.PI*2/o.n, bx=p.x+Math.cos(a)*o.r, by=p.y+Math.sin(a)*o.r;
+      for(const e of near(bx,by,10)){ if((o.hits.get(e)||0)>G.time) continue; o.hits.set(e,G.time+.25);
+        strike(e,o.mult,a+Math.PI/2,{skill:'blades',noKb:true,critBonus:G.stats.skillCrit}); if(o.fire&&!e.dead) e.burn={t:3,dps:G.stats.dmg*.25};}}}
+  if(G.orbits) G.orbits=G.orbits.filter(o=>o.t<o.ttl);
 }
 function dash(){
   const p=G.player, s=G.stats; if(!s.canDash) return;
@@ -1574,7 +1857,8 @@ function update(dt){
   if(G.dying){G.dying-=dt; if(G.dying<=0){die(); return;} dt*=.3;}
   G.time+=dt;
   const p=G.player, s=G.stats;
-  p.atkT-=dt; p.abilT-=dt; p.dashT-=dt; p.inv-=dt; p.hurtT-=dt;
+  p.atkT-=dt; p.dashT-=dt; p.inv-=dt; p.hurtT-=dt;
+  updateSkills(dt);
   if(p.atk){const k=p.atk; k.t+=dt;
     if(!k.done&&k.t>=k.hitAt){k.done=true; releaseAttack(k);}
     // step into the blow, but not while backing away from it (kiting shouldn't drag you into the enemy)
@@ -1584,7 +1868,7 @@ function update(dt){
   if(!G.dying){p.hp=Math.min(s.maxHp,p.hp+(s.regen-s.drain)*dt); if(p.hp<=0){p.hp=0; G.lastHitBy='your own bleeding'; startDying();}}
   p.ghost+= (p.hp-p.ghost)*Math.min(1,dt*(p.ghost>p.hp?2.5:10));
   if(p.hp<s.maxHp*.3){p.beatT-=dt; if(p.beatT<=0){p.beatT=.95; play('beat');}}
-  const [mx,my]=G.dying?[0,0]:moveInput();
+  const [mx,my]=G.dying||p.leap?[0,0]:moveInput(); // mid-leap you're in the air
   if(p.dashTime>0){p.dashTime-=dt; move(p,p.dvx*dt,p.dvy*dt);
     if(s.u.gravewalk){p.fireT=(p.fireT||0)-dt; if(p.fireT<=0){p.fireT=.035; addHazard(p.x,p.y+6,16,2.6,s.dmg*.45*s.u.gravewalk,'#ff7a2a',0,'player');}} addP({x:p.x,y:p.y,vx:0,vy:0,life:.25,max:.25,size:9,color:CLASSES[G.cls].color,drag:0,fade:true});}
   else { move(p,mx*s.speed*dt,my*s.speed*dt);
@@ -1615,7 +1899,6 @@ function update(dt){
     for(const e of G.enemies){ if(e.dead||dist(e,p)-e.r>range) continue; const ad=angDiff(Math.atan2(e.y-p.y,e.x-p.x),p.facing); if(ad<bd&&los(p.x,p.y,e.x,e.y)){bd=ad; best=e;} }
     if(best) p.facing=Math.atan2(best.y-p.y,best.x-p.x); }
   if(p.bufDash>0){p.bufDash-=dt; if(p.dashT<=0&&p.dashTime<=0&&!G.dying) dash();}
-  if(p.bufAbil>0){p.bufAbil-=dt; if(p.abilT<=0&&!G.dying) useAbility();}
   if((mouse.down||arrow!==null||PAD.fire||TOUCH.fire||((TOUCH.active||SET.auto)&&autoTarget()))&&p.atkT<=0&&!G.dying) attack();
 
   G.flowT-=dt; if(G.flowT<=0){G.flowT=.25; G.flow=bfs(G.map,tileIdx(p.x,p.y),40);}
@@ -1642,21 +1925,27 @@ function update(dt){
   }
   for(const pr of G.projectiles){
     pr.x+=pr.vx*dt; pr.y+=pr.vy*dt; pr.life-=dt;
-    if(solidAt(pr.x,pr.y)){spark(pr.x-pr.vx*dt,pr.y-pr.vy*dt,pr.color,5); pr.life=0; continue;}
-    if(pr.owner==='player') for(const o of G.props) if(o.kind==='urn'&&!o.broken&&Math.hypot(o.x-pr.x,o.y-pr.y)<12){breakUrn(o,Math.atan2(pr.vy,pr.vx)); pr.life=0;}
+    if(solidAt(pr.x,pr.y)){pr.x-=pr.vx*dt; pr.y-=pr.vy*dt; spark(pr.x,pr.y,pr.color,5); pr.life=0; continue;}
+    if(pr.owner==='player'&&!pr.noHit) for(const o of G.props) if(o.kind==='urn'&&!o.broken&&Math.hypot(o.x-pr.x,o.y-pr.y)<12){breakUrn(o,Math.atan2(pr.vy,pr.vx)); pr.life=0;}
     if(pr.life<=0) continue;
-    if(pr.owner==='player'){for(const e of G.enemies){if(e.dead) continue; if(pr.hit&&pr.hit.has(e)) continue;
-      if(Math.hypot(e.x-pr.x,e.y-pr.y)<e.r+pr.r){strike(e,pr.mult||1,Math.atan2(pr.vy,pr.vx),{forceCrit:pr.forceCrit}); spark(pr.x,pr.y,pr.color,6);
+    if(pr.pulse){const q=pr.pulse; q.acc+=dt; if(q.pull) pullIn(pr.x,pr.y,q.r*1.8,220*dt*8); // the void orb gnaws at everything near it
+      if(q.acc>=q.every){q.acc-=q.every; for(const e of near(pr.x,pr.y,q.r)) strike(e,q.m,Math.atan2(e.y-pr.y,e.x-pr.x),{skill:pr.skill,noKb:true,quiet:true,critBonus:G.stats.skillCrit,color:'#c79aff'});}}
+    if(pr.owner==='player'&&!pr.noHit){for(const e of G.enemies){if(e.dead) continue; if(pr.hit&&pr.hit.has(e)) continue;
+      if(Math.hypot(e.x-pr.x,e.y-pr.y)<e.r+pr.r){strike(e,pr.mult||1,Math.atan2(pr.vy,pr.vx),{forceCrit:pr.forceCrit,skill:pr.skill,critBonus:pr.critBonus}); spark(pr.x,pr.y,pr.color,6);
+        if(pr.chill&&!e.dead) e.slow=Math.max(e.slow,pr.chill);
         if(pr.pierce>0){pr.pierce--; (pr.hit||(pr.hit=new Set())).add(e);} else {pr.life=0; break;}}}}
+    else if(pr.owner==='player'){} // void orbs never touch-hit (and never hit you)
     else if(Math.hypot(p.x-pr.x,p.y-pr.y)<p.r+pr.r){
       if(s.u.mirror&&Math.random()<.3*s.u.mirror){pr.owner='player'; pr.vx*=-1.2; pr.vy*=-1.2; pr.mult=1.2; pr.life=1.5; pr.color='#ffe0a0'; spark(pr.x,pr.y,'#ffe0a0',8); play('crit',pr);}
       else {damagePlayer(pr.dmg,pr.src); pr.life=0;}}
     else for(const m of G.allies) if(m.rise<=0&&Math.hypot(m.x-pr.x,m.y-pr.y)<m.r+pr.r){damageAlly(m,pr.dmg); pr.life=0; break;}
     if(Math.random()<.5) addP({x:pr.x,y:pr.y,vx:0,vy:0,life:.2,max:.2,size:pr.r*.7,color:pr.color,drag:0,emissive:true});
   }
+  for(const pr of G.projectiles) if(pr.life<=0&&pr.owner==='player'&&!pr.ended){pr.ended=true; projEnd(pr);}
   G.projectiles=G.projectiles.filter(pr=>{ if(pr.life<=0&&pr.fire&&Math.random()<.45&&!solidAt(pr.x,pr.y)) addHazard(pr.x,pr.y,16,2.5,pr.dmg*.6,'#ff7a2a'); return pr.life>0; });
   G.near=null; let nd=36;
   for(let i=G.drops.length-1;i>=0;i--){const d=G.drops[i]; d.t+=dt; const dd=Math.hypot(d.x-p.x,d.y-p.y);
+    if(d.kind==='tome'){ if(dd<p.r+16){G.drops.splice(i,1); learnSkill(d.skill);} continue; } // walk over a Skill Tome to read it
     if(d.kind==='orb'){ if(dd<80){const a=Math.atan2(p.y-d.y,p.x-d.x);d.x+=Math.cos(a)*220*dt;d.y+=Math.sin(a)*220*dt;}
       if(dd<p.r+10){healP(s.maxHp*.12); G.drops.splice(i,1); play('pick');} }
     else if(dd<nd){nd=dd; G.near=d;}}
@@ -1667,7 +1956,9 @@ function update(dt){
   p.hazT=(p.hazT||0)-dt; G.darkT=Math.max(0,G.darkT-dt);
   for(const h of G.hazards){ if(h.delay>0){h.delay-=dt; continue;} h.t-=dt;
     if(h.owner==='player'){h.tick-=dt; if(h.tick<=0){h.tick=.5; // your fire burns them, not you
-        for(const e of G.enemies) if(!e.dead&&Math.hypot(e.x-h.x,e.y-h.y)<h.r+e.r*.6) hitEnemy(e,h.dmg,{proc:false,noKb:true,color:'#ff9a3c',quiet:true});}}
+        for(const e of G.enemies) if(!e.dead&&Math.hypot(e.x-h.x,e.y-h.y)<h.r+e.r*.6){
+          if(h.wither) mark(e,1,.25); if(h.spread){e.plagueT=1; e.plagueSpread=true;}
+          hitEnemy(e,h.dmg,{proc:false,noKb:true,color:h.color==='#9acd32'?'#b8e05a':'#ff9a3c',quiet:true,skill:h.skill});}}}
     else if(p.hazT<=0&&Math.hypot(p.x-h.x,p.y-h.y)<h.r+p.r*.4){p.hazT=.5; damagePlayer(h.dmg,null,h.color==='#ff7a2a'?'fire':'bile');}
     if(Math.random()<dt*4) addP({x:h.x+rand(-h.r,h.r)*.7,y:h.y+rand(-h.r,h.r)*.5,vx:0,vy:-35,life:.6,max:.6,size:2,color:h.color,drag:.5,emissive:true}); }
   G.hazards=G.hazards.filter(h=>h.t>0);
@@ -1731,7 +2022,7 @@ function render(){
     lctx.save(); clipPoly(lctx,t.poly); L(t.x,t.y+8,130*(.92+.08*Math.sin(G.time*9+t.ph))+rand(-3,3),.9); lctx.restore();}
   for(const pr of G.projectiles) L(pr.x,pr.y,pr.owner==='player'?70:42,.7);
   for(const f of G.effects) if(f.type==='ring') L(f.x,f.y,f.r1*1.3,(f.light?.95:.6)*(1-f.t/f.max));
-  for(const d of G.drops) L(d.x,d.y,d.kind==='orb'?34:d.item.rarity==='legendary'?70:30,d.kind==='item'&&d.item.rarity==='legendary'?.8:.45);
+  for(const d of G.drops) L(d.x,d.y,d.kind==='orb'?34:d.kind==='tome'?60:d.item.rarity==='legendary'?70:30,d.kind==='tome'||(d.kind==='item'&&d.item.rarity==='legendary')?.8:.45);
   for(const e of G.enemies) if(e.burn) L(e.x,e.y,40,.5);
   L(G.stairs.x,G.stairs.y,46,.35);
   for(const o of G.props) if(o.kind==='shrine'&&!o.used) L(o.x,o.y,95,.8); else if(o.kind==='altar') L(o.x,o.y-6,o.state==='active'?150:70,.75);
@@ -1768,7 +2059,7 @@ function render(){
     for(const q of eyeSpots(SPRITES.minion,m.x,m.y+7,Math.cos(m.face)<0)){ctx.fillStyle='rgba(122,255,106,.22)'; ctx.beginPath(); ctx.arc(q.x,q.y,5,0,7); ctx.fill(); ctx.fillStyle='#7aff6a'; ctx.fillRect(q.x-1,q.y-1,2,2);}}
   for(const pr of G.projectiles){ctx.fillStyle=hexA(pr.color,.25); ctx.beginPath(); ctx.arc(pr.x,pr.y,pr.r*3,0,7); ctx.fill();
     ctx.fillStyle=hexA(pr.color,1); ctx.beginPath(); ctx.arc(pr.x,pr.y,pr.r,0,7); ctx.fill();}
-  for(const d of G.drops){const c=d.kind==='orb'?'#ff2a2a':RAR[d.item.rarity].c, pu=.6+.4*Math.sin(G.time*4+d.x);
+  for(const d of G.drops){const c=d.kind==='orb'?'#ff2a2a':d.kind==='tome'?SKILL_INFO[d.skill].c:RAR[d.item.rarity].c, pu=.6+.4*Math.sin(G.time*4+d.x);
     ctx.fillStyle=hexA(c,.18*pu); ctx.beginPath(); ctx.arc(d.x,d.y,d.kind==='orb'?10:16,0,7); ctx.fill();
     if(d.kind==='item'&&d.item.rarity==='legendary'){ // a pillar of light you can see from across the room
       const bh=150+20*pu, bg=ctx.createLinearGradient(0,d.y-bh,0,d.y); bg.addColorStop(0,hexA(c,0)); bg.addColorStop(1,hexA(c,.45*pu));
@@ -1848,6 +2139,7 @@ function drawStairs(g){
 }
 function drawDrop(g,d){
   const bob=Math.round(Math.sin(G.time*3+d.x)*1.5)*2;
+  if(d.kind==='tome'){drawTome(g,d); return;}
   if(d.kind==='orb'&&ARTX.ready){drawSprite(g,ARTX.flask,d.x,d.y+10+bob,false,0); return;}
   if(d.kind==='orb'){g.fillStyle='#4a0606'; g.fillRect(Math.round(d.x)-4,Math.round(d.y)-4+bob,8,8); g.fillStyle='#a01a10'; g.fillRect(Math.round(d.x)-2,Math.round(d.y)-4+bob,4,6); g.fillStyle='#ff6a4a'; g.fillRect(Math.round(d.x)-2,Math.round(d.y)-2+bob,2,2); return;}
   drawSprite(g,ICONS[d.item.slot],d.x,d.y+8+bob,false,0);
@@ -1857,7 +2149,21 @@ function drawProp(g,o){
   g.fillStyle='rgba(0,0,0,.45)'; g.beginPath(); g.ellipse(o.x,feet,sp.w*.9,4,0,0,7); g.fill();
   drawSprite(g,sp,o.x,feet,false,0);
 }
+// a floating, glowing sword pointed at whatever it's hunting
+function drawBlade(g,x,y,a,alpha){
+  const ws=WEAPONS.warrior; g.save(); g.translate(Math.round(x),Math.round(y)); g.rotate(a); g.globalAlpha*=alpha;
+  if(ws.frames) g.drawImage(ws.frames[0],-ws.w,-ws.h,ws.w*2,ws.h*2); else {g.fillStyle='#cfe8ff'; g.fillRect(-12,-1.5,24,3);}
+  g.restore();
+}
+// Skill Tome on the floor: a closed book in the skill's colour
+function drawTome(g,d){
+  const c=SKILL_INFO[d.skill].c, x=Math.round(d.x), y=Math.round(d.y+Math.sin(G.time*3+d.x)*3);
+  g.fillStyle='#1a0e0a'; g.fillRect(x-8,y-10,16,20); g.fillStyle=c; g.fillRect(x-7,y-9,13,18); g.fillStyle='rgba(0,0,0,.35)'; g.fillRect(x-7,y-9,3,18);
+  g.fillStyle='#e8dcc0'; g.fillRect(x+5,y-8,2,16); g.fillStyle='#1a0e0a'; g.fillRect(x-1,y-3,5,5); g.fillStyle=c; g.fillRect(x,y-2,3,3);
+}
 function drawAlly(g,m){
+  if(m.blade){const bob=Math.sin(G.time*6+m.ph)*3; g.fillStyle='rgba(120,200,255,.12)'; g.beginPath(); g.ellipse(m.x,m.y+10,10,4,0,0,7); g.fill();
+    drawBlade(g,m.x,m.y-6+bob,m.face+(m.wind>0?Math.PI*2*(1-m.wind/.1):0),m.ttl!==undefined&&m.ttl<1?m.ttl:1); return;}
   const sp=SPRITES.minion, flip=Math.cos(m.face)<0, feet=m.y+7, fr=sprFrame(sp,isMoving(m),m.ph);
   g.fillStyle='rgba(0,0,0,.45)'; g.beginPath(); g.ellipse(m.x,feet,9,3.5,0,0,7); g.fill();
   g.fillStyle='rgba(90,220,90,.12)'; g.beginPath(); g.ellipse(m.x,feet,12,4.5,0,0,7); g.fill();
@@ -1942,6 +2248,13 @@ function drawEffect(g,f){
   else if(f.type==='ring'){const r=f.r0+(f.r1-f.r0)*(1-(1-k)*(1-k)); g.strokeStyle=hexA(f.color,.8*a); g.lineWidth=f.w*a+.5; g.beginPath(); g.arc(f.x,f.y,r,0,7); g.stroke();}
   else if(f.type==='zap'){g.strokeStyle=`rgba(190,230,255,${a})`; g.lineWidth=2; g.beginPath(); g.moveTo(f.pts[0].x,f.pts[0].y);
     for(let i=1;i<f.pts.length;i++){const A=f.pts[i-1],B=f.pts[i]; for(let j=1;j<=4;j++){const tt=j/4; g.lineTo(A.x+(B.x-A.x)*tt+(j<4?rand(-7,7):0),A.y+(B.y-A.y)*tt+(j<4?rand(-7,7):0));}} g.stroke();}
+  else if(f.type==='warn'){ // where something is about to land: a ring that fills in
+    g.strokeStyle=hexA(f.color,.35+.4*k); g.lineWidth=2; g.beginPath(); g.arc(f.x,f.y,f.r,0,7); g.stroke();
+    g.fillStyle=hexA(f.color,.12+.15*k); g.beginPath(); g.arc(f.x,f.y,f.r*k,0,7); g.fill();}
+  else if(f.type==='spikes'){ // bone spikes punching up in a ring
+    const h=(k<.25?k/.25:1-(k-.25)/.75)*22; g.fillStyle=`rgba(232,220,192,${.9*a})`;
+    for(let i=0;i<10;i++){const b=i*Math.PI/5, rr=f.r*(i%2?.45:.85), sx=f.x+Math.cos(b)*rr, sy=f.y+Math.sin(b)*rr*.6;
+      g.beginPath(); g.moveTo(sx-4,sy); g.lineTo(sx,sy-h); g.lineTo(sx+4,sy); g.closePath(); g.fill();}}
   else if(f.type==='streak'){g.strokeStyle=`rgba(120,140,120,${.5*a})`; g.lineWidth=10*a; g.lineCap='round'; g.beginPath(); g.moveTo(f.x,f.y); g.lineTo(f.x2,f.y2); g.stroke();}
 }
 
@@ -1970,16 +2283,22 @@ function drawHUD(){
   if(G.explored[tileIdx(G.stairs.x,G.stairs.y)]){ctx.fillStyle=G.sealed?'#c02a1a':'#9fb4d8'; ctx.fillRect(mx+G.stairs.x*ms-2.5,my+G.stairs.y*ms-2.5,5,5);}
   ctx.fillStyle='#e8dccb'; ctx.beginPath(); ctx.arc(mx+p.x*ms,my+p.y*ms,2.5,0,7); ctx.fill();
   // abilities
-  const c=CLASSES[G.cls], pa=PAD.active, ak=pa?'LB':'RMB / Q',
-    slots=[{k:pa?'RT':'LMB',n:G.cls==='necro'?'Spear':c.ranged?'Bolt':'Strike',cd:Math.max(0,p.atkT)/s.atkCd},{k:G.cls==='necro'?`${ak} · ${G.allies.length}/${maxMinions()}`:ak,n:c.abilName,cd:Math.max(0,p.abilT)/s.abilCd,sec:p.abilT},{k:pa?'A':'SPACE',n:s.canDash?'Dash':'No dash',cd:s.canDash?Math.max(0,p.dashT):1}];
+  const c=CLASSES[G.cls], pa=PAD.active, PADK=['LB','LT','RB','B'];
+  const slots=[{k:pa?'RT':'LMB',n:G.cls==='necro'?'Spear':c.ranged?'Bolt':'Strike',cd:Math.max(0,p.atkT)/s.atkCd}];
+  G.slots.forEach((id,i)=>{ if(!id){slots.push({k:pa?PADK[i]:String(i+1),n:'—',cd:0,empty:true}); return;}
+    const sk=G.skills[id], full=SKILLS[id].cd*s.cdMul*(id==='leap'&&skillHas('leap','twice')?.5:1);
+    slots.push({k:(pa?PADK[i]:i===0?'1 / Q':String(i+1))+(id==='raise'?` · ${G.allies.filter(m=>!m.blade).length}/${maxMinions()}`:''),n:SKILL_INFO[id].n,col:SKILL_INFO[id].c,lv:sk.lvl,cd:Math.max(0,sk.cdT)/full,sec:sk.cdT,xp:sk.xp/skillNeed(sk.lvl)});});
+  slots.push({k:pa?'A':'SPACE',n:s.canDash?'Dash':'No dash',cd:s.canDash?Math.max(0,p.dashT):1});
   // on touch the buttons are the ability bar, so cards and prompts sit above them instead
-  const bw=70, gap=8, bx=W/2-(bw*3+gap*2)/2, by=TOUCH.active?H-250:H-20-56;
+  const bw=W<900?60:72, gap=6, tot=bw*slots.length+gap*(slots.length-1), bx=Math.max(W/2-tot/2,W>760?240:8), by=TOUCH.active?H-250:H-20-56;
   if(!TOUCH.active) slots.forEach((sl,i)=>{const X=bx+i*(bw+gap); ctx.fillStyle='rgba(10,6,7,.8)'; ctx.fillRect(X,by,bw,56);
     if(sl.cd>0){ctx.fillStyle='rgba(0,0,0,.6)'; ctx.fillRect(X,by,bw,56*clamp(sl.cd,0,1));}
-    ctx.strokeStyle=sl.cd>0?'#2e1c1e':'#7d0f0f'; ctx.strokeRect(X+.5,by+.5,bw-1,55);
-    ctx.textAlign='center'; ctx.font=`17px ${FD}`; ctx.fillStyle=sl.cd>0?'#857a72':'#d3c7ae'; ctx.fillText(sl.n,X+bw/2,by+24);
-    ctx.font=`10px ${FB}`; ctx.fillStyle='#857a72'; ctx.fillText(sl.k,X+bw/2,by+44);
-    if(sl.sec>0){ctx.font=`600 11px ${FB}`; ctx.fillStyle='#d3c7ae'; ctx.fillText(sl.sec.toFixed(1),X+bw-12,by+9);}});
+    ctx.strokeStyle=sl.empty||sl.cd>0?'#2e1c1e':sl.col?hexA(sl.col,.8):'#7d0f0f'; ctx.strokeRect(X+.5,by+.5,bw-1,55);
+    ctx.textAlign='center'; ctx.font=`${sl.n.length>9?13:16}px ${FD}`; ctx.fillStyle=sl.empty?'#3a302c':sl.cd>0?'#857a72':(sl.col||'#d3c7ae'); ctx.fillText(fit(sl.n,bw-6),X+bw/2,by+24);
+    ctx.font=`10px ${FB}`; ctx.fillStyle='#857a72'; ctx.fillText(fit(sl.k,bw-4),X+bw/2,by+44);
+    if(sl.lv){ctx.textAlign='left'; ctx.font=`600 10px ${FB}`; ctx.fillStyle='#857a72'; ctx.fillText(sl.lv,X+4,by+9);
+      ctx.fillStyle='rgba(0,0,0,.6)'; ctx.fillRect(X+1,by+53,bw-2,2); ctx.fillStyle='#8a7a5a'; ctx.fillRect(X+1,by+53,(bw-2)*clamp(sl.xp,0,1),2);}
+    if(sl.sec>0){ctx.textAlign='center'; ctx.font=`600 11px ${FB}`; ctx.fillStyle='#d3c7ae'; ctx.fillText(sl.sec.toFixed(1),X+bw-14,by+9);}});
   // gear
   if(W>760){SLOTS.forEach((k,i)=>{const it=G.gear[k], X=20, Y=H-20-(3-i)*44+4, gw=210;
     ctx.fillStyle='rgba(10,6,7,.78)'; ctx.fillRect(X,Y,gw,38); ctx.strokeStyle='#2e1c1e'; ctx.strokeRect(X+.5,Y+.5,gw-1,37);
@@ -2030,7 +2349,7 @@ function drawHUD(){
     const hint=TOUCH.active?'Left thumb moves · you attack automatically · DASH to dodge · find the stairs down'
       :PAD.active?'Left stick moves · RT attacks · LB skill · A dashes · find the stairs down'
       :SET.auto?'WASD move · aim with the mouse or arrow keys · you attack automatically · space dash · find the stairs down'
-      :'WASD move · arrow keys attack that way (or left click) · Q skill · space dash · find the stairs down';
+      :'WASD move · arrow keys attack that way (or left click) · 1-4 skills · space dash · find the stairs down';
     const hl=wrapText(hint,W-40); hl.forEach((l,i)=>ctx.fillText(l,W/2,by-24-(hl.length-1-i)*17)); ctx.globalAlpha=1;}
 }
 function wrapText(t,w){const out=[]; let cur=''; for(const word of t.split(' ')){const nx=cur?cur+' '+word:word; if(cur&&ctx.measureText(nx).width>w){out.push(cur); cur=word;} else cur=nx;} if(cur) out.push(cur); return out;}
@@ -2082,6 +2401,7 @@ function showClasses(){
   showOnly('ovClass');
 }
 function openDraft(item){
+  if(item.skill) return openSkillDraft(item.skill);
   const opts=[], used=new Set();
   let guard=0;
   while(opts.length<3&&guard++<50){
@@ -2089,7 +2409,7 @@ function openDraft(item){
     if(goods.length&&Math.random()<.3&&!opts.some(o=>o.deepen)){const a=pick(goods); opts.push({deepen:a}); used.add(a.id); continue;}
     const id=pick(goodFor()); if(used.has(id)) continue; used.add(id); opts.push({affix:rollAffix(id,G.depth)});
   }
-  G.curDraft={item,opts};
+  G.curDraft={item,opts}; $('draftEyebrow').textContent='Your gear has grown';
   $('draftTitle').textContent=`${item.name} hungers`;
   $('draftSub').textContent=`It has fed enough to reach level ${item.level}. Give it one gift.`;
   $('draftCards').innerHTML=opts.map((o,i)=>{
@@ -2101,8 +2421,21 @@ function openDraft(item){
   $('draftCards').querySelectorAll('.card').forEach(b=>b.onclick=()=>chooseDraft(+b.dataset.i));
   showOnly('ovDraft'); play('draft');
 }
+// a skill reached a mutation level: pick one of three changes to how it works (they stack across levels)
+function openSkillDraft(id){
+  const sk=G.skills[id], muts=SKILLS[id].muts, free=Object.keys(muts).filter(k=>!sk.muts.includes(k));
+  if(!free.length) return; const opts=[]; while(opts.length<Math.min(3,free.length)){const k=pick(free); if(!opts.includes(k)) opts.push(k);}
+  G.curDraft={skill:id,opts}; $('draftEyebrow').textContent='Your skill has grown';
+  $('draftTitle').textContent=`${SKILL_INFO[id].n} mutates`;
+  $('draftSub').textContent=`Level ${sk.lvl}. Choose what it becomes.`;
+  $('draftCards').innerHTML=opts.map((k,i)=>`<button class="card" data-i="${i}" id="draft_${i}"><span class="key">${i+1} · Mutation</span><span class="nm" style="color:${SKILL_INFO[id].c}">${k[0].toUpperCase()+k.slice(1)}</span><span class="ds">${muts[k]}</span></button>`).join('');
+  $('draftCards').querySelectorAll('.card').forEach(b=>b.onclick=()=>chooseDraft(+b.dataset.i));
+  showOnly('ovDraft'); play('draft');
+}
 function chooseDraft(i){
-  const D=G.curDraft; if(!D||!D.opts[i]) return; const o=D.opts[i], it=D.item;
+  const D=G.curDraft; if(!D||!D.opts[i]) return;
+  if(D.skill){G.skills[D.skill].muts.push(D.opts[i]); G.curDraft=null; hideAll(); play('pick'); return;}
+  const o=D.opts[i], it=D.item;
   if(o.deepen){const d=AFX[o.deepen.id]; o.deepen.v=Math.min(d.cap||1e9,o.deepen.v*1.6);}
   else {const ex=it.affixes.find(a=>a.id===o.affix.id), cap=AFX[o.affix.id].cap||1e9; if(ex) ex.v=Math.min(cap,ex.v+o.affix.v); else it.affixes.push(o.affix);}
   G.curDraft=null; recalc(); hideAll(); play('pick');
@@ -2117,58 +2450,123 @@ function refreshChar(){
   $('ptsPill').textContent=G.points?`${G.points} point${G.points>1?'s':''} to spend`:'No points to spend';
   const s=G.stats, rows=[['Life',`${Math.ceil(G.player.hp)} / ${s.maxHp}`],['Damage',s.dmg.toFixed(1)],['Attacks per second',(1/s.atkCd).toFixed(2)],
     ['Critical chance',pct(s.crit)],['Critical damage',pct(s.critMult)],['Damage reduction',pct(s.armor)],['Move speed',Math.round(s.speed)],
-    ['Light radius',Math.round(s.light)],['Ability cooldown',s.abilCd.toFixed(1)+'s'],['Ability power',pct(s.abilDmg)]];
+    ['Light radius',Math.round(s.light)],['Skill damage',pct(s.abilDmg)],['Skill cooldowns',Math.round(s.cdMul*100)+'%'],['Skill area','+'+pct(s.area)],['Skill duration','+'+pct(s.dur)]];
+  if(s.proj) rows.push(['Extra projectiles','+'+s.proj]); if(s.chainX) rows.push(['Extra chains','+'+s.chainX]); if(s.skillCrit) rows.push(['Skill critical chance','+'+pct(s.skillCrit)]);
   if(s.lifesteal) rows.push(['Life leech',(s.lifesteal*100).toFixed(1)+'%']); if(s.regen) rows.push(['Regeneration',s.regen.toFixed(1)+'/s']);
   if(s.drain) rows.push(['Life lost',s.drain.toFixed(1)+'/s']); if(s.dmgTaken) rows.push(['Extra damage taken',pct(s.dmgTaken)]);
   for(const k of ['thorns','ignite','chain','explode','frost']) if(s[k]) rows.push([AFX[k].n,pct(s[k])]);
   if(G.cls==='necro') rows.push(['Skeletons',`${G.allies.length} / ${maxMinions()}`],['Skeleton damage',(s.dmg*(.55+s.minionDmg)*s.abilDmg).toFixed(1)]);
-  let h=`<div><div class="sp-h">Level ${G.level} ${CLASSES[G.cls].name}</div>${rows.map(([k,v])=>`<div class="sp-row"><span>${k}</span><b>${v}</b></div>`).join('')}</div><div><div class="sp-h">Carried</div>`;
+  let h=`<div><div class="sp-h">Skills</div>`;
+  for(const id of Object.keys(G.skills)){const sk=G.skills[id], I=SKILL_INFO[id], need=skillNeed(sk.lvl);
+    h+=`<div class="sk"><div class="sk-top"><span class="sk-n" style="color:${I.c}">${I.n}</span><span class="sk-l">Lv ${sk.lvl} · ${(SKILLS[id].cd*s.cdMul).toFixed(1)}s</span></div>
+      <div class="sk-bar"><i style="width:${Math.min(100,sk.xp/need*100)}%"></i></div>
+      <div class="sk-m">${SKILLS[id].d}</div>${sk.muts.map(k=>`<div class="sk-m">◆ <b>${k[0].toUpperCase()+k.slice(1)}</b>: ${SKILLS[id].muts[k]}</div>`).join('')}
+      <div class="sk-slots">${[0,1,2,3].map(k=>`<button data-sk="${id}" data-k="${k}" class="${G.slots[k]===id?'on':''}" title="Put on key ${k+1}">${k+1}</button>`).join('')}</div></div>`;}
+  h+=`<div class="it-m" style="text-transform:none">Learn more from skill nodes in the tree and from Skill Tomes. Skills grow from their kills and mutate at levels ${MUT_LV.join(', ')}.</div></div>`;
+  h+=`<div><div class="sp-h">Level ${G.level} ${CLASSES[G.cls].name}</div>${rows.map(([k,v])=>`<div class="sp-row"><span>${k}</span><b>${v}</b></div>`).join('')}</div><div><div class="sp-h">Carried</div>`;
   for(const k of SLOTS){const it=G.gear[k];
     h+=it?`<div class="it"><div class="it-n" style="color:${RAR[it.rarity].c}">${esc(it.name)}</div><div class="it-m">${RAR[it.rarity].n} ${it.slot} · level ${it.level} · found at depth ${it.ilvl||1}</div>${itemLines(it).map(l=>`<div class="it-a${l.bad?' bad':''}${l.leg?' leg':''}">${esc(l.t)}</div>`).join('')}${it.leg?`<div class="flav">${esc(LEG[it.leg].fl)}</div>`:''}</div>`
       :`<div class="it"><div class="it-m">No ${k}</div></div>`;}
   $('statPanel').innerHTML=h+'</div>';
+  $('statPanel').querySelectorAll('[data-sk]').forEach(b=>b.onclick=()=>slotSkill(b.dataset.sk,+b.dataset.k));
+  if(TS.run!==G){TS.run=G; TS.z=.75; const n=TREE.nodes[CLASS_START[G.cls]]; TS.vx=n.x; TS.vy=n.y; TS.hover=-1;}
   requestAnimationFrame(drawTree);
 }
-let TS={cx:0,cy:0,sc:1,hover:-1};
-const nodeR=n=>n.kind==='key'?14:n.kind==='heart'?13:n.kind==='notable'?10:7;
+// The tree is far bigger than the screen: drag to pan, wheel or +/- to zoom, "Me" to jump back to your start.
+let TS={vx:0,vy:0,z:.75,hover:-1,run:null,drag:null,cx:0,cy:0,path:null};
+const NODE_R={small:5,notable:9,start:12,heart:12,skill:13,support:10,key:15};
+const nodeR=n=>NODE_R[n.kind]||6;
 const canTake=id=>!G.alloc.has(id)&&TREE.nodes[id].adj.some(a=>G.alloc.has(a));
+// shortest route from what you've taken to a node: the nodes you'd have to take, in order
+function treePath(id){
+  if(G.alloc.has(id)) return null;
+  const prev=new Map(), q=[]; for(const a of G.alloc){prev.set(a,-1); q.push(a);}
+  for(let h=0;h<q.length;h++){const c=q[h]; if(c===id) break;
+    for(const nb of TREE.nodes[c].adj) if(!prev.has(nb)){prev.set(nb,c); q.push(nb);}}
+  if(!prev.has(id)) return null; const out=[]; for(let c=id;!G.alloc.has(c);c=prev.get(c)) out.unshift(c); return out;
+}
+function takeNode(id){
+  const path=treePath(id); if(!path||!path.length||path.length>G.points) return false;
+  for(const n of path){G.alloc.add(n); G.points--; const N=TREE.nodes[n]; if(N.skill) learnSkill(N.skill);}
+  recalc(); play('level'); TS.path=null; refreshChar(); return true;
+}
+function slotSkill(id,k){const prev=G.slots.indexOf(id), other=G.slots[k]; G.slots[k]=id; if(prev>=0&&prev!==k) G.slots[prev]=other; play('pick'); refreshChar();}
+const kindCol=n=>n.kind==='skill'?SKILL_INFO[n.skill].c:n.kind==='support'?'#7fb0ff':n.kind==='key'?'#e04a30':n.kind==='start'?CLASSES[n.cls].color:'#d3c7ae';
+function nodeLines(n){
+  if(n.ks) return KEYSTONES[n.ks].d;
+  if(n.kind==='skill'){const I=SKILL_INFO[n.skill], known=G.skills[n.skill];
+    return [I.tags.join(' · '),SKILLS[n.skill].d,known?'You know it: taking this levels it up.':'Taking this teaches you the skill.'];}
+  if(n.kind==='support') return [SUPPORTS[n.sup].d,'Affects every skill you have.'];
+  return n.stats.map(([k,v])=>AFX[k]?AFX[k].f(v):`${k} +${v}`);
+}
 function drawTree(){
   const c=$('treeCv'), rect=c.getBoundingClientRect(); if(!rect.width) return;
   c.width=rect.width*DPR; c.height=rect.height*DPR; const g=c.getContext('2d'); g.setTransform(DPR,0,0,DPR,0,0);
-  TS.cx=rect.width/2; TS.cy=rect.height/2; TS.sc=Math.min(rect.width,rect.height)/(2*320);
-  const P=n=>[TS.cx+n.x*TS.sc,TS.cy+n.y*TS.sc];
-  const bg=g.createRadialGradient(TS.cx,TS.cy,0,TS.cx,TS.cy,Math.max(rect.width,rect.height)*.6); bg.addColorStop(0,'#160a0b'); bg.addColorStop(1,'#050304'); g.fillStyle=bg; g.fillRect(0,0,rect.width,rect.height);
-  for(const [a,b] of TREE.edges){const A=TREE.nodes[a],B=TREE.nodes[b],ha=G.alloc.has(a),hb=G.alloc.has(b);
-    g.strokeStyle=ha&&hb?'#c02a1a':(ha||hb)?'rgba(211,199,174,.35)':'#2a1d1f'; g.lineWidth=ha&&hb?3:1.5;
-    const [x1,y1]=P(A),[x2,y2]=P(B); g.beginPath(); g.moveTo(x1,y1); g.lineTo(x2,y2); g.stroke();}
+  TS.cx=rect.width/2; TS.cy=rect.height/2; const z=TS.z, W2=rect.width, H2=rect.height;
+  const P=n=>[TS.cx+(n.x-TS.vx)*z,TS.cy+(n.y-TS.vy)*z], on=(x,y,m=30)=>x>-m&&y>-m&&x<W2+m&&y<H2+m;
+  g.fillStyle='#070405'; g.fillRect(0,0,W2,H2);
+  const [hx,hy]=P(TREE.nodes[0]), bg=g.createRadialGradient(hx,hy,0,hx,hy,900*z); bg.addColorStop(0,'#1c0c0d'); bg.addColorStop(1,'rgba(7,4,5,0)'); g.fillStyle=bg; g.fillRect(0,0,W2,H2);
+  g.strokeStyle='rgba(60,30,30,.25)'; g.lineWidth=1; for(const r of [210,400,590,780]){g.beginPath(); g.arc(hx,hy,r*z,0,7); g.stroke();}
+  const path=new Set(TS.path||[]);
+  for(const [a,b] of TREE.edges){const [x1,y1]=P(TREE.nodes[a]),[x2,y2]=P(TREE.nodes[b]); if(!on(x1,y1)&&!on(x2,y2)) continue;
+    const ha=G.alloc.has(a),hb=G.alloc.has(b), pa=path.has(a)||ha, pb=path.has(b)||hb, inPath=TS.path&&pa&&pb&&(path.has(a)||path.has(b));
+    g.strokeStyle=ha&&hb?'#c02a1a':inPath?'#e07a2c':(ha||hb)?'rgba(211,199,174,.4)':'#2a1d1f'; g.lineWidth=(ha&&hb?3:inPath?2.5:1.5)*Math.max(.6,Math.min(1.4,z));
+    g.beginPath(); g.moveTo(x1,y1); g.lineTo(x2,y2); g.stroke();}
   g.textAlign='center'; g.textBaseline='middle';
-  for(const Z of ZONES){const id=CLASS_START[Z.cls], [x,y]=P(TREE.nodes[id]); g.font=`15px ${FD}`; g.fillStyle=G.cls===Z.cls?'#d3c7ae':'#4a403c';
-    g.fillText(CLASSES[Z.cls].name,x+Math.cos(Z.a)*34,y+Math.sin(Z.a)*34);}
-  for(const n of TREE.nodes){const [x,y]=P(n), r=nodeR(n)*Math.max(.8,Math.min(1.3,TS.sc*1.4)), has=G.alloc.has(n.id), av=canTake(n.id);
-    if(has){g.fillStyle='rgba(192,42,26,.25)'; g.beginPath(); g.arc(x,y,r*2,0,7); g.fill();}
-    g.fillStyle=has?(n.kind==='key'?'#e04a30':'#9a1a10'):av?'#1f1416':'#120c0d';
-    g.strokeStyle=has?'#ffb08a':av?'#d3c7ae':'#3a2a2c'; g.lineWidth=n.id===TS.hover?3:n.kind==='key'?2.5:1.5;
-    g.beginPath(); if(n.kind==='key'){for(let i=0;i<4;i++){const a=i*Math.PI/2; g.lineTo(x+Math.cos(a)*r*1.2,y+Math.sin(a)*r*1.2);} g.closePath();} else g.arc(x,y,r,0,7);
-    g.fill(); g.stroke();}
+  for(const Z of ZONES){const [x,y]=P(TREE.nodes[CLASS_START[Z.cls]]); if(!on(x,y,200)) continue; g.font=`${Math.round(14+6*Math.min(1.5,z))}px ${FD}`;
+    const off=34+30*Math.min(1.5,z); g.fillStyle=G.cls===Z.cls?'#d3c7ae':'#4a403c'; g.fillText(CLASSES[Z.cls].name,x+Math.cos(Z.a)*off,y+Math.sin(Z.a)*off);}
+  const k=Math.max(.6,Math.min(1.6,z*1.25)), names=z>=.85;
+  for(const n of TREE.nodes){const [x,y]=P(n); if(!on(x,y)) continue; const r=nodeR(n)*k, has=G.alloc.has(n.id), av=canTake(n.id), col=kindCol(n), pth=path.has(n.id);
+    if(has){g.fillStyle=n.kind==='small'?'rgba(192,42,26,.22)':hexA(col,.25); g.beginPath(); g.arc(x,y,r*2,0,7); g.fill();}
+    g.fillStyle=has?(n.kind==='small'||n.kind==='notable'?'#9a1a10':hexA(col,.85)):av?'#22161a':'#120c0d';
+    g.strokeStyle=has?'#ffb08a':pth?'#e07a2c':av?'#d3c7ae':n.kind==='small'?'#3a2a2c':hexA(col,.55);
+    g.lineWidth=(n.id===TS.hover?3:n.kind==='small'?1.2:2)*Math.min(1.3,k);
+    g.beginPath();
+    if(n.kind==='key'||n.kind==='support'){const R=r*(n.kind==='key'?1.25:1.1); for(let i=0;i<4;i++){const a=i*Math.PI/2; g.lineTo(x+Math.cos(a)*R,y+Math.sin(a)*R);} g.closePath();}
+    else if(n.kind==='skill'){for(let i=0;i<6;i++){const a=i*Math.PI/3+Math.PI/6; g.lineTo(x+Math.cos(a)*r,y+Math.sin(a)*r);} g.closePath();}
+    else g.arc(x,y,r,0,7);
+    g.fill(); g.stroke();
+    if(n.kind==='notable'||n.kind==='start'){g.beginPath(); g.arc(x,y,r+3*k,0,7); g.lineWidth=1; g.strokeStyle=has?'#ffb08a':'#4a3a3a'; g.stroke();}
+    if(n.kind==='skill'){g.font=`${Math.round(11*k)}px ${FD}`; g.fillStyle=has?'#140a0a':col; g.fillText(SKILL_INFO[n.skill].n[0],x,y+1);}
+    if(names&&n.kind!=='small'){g.font=`${Math.round(11*Math.min(1.3,z))}px ${FB}`; g.fillStyle=has?'#d3c7ae':n.kind==='notable'?'#6a5e58':col; g.fillText(n.name,x,y+r+11*Math.min(1.3,z));}}
   if(TS.hover>=0){const n=TREE.nodes[TS.hover], [x,y]=P(n);
-    const lines=n.ks?KEYSTONES[n.ks].d:n.stats.map(([k,v])=>AFX[k].f(v));
-    const st=G.alloc.has(n.id)?'Taken':canTake(n.id)?(G.points?'Click to take':'Earn a level to take this'):'Take a connected node first';
-    g.font=`13px ${FB}`; const tw=Math.max(150,...lines.map(l=>g.measureText(l).width))+24, th=48+lines.length*18;
-    let tx=x+18, ty=y-th/2; if(tx+tw>rect.width-8) tx=x-18-tw; ty=clamp(ty,8,rect.height-th-8);
-    g.fillStyle='rgba(8,5,6,.95)'; g.fillRect(tx,ty,tw,th); g.strokeStyle=n.ks?'#e04a30':'#3a2a2c'; g.strokeRect(tx+.5,ty+.5,tw-1,th-1);
-    g.textAlign='left'; g.font=`19px ${FD}`; g.fillStyle=n.ks?'#e04a30':'#d3c7ae'; g.fillText(n.name,tx+12,ty+16);
-    g.font=`13px ${FB}`; lines.forEach((l,i)=>{g.fillStyle=n.ks&&i===1?'#c98a7a':'#d3c7ae'; g.fillText(l,tx+12,ty+36+i*18);});
-    g.font=`italic 12px ${FB}`; g.fillStyle=st==='Click to take'?'#e07a2c':'#857a72'; g.fillText(st,tx+12,ty+th-12);}
+    const lines=nodeLines(n), cost=TS.path?TS.path.length:0;
+    const st=G.alloc.has(n.id)?'Taken':!cost?'Not reachable':cost>G.points?`${cost} point${cost>1?'s':''} away · you have ${G.points}`:TOUCH.active?`Tap again to take (${cost} point${cost>1?'s':''})`:`Click to take (${cost} point${cost>1?'s':''})`;
+    const head=n.kind==='skill'?'Skill':n.kind==='support'?'Support':n.kind==='key'?'Keystone':n.kind==='notable'?'Notable':n.kind==='start'?'Starting point':'';
+    g.font=`13px ${FB}`; const tw=Math.min(W2-16,Math.max(170,...lines.map(l=>g.measureText(l).width))+24), th=(head?64:48)+lines.length*18;
+    let tx=x+18, ty=y-th/2; if(tx+tw>W2-8) tx=x-18-tw; tx=clamp(tx,8,W2-tw-8); ty=clamp(ty,8,H2-th-8);
+    const col=n.kind==='small'||n.kind==='notable'?'#d3c7ae':kindCol(n);
+    g.fillStyle='rgba(8,5,6,.95)'; g.fillRect(tx,ty,tw,th); g.strokeStyle=n.kind==='small'?'#3a2a2c':hexA(col,.7); g.strokeRect(tx+.5,ty+.5,tw-1,th-1);
+    g.textAlign='left'; let yy=ty+16;
+    if(head){g.font=`11px ${FB}`; g.fillStyle='#857a72'; g.fillText(head.toUpperCase(),tx+12,yy); yy+=16;}
+    g.font=`19px ${FD}`; g.fillStyle=col; g.fillText(n.name,tx+12,yy); yy+=20;
+    g.font=`13px ${FB}`; lines.forEach((l,i)=>{g.fillStyle=n.ks&&i===1?'#c98a7a':'#d3c7ae'; g.fillText(l,tx+12,yy+i*18);});
+    g.font=`italic 12px ${FB}`; g.fillStyle=st.startsWith('Click')||st.startsWith('Tap')?'#e07a2c':'#857a72'; g.fillText(st,tx+12,ty+th-12);}
 }
+function treeXY(ev){const r=$('treeCv').getBoundingClientRect(); return [ev.clientX-r.left,ev.clientY-r.top];}
 function treeHit(ev){
-  const rect=$('treeCv').getBoundingClientRect(), mx=ev.clientX-rect.left, my=ev.clientY-rect.top;
-  let best=-1, bd=1e9;
-  for(const n of TREE.nodes){const x=TS.cx+n.x*TS.sc, y=TS.cy+n.y*TS.sc, d=Math.hypot(mx-x,my-y); if(d<nodeR(n)*1.4+6&&d<bd){bd=d;best=n.id;}}
+  const [mx,my]=treeXY(ev); let best=-1, bd=1e9; const k=Math.max(.6,Math.min(1.6,TS.z*1.25));
+  for(const n of TREE.nodes){const x=TS.cx+(n.x-TS.vx)*TS.z, y=TS.cy+(n.y-TS.vy)*TS.z, d=Math.hypot(mx-x,my-y); if(d<nodeR(n)*k+8&&d<bd){bd=d;best=n.id;}}
   return best;
 }
-$('treeCv').addEventListener('mousemove',ev=>{const h=treeHit(ev); if(h!==TS.hover){TS.hover=h; drawTree();}});
-$('treeCv').addEventListener('mouseleave',()=>{TS.hover=-1; drawTree();});
-$('treeCv').addEventListener('click',ev=>{const h=treeHit(ev); if(h>=0&&G.points>0&&canTake(h)){G.alloc.add(h); G.points--; recalc(); play('level'); refreshChar();}});
+function treeHover(h){ if(h===TS.hover) return; TS.hover=h; TS.path=h>=0?treePath(h):null; drawTree(); }
+function treeZoom(f,mx,my){const r=$('treeCv').getBoundingClientRect(); if(mx===undefined){mx=r.width/2; my=r.height/2;}
+  const wx=TS.vx+(mx-TS.cx)/TS.z, wy=TS.vy+(my-TS.cy)/TS.z; TS.z=clamp(TS.z*f,.25,2.2);
+  TS.vx=wx-(mx-TS.cx)/TS.z; TS.vy=wy-(my-TS.cy)/TS.z; drawTree();}
+function treeCenter(id){const n=TREE.nodes[id]; TS.vx=n.x; TS.vy=n.y; drawTree();}
+const treeCv=$('treeCv');
+treeCv.addEventListener('pointerdown',ev=>{TS.drag={x:ev.clientX,y:ev.clientY,vx:TS.vx,vy:TS.vy,moved:false}; try{treeCv.setPointerCapture(ev.pointerId);}catch(e){}});
+treeCv.addEventListener('pointermove',ev=>{const d=TS.drag;
+  if(d){const dx=ev.clientX-d.x, dy=ev.clientY-d.y; if(Math.hypot(dx,dy)>5) d.moved=true;
+    if(d.moved){TS.vx=d.vx-dx/TS.z; TS.vy=d.vy-dy/TS.z; treeCv.style.cursor='grabbing'; drawTree(); return;}}
+  if(ev.pointerType==='mouse') treeHover(treeHit(ev));});
+treeCv.addEventListener('pointerup',ev=>{const d=TS.drag; TS.drag=null; treeCv.style.cursor='grab'; if(!d||d.moved) return;
+  const h=treeHit(ev); if(h<0){treeHover(-1); return;}
+  if(ev.pointerType!=='mouse'&&h!==TS.hover){treeHover(h); return;} // touch: first tap shows what it is, second takes it
+  treeHover(h); takeNode(h);});
+treeCv.addEventListener('pointerleave',ev=>{if(!TS.drag&&ev.pointerType==='mouse') treeHover(-1);});
+treeCv.addEventListener('wheel',ev=>{ev.preventDefault(); const [mx,my]=treeXY(ev); treeZoom(ev.deltaY<0?1.15:1/1.15,mx,my);},{passive:false});
+$('treeIn').onclick=()=>treeZoom(1.25); $('treeOut').onclick=()=>treeZoom(1/1.25); $('treeHome').onclick=()=>treeCenter(CLASS_START[G.cls]);
 
 // ================= settings =================
 const SET=(()=>{let s=null; try{s=JSON.parse(localStorage.getItem('deepening.settings')||'null')}catch(e){}
@@ -2190,7 +2588,7 @@ $('btnTitleSet').onclick=()=>{initAudio(); openSettings('ovTitle');};
 $('btnPauseSet').onclick=()=>openSettings('ovPause');
 
 // ================= gamepad =================
-// Standard layout: left stick moves, right stick aims, RT attacks, A/RB dash, B/LB/LT ability, X interact, Y skill tree, Start pause.
+// Standard layout: left stick moves, right stick aims, RT attacks, A dash, skills on LB / LT / RB / B, X interact, Y skill tree, Start pause.
 // In menus the d-pad or stick moves between buttons and A presses.
 const PAD={active:false,m:{x:0,y:0},a:{x:0,y:0},fire:false,prev:[],navT:0};
 function pollPad(dt){
@@ -2203,7 +2601,7 @@ function pollPad(dt){
   if(overlay){PAD.fire=false; padMenu(overlay,b,hit,dt);}
   else if(state==='play'&&G&&!G.paused){
     PAD.fire=b[7];
-    if(!G.transition&&!G.dying){ if(hit(0)||hit(5)) dash(); if(hit(1)||hit(4)||hit(6)) useAbility();
+    if(!G.transition&&!G.dying){ if(hit(0)) dash(); if(hit(4)) castSlot(0); if(hit(6)) castSlot(1); if(hit(5)) castSlot(2); if(hit(1)) castSlot(3);
       if(hit(2)){ if(G.near) takeNear(); else if(G.nearProp) useProp(G.nearProp); } }
     if(hit(3)) toggleChar(); else if(hit(9)) showOnly('ovPause');
   }
@@ -2233,9 +2631,11 @@ function treePad(b,hit,dt){
     const cur=TREE.nodes[TS.hover>=0?TS.hover:CLASS_START[G.cls]], l=Math.hypot(vx,vy), ux=vx/l, uy=vy/l; let best=-1, bs=-1e9;
     for(const n of TREE.nodes){if(n===cur) continue; const dx=n.x-cur.x, dy=n.y-cur.y, d=Math.hypot(dx,dy), dot=(dx*ux+dy*uy)/d; if(dot<.6) continue;
       const sc=dot*2-d/100; if(sc>bs){bs=sc; best=n.id;}}
-    if(best>=0){TS.hover=best; drawTree();}}
-  if(TS.hover<0&&(vx||vy)){TS.hover=CLASS_START[G.cls]; drawTree();}
-  if(hit(0)&&TS.hover>=0&&G.points>0&&canTake(TS.hover)){G.alloc.add(TS.hover); G.points--; recalc(); play('level'); refreshChar();}
+    if(best>=0){TS.hover=-2; treeHover(best); const n=TREE.nodes[best]; TS.vx+=(n.x-TS.vx)*.5; TS.vy+=(n.y-TS.vy)*.5; drawTree();}}
+  if(TS.hover<0&&(vx||vy)) treeHover(CLASS_START[G.cls]);
+  if(Math.abs(PAD.a.x)>.1||Math.abs(PAD.a.y)>.1){TS.vx+=PAD.a.x*600*dt/TS.z; TS.vy+=PAD.a.y*600*dt/TS.z; drawTree();} // right stick pans
+  if(b[4]&&!b[5]) treeZoom(1-dt*1.5); if(b[5]&&!b[4]) treeZoom(1+dt*1.5); // bumpers zoom
+  if(hit(0)&&TS.hover>=0) takeNode(TS.hover);
 }
 
 // ================= touch =================
@@ -2253,7 +2653,10 @@ function syncTouchUI(){
   if(!show){TOUCH.fire=false; endStick({pointerId:TOUCH.id}); return;}
   $('tUse').hidden=!(G.near||G.nearProp);
   const p=G.player, s=G.stats, cd=(el,k)=>{el.style.background=k>0?`conic-gradient(rgba(0,0,0,.65) ${k*360}deg, rgba(20,8,9,.6) 0)`:'';};
-  cd($('tAbility'),Math.max(0,p.abilT)/s.abilCd); cd($('tDash'),s.canDash?Math.max(0,p.dashT):1);
+  G.slots.forEach((id,i)=>{const el=$('tSk'+i); el.hidden=!id; if(!id) return;
+    const nm=SKILL_INFO[id].n.toUpperCase(); if(el.textContent!==nm){el.textContent=nm; el.style.borderColor=hexA(SKILL_INFO[id].c,.8);}
+    cd(el,Math.max(0,G.skills[id].cdT)/(SKILLS[id].cd*s.cdMul));});
+  cd($('tDash'),s.canDash?Math.max(0,p.dashT):1);
 }
 addEventListener('pointerdown',e=>{ if(e.pointerType==='touch') setTouch(true); },true);
 addEventListener('pointermove',e=>{ if(e.pointerType==='mouse'&&TOUCH.active&&(Math.abs(e.movementX)+Math.abs(e.movementY)>2)) setTouch(false); });
@@ -2271,7 +2674,7 @@ addEventListener('pointermove',e=>{
 function endStick(e){ if(e.pointerId!==TOUCH.id||TOUCH.id===null) return; TOUCH.id=null; TOUCH.m={x:0,y:0}; $('stick').style.display='none'; }
 addEventListener('pointerup',endStick); addEventListener('pointercancel',endStick);
 const tap=(id,fn)=>$(id).addEventListener('pointerdown',e=>{e.preventDefault(); e.stopPropagation(); if(state==='play'&&G&&!G.paused&&!G.dying&&!G.transition) fn();});
-tap('tAbility',()=>useAbility()); tap('tDash',()=>dash());
+for(let i=0;i<4;i++) tap('tSk'+i,()=>castSlot(i)); tap('tDash',()=>dash());
 tap('tUse',()=>{ if(G.near) takeNear(); else if(G.nearProp) useProp(G.nearProp); });
 tap('tPause',()=>showOnly('ovPause')); tap('tTree',()=>toggleChar());
 $('tAttack').addEventListener('pointerdown',e=>{e.preventDefault(); TOUCH.fire=true;});
@@ -2291,6 +2694,7 @@ addEventListener('keydown',e=>{
   if(G.paused||G.transition||G.dying) return;
   if(e.code==='Space'||e.code==='ShiftLeft'||e.code==='ShiftRight') dash();
   if(e.code==='KeyQ') useAbility();
+  if(/^Digit[1-4]$/.test(e.code)&&!e.repeat) castSlot(+e.code.slice(5)-1);
   if(e.code==='KeyE'){ if(G.near) takeNear(); else if(G.nearProp) useProp(G.nearProp); }
 });
 addEventListener('keyup',e=>{keys[e.code]=false;});
@@ -2310,11 +2714,11 @@ $('btnCopyRun').onclick=()=>{ const b=$('btnCopyRun'), t=$('runSummary'), shown=
   try{ navigator.clipboard.writeText(G.summary).then(()=>{b.textContent='Copied. Paste it to the dev';},()=>{b.textContent='Select the text below and copy it'; shown();}); }
   catch(e){ b.textContent='Select the text below and copy it'; shown(); } };
 // one place for the build number: the title screen and run summaries both read it
-const BUILD='0.19';
+const BUILD='0.20';
 // ----- first-time tips: each shows once ever, worded for whatever you're playing with -----
 const HINTS=(()=>{try{return new Set(JSON.parse(localStorage.getItem('deepening.hints')||'[]'))}catch(e){return new Set()}})();
 const keyFor=a=>({dash:TOUCH.active?'Tap DASH':PAD.active?'Press A':'Press Space', use:TOUCH.active?'Tap USE':PAD.active?'Press X':'Press E',
-  tree:TOUCH.active?'Tap TREE':PAD.active?'Press Y':'Press K', skill:TOUCH.active?'Tap SKILL':PAD.active?'Press LB':'Right click or Q'})[a];
+  tree:TOUCH.active?'Tap TREE':PAD.active?'Press Y':'Press K', skill:TOUCH.active?'Tap it beside ATTACK':PAD.active?'Press LB':'Press 1 (or Q)'})[a];
 function hint(id,text){
   if(!G||HINTS.has(id)) return; HINTS.add(id);
   try{localStorage.setItem('deepening.hints',JSON.stringify([...HINTS]))}catch(e){}
@@ -2327,7 +2731,8 @@ function checkHints(){
   if(G.time>25&&!G.usedAbility) hint('skill',`Your class skill is ready, and it recharges fast. ${keyFor('skill')}.`);
   if(G.explored[tileIdx(G.stairs.x,G.stairs.y)]&&dist(G.stairs,p)<260) hint('stairs','The stairs down. Once you take them there is no coming back up, so loot first if you dare.');
   if(p.hp<s.maxHp*.35) hint('lowhp','Low on life. Red orbs heal you: the dead drop them, and so do smashed urns.');
-  if(G.points>0) hint('points',`You have a skill point to spend. ${keyFor('tree')} to open the skill tree.`);
+  if(G.points>0) hint('points',`You have a skill point to spend. ${keyFor('tree')} to open the skill tree. The hexagons teach you new skills.`);
+  if(Object.keys(G.skills).length>1) hint('slots',`New skills go on keys 1 to 4. They level up from their kills and mutate as they grow.`);
 }
 $('buildTag').textContent=`Beta build ${BUILD} · tell the dev what killed you`;
 
