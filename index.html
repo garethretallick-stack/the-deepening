@@ -473,6 +473,33 @@ const LEGS=[
   {id:'night',slot:'armor',n:'The Long Night',d:'Your light is halved. +50% damage.',fl:'You stopped needing to see.'},
   {id:'saint',slot:'charm',n:'Saint\'s Lantern',d:'+60% light radius. Enemies inside your light take 15% more damage.',fl:'Her light outlived her.'},
   {id:'ossuary',slot:'charm',n:'Ossuary Crown',d:'Kills have a 10% chance to raise a skeleton that fights for you.',fl:'They were waiting for someone to ask.'},
+  // these rewrite a skill. They work even if you haven't learned it: wear the item and the skill's rules change (or it casts anyway).
+  {id:'meteor3',slot:'charm',n:'Thrice-Fallen Star',d:'Meteor falls three times, each one smaller.',fl:'It keeps remembering how to fall.'},
+  {id:'bouncefire',slot:'weapon',n:'The Ricochet Ember',d:'Fireball bounces off walls until it hits something. Only one can exist at a time.',fl:'It has never once missed. It has simply not hit yet.'},
+  {id:'leapdash',slot:'armor',n:'Hammerfall Greaves',d:'Your dash is a Leap Slam toward where you aim.',fl:'Why walk.'},
+  {id:'endlessspin',slot:'weapon',n:'The Unending Top',d:'Whirlwind spins six times over three seconds. You move 40% slower while spinning.',fl:'The room is spinning. Good.'},
+  {id:'chaoscast',slot:'charm',n:'Wildheart',d:'Every skill you cast also casts a random other skill you know.',fl:'It does not take requests.'},
+  {id:'plagueskel',slot:'armor',n:'Rotting Reliquary',d:'Skeletons burst into Plague Clouds when they fall. Healing orbs do nothing for you.',fl:'Holy, once.'},
+  {id:'stormstep',slot:'armor',n:'Stormwalker Wraps',d:'Shadow Step looses Chain Lightning from where you land.',fl:'You arrive like weather.'},
+  {id:'novachain',slot:'charm',n:'The Ringing Bell',d:'Anything Nova kills rings out a smaller Nova of its own.',fl:'Every death is a note.'},
+  {id:'iceprison',slot:'armor',n:'Glacier Heart',d:'Ice Shards freeze enemies solid instead of chilling them.',fl:'Cold all the way down.'},
+  {id:'bloodgod',slot:'charm',n:'Chalice of the Red God',d:'Blood Nova has almost no cooldown, but costs 20% of your life.',fl:'Drink. Pour. Drink.'},
+  {id:'gyre',slot:'weapon',n:'Planetary Gyre',d:'Orbiting Blades never fade. Each cast adds one more blade, up to 12.',fl:'Small moons, sharp edges.'},
+  {id:'swordrain',slot:'charm',n:'The Rain of Swords',d:'Spectral Swords summons 8 swords that last 4 seconds and explode.',fl:'Briefly, the sky was all steel.'},
+  {id:'spikewalk',slot:'armor',n:'Ossein Treads',d:'While you move, Bone Spikes erupt beneath you every second.',fl:'Every step a grave.'},
+  {id:'lightningrod',slot:'weapon',n:'The Lightning Rod',d:'Chain Lightning chains 30 times, but each jump deals 50% less.',fl:'It does not know when to stop.'},
+  {id:'tectonic',slot:'weapon',n:'Tectonic Maul',d:'Ground Slam rolls forward as a wave of six slams.',fl:'The ground agrees with you.'},
+  {id:'ledger',slot:'charm',n:'The Executioner\'s Ledger',d:'Your critical hits Death Mark what they hit.',fl:'Every name, written in red.'},
+  {id:'voidtwins',slot:'charm',n:'Twin Abyss',d:'Void Orb summons two orbs that circle you for 6 seconds.',fl:'They watch your back. They are your back.'},
+  {id:'plaguemask',slot:'armor',n:'Plaguebearer\'s Mask',d:'You breathe out rot: a Plague Cloud follows you everywhere.',fl:'Breathe in. Do not breathe in.'},
+  {id:'skyfall',slot:'armor',n:'Skyfall Pauldrons',d:'Leap Slam always lands a critical hit and calls down a meteor where you land.',fl:'Heaven, used as a weapon.'},
+  {id:'skycaller',slot:'weapon',n:'Sky-Caller\'s Rod',d:'Fireball calls down a meteor on your target instead.',fl:'Why throw what you can drop.'},
+  {id:'gildedheart',slot:'charm',n:'The Gilded Heart',d:'Picking up gold sets off a golden nova. More gold, bigger nova.',fl:'Money talks. This one screams.'},
+  {id:'ghostcloak',slot:'armor',n:'Ghost Cloak',d:'Shadow Step has almost no cooldown, but costs 4% of your life.',fl:'You are mostly elsewhere.'},
+  {id:'wheel',slot:'charm',n:'The Spinning Wheel',d:'Every 4 seconds, a random skill comes off cooldown.',fl:'Round and round it goes.'},
+  {id:'ratcrown',slot:'charm',n:'Crown of the Rat King',d:'Every kill releases a hungry rat. They are very loyal.',fl:'All hail.'},
+  {id:'partyhat',slot:'armor',n:'Party Hat of the Damned',d:'Every critical hit sets off a confetti bomb.',fl:'It\'s somebody\'s birthday. Somebody\'s always dying.'},
+  {id:'frogcrown',slot:'charm',n:'Crown of the Frog Prince',d:'Every 8 seconds, it rains frogs around you.',fl:'He was kissed. It did not go well.'},
 ];
 const LEG=Object.fromEntries(LEGS.map(l=>[l.id,l]));
 const SLOTS=['weapon','armor','charm'];
@@ -913,6 +940,12 @@ function recalc(){
   s.u={}; s.lightMul=1;
   // s.u.<id> holds the legendary's current power (1 at its own depth, fading as you go deeper)
   for(const k of SLOTS){const it=G.gear[k]; if(it&&it.leg) s.u[it.leg]=legPow(it);}
+  // item powers, skill mods and item skills from everything worn
+  s.powers=[]; s.skLv={}; s.tagLv={}; s.mutG={}; s.grants=[]; G.itemSkillPow={};
+  for(const k of SLOTS){const it=G.gear[k]; if(!it) continue;
+    for(const pw of it.powers||[]) s.powers.push(pw);
+    for(const m of it.sk||[]){ if(m.k==='lv') s.skLv[m.id]=(s.skLv[m.id]||0)+m.v; else if(m.k==='tag') s.tagLv[m.tag]=(s.tagLv[m.tag]||0)+m.v; else (s.mutG[m.id]=s.mutG[m.id]||[]).push(m.m);}
+    if(it.grant){const sid='it_'+it.grant; s.grants.push(sid); G.itemSkillPow[sid]=1+Math.min(it.ilvl||1,60)*.04;}}
   if(s.u.ember) s.ignite+=.25*s.u.ember;
   if(s.u.storm) s.chain=Math.max(s.chain,s.u.storm);
   if(s.u.night){s.lightMul*=.5; s.dmgPct+=.5*s.u.night;}
@@ -925,6 +958,14 @@ function recalc(){
   s.cdMul=(1-Math.min(.7,s.cdr))*(1+s.cdrPenalty); s.abilCd=c.abilCd*s.cdMul; s.abilDmg=1+s.abilDmg; s.light=Math.max(60,s.light*s.lightMul);
   const prev=G.stats; G.stats=s;
   if(prev&&G.player){const d=s.maxHp-prev.maxHp; G.player.hp=clamp(G.player.hp+Math.max(0,d),1,s.maxHp);}
+  if(!G._try) syncGrants();
+}
+// item skills come and go with the item: put a new one on a free key, take it off the keys when the item comes off
+function syncGrants(){
+  const gr=G.stats.grants;
+  for(let i=0;i<4;i++){const id=G.slots[i]; if(id&&SKILL_INFO[id].item&&!gr.includes(id)) G.slots[i]=null;}
+  for(const id of gr){ if(!G.skills[id]) G.skills[id]={lvl:1,xp:0,cdT:0,muts:[]};
+    if(!G.slots.includes(id)){const f=G.slots.indexOf(null); if(f>=0){G.slots[f]=id; if(G.player) text(G.player.x,G.player.y-44,`${SKILL_INFO[id].n} on key ${f+1}`,SKILL_INFO[id].c,13);}}}
 }
 const xpNeed=l=>Math.round(18*Math.pow(l,1.45));
 const itemNeed=l=>Math.round(22*Math.pow(l,1.35));
@@ -941,14 +982,22 @@ function makeItem(slot,depth,bias=0,force){
   const used=new Set();
   while(it.affixes.length<n){const id=pick(goodFor()); if(used.has(id)) continue; used.add(id); it.affixes.push(rollAffix(id,depth,r==='cursed'?1.6:1));}
   if(r==='cursed') it.affixes.push(rollAffix(pick(BAD),depth));
+  // the fun part: powers, skill mods and item skills. Better rarities carry more of them.
+  it.powers=[]; it.sk=[];
+  const pwN={common:Math.random()<.1?1:0,magic:Math.random()<.5?1:0,rare:1+(Math.random()<.35?1:0),cursed:1+(Math.random()<.5?1:0)}[r]||0;
+  for(let k=0;k<pwN;k++) it.powers.push(rollPower(depth));
+  const skN={common:0,magic:Math.random()<.3?1:0,rare:Math.random()<.55?1+(Math.random()<.3?1:0):0,cursed:Math.random()<.4?1:0}[r]||0;
+  for(let k=0;k<skN;k++) it.sk.push(rollSkillMod(depth));
+  if(Math.random()<({common:.02,magic:.07,rare:.16,cursed:.12}[r]||0)) it.grant=pick(EFFECT_IDS);
   const first=it.affixes.find(a=>!AFX[a.id].bad), bad=it.affixes.find(a=>AFX[a.id].bad);
-  it.name=(bad?AFX[bad.id].n+' ':'')+(first?AFX[first.id].n+' ':pick(['Rusted ','Worn ','Chipped ','Grim ']))+it.noun;
+  const adj=it.powers.length?EFFECTS[it.powers[0].e].adj+' ':first?AFX[first.id].n+' ':pick(['Rusted ','Worn ','Chipped ','Grim ']);
+  it.name=(bad?AFX[bad.id].n+' ':'')+adj+it.noun+(it.grant?' of '+EFFECTS[it.grant].n:'');
   return it;
 }
 function baseLines(it){const l=[]; if(it.baseDmg) l.push(`+${it.baseDmg} damage`); if(it.baseHp) l.push(`+${it.baseHp} max life`); if(it.baseArmor) l.push(`+${pct(it.baseArmor)} damage reduction`); return l;}
 function makeLegendary(depth,slot){
   const pool=LEGS.filter(l=>!slot||l.slot===slot), L=pick(pool), it=makeItem(L.slot,depth,0,'rare');
-  it.rarity='legendary'; it.leg=L.id; it.name=L.n; return it;
+  it.rarity='legendary'; it.leg=L.id; it.name=L.n; if(!it.powers.length) it.powers.push(rollPower(depth)); return it;
 }
 // roll a drop, and announce legendaries as they land: 6% from bosses, 0.6% from anything else
 const LEG_CHANCE=.006, LEG_CHANCE_BOSS=.06;
@@ -959,7 +1008,12 @@ function dropItem(x,y,slot,bias=0,force,legChance=LEG_CHANCE,depth=G.depth){
     G.effects.push({type:'ring',x,y,r0:6,r1:70,t:0,max:.7,color:'#ff8c1a',w:4,light:true});}
 }
 function itemLines(it){const lp=it.leg?legPow(it):1;
-  return (it.leg?[{t:LEG[it.leg].d+(lp<1?` (fading: ${Math.round(lp*100)}% power)`:''),leg:true}]:[]).concat(baseLines(it).map(t=>({t,bad:false}))).concat(it.affixes.map(a=>({t:AFX[a.id].f(a.v),bad:!!AFX[a.id].bad})));}
+  return (it.leg?[{t:LEG[it.leg].d+(lp<1?` (fading: ${Math.round(lp*100)}% power)`:''),leg:true}]:[])
+    .concat(it.grant?[{t:`Grants skill: ${EFFECTS[it.grant].n}. ${cap1(EFFECTS[it.grant].t)}.`,gr:true}]:[])
+    .concat((it.powers||[]).map(pw=>({t:powerText(pw),pw:true})))
+    .concat((it.sk||[]).map(m=>({t:skillModText(m),skm:true})))
+    .concat(baseLines(it).map(t=>({t,bad:false}))).concat(it.affixes.map(a=>({t:AFX[a.id].f(a.v),bad:!!AFX[a.id].bad})));}
+const lineCol=l=>l.leg?'#ff8c1a':l.gr?'#5affd8':l.pw?'#c9a0ff':l.skm?'#8fd8ff':l.bad?'#e04a30':'#d3c7ae';
 // Leveling an item mostly buys drafts; its stats only creep up, so loot from deeper down still wins.
 function growBase(it){if(it.baseDmg) it.baseDmg=Math.max(it.baseDmg+(Math.random()<.5?1:0),Math.round(it.baseDmg*1.04)); if(it.baseHp) it.baseHp=Math.round(it.baseHp*1.04+1);}
 // A legendary is at full strength on the floor it was found, then fades 6% per floor deeper, never below 25%.
@@ -1032,7 +1086,8 @@ function descend(){
   const p=G.player; p.x=f.spawn.x; p.y=f.spawn.y; G.cam.x=p.x; G.cam.y=p.y;
   G.corpses=[]; G.floorT=0; G.stalkWarned=false; G.stalker=null; G.stalkDone=false; // your skeletons follow you down; the Stalker does not
   for(const m of G.allies){m.x=p.x; m.y=p.y; m.tgt=null; for(let tr=0;tr<12;tr++){const a=rand(0,6.28), x=p.x+Math.cos(a)*30, y=p.y+Math.sin(a)*30; if(!collides(x,y,8)){m.x=x; m.y=y; break;}}}
-  G.projectiles=[]; G.drops=[]; G.particles=[]; G.effects=[]; G.texts=[]; G.pending=[]; G.hazards=[]; G.darkT=0;
+  G.projectiles=[]; G.drops=[]; G.particles=[]; G.effects=[]; G.texts=[]; G.pending=[]; G.hazards=[]; G.darkT=0; G.turrets=[]; G.peels=[];
+  later(.5,()=>firePowers('floor'));
   if(G.depth>1) healP(G.stats.maxHp*.2);
   // a Skill Tome lies somewhere on floor 2 and every third floor after, so new skills come early and keep coming
   if(G.depth%3===2&&!G.isBoss&&!G.isTavern){const d=bfs(G.map,tileIdx(p.x,p.y)); let far=0; for(const v of d) if(v>far) far=v;
@@ -1279,6 +1334,12 @@ function doCharge(e,dt,spd){
 }
 function updateEnemy(e,dt){
   e.flash-=dt; e.slow-=dt; e.hurt-=dt; e.cd-=dt; if(e.markT>0) e.markT-=dt; if(e.plagueT>0) e.plagueT-=dt;
+  // frozen solid, turned into a chicken, or running scared: none of these get to fight
+  if(e.frozenT>0){e.frozenT-=dt; e.kb.x*=.8; e.kb.y*=.8; if(e.state==='windup') e.state='chase'; return;}
+  if(e.chickenT>0){e.chickenT-=dt; e.wa=(e.wa??rand(0,6.28))+rand(-4,4)*dt; move(e,Math.cos(e.wa)*70*dt,Math.sin(e.wa)*70*dt); e.face=e.wa;
+    if(Math.random()<dt*.6) text(e.x,e.y-14,pick(['bawk','BAWK','buk buk']),'#fff4c0',10); if(e.chickenT<=0) smoke(e.x,e.y,8); return;}
+  if(e.fearT>0){e.fearT-=dt; const p=G.player; let a=Math.atan2(e.y-p.y,e.x-p.x); if(e.confused) a+=Math.sin(G.time*5+e.ph*3)*2;
+    move(e,Math.cos(a)*e.T.speed*.8*dt,Math.sin(a)*e.T.speed*.8*dt); e.face=a; if(e.state==='windup') e.state='chase'; if(e.fearT<=0) e.confused=false; return;}
   if(e.mod==='burning'&&e.state!=='idle'){e.trailT=(e.trailT||0)-dt; if(e.trailT<=0){e.trailT=.45; addHazard(e.x,e.y+e.r*.5,14,2.2,3+G.depth*.8,'#ff7a2a');}}
   if(e.burn){e.burn.t-=dt; e.burnTick-=dt;
     if(e.burnTick<=0){e.burnTick=.5; hitEnemy(e,e.burn.dps*.5,{proc:false,color:'#ff9a3c',noKb:true,quiet:true}); spark(e.x,e.y,'#ff8a2a',3);}
@@ -1417,6 +1478,9 @@ function hitEnemy(e,dmg,o={}){
     if(Math.random()<s.frost){e.slow=2; spark(e.x,e.y,'#a8dcff',6);}
     if(Math.random()<s.chain) chainLightning(e,dmg*.6*(s.u.storm?.6:1));
     if(s.u.bleed){e.bleed={t:3,dps:dmg*.5*s.u.bleed/3}; e.bleedTick=e.bleedTick||.5;}
+    firePowers('hit',e.x,e.y,e);
+    if(o.crit){firePowers('crit',e.x,e.y,e); if(s.u.ledger) mark(e,4,.35);
+      if(s.u.partyhat&&G.time-(G.partyT||-9)>.5){G.partyT=G.time; const x=e.x,y=e.y; later(.05,()=>confetti(x,y,1.2*s.u.partyhat));}}
   }
   if(!o.quiet){play(o.crit?'crit':'hit',e); if(o.crit) hitStop(.045);
     if(o.crit){G.effects.push({type:'ring',x:e.x,y:e.y,r0:4,r1:26,t:0,max:.15,color:'#ffe0a0',w:4}); G.shake=Math.min(14,G.shake+3);}}
@@ -1431,6 +1495,8 @@ function chainLightning(from,dmg){
 }
 function killEnemy(e){
   e.dead=true; G.kills++;
+  {const x=e.x, y=e.y; later(0,()=>{firePowers('kill',x,y,null); if(e.elite||e.boss) firePowers('elite',x,y,null);
+    if(G.stats.u.ratcrown) critter(x,y,1,{color:'#8a6a4a',mult:.6*G.stats.u.ratcrown,spd:200,r:3,life:4});});}
   const g=G.dctx;
   g.fillStyle='rgba(55,5,5,.55)'; for(let i=0;i<6;i++){g.beginPath();g.ellipse(e.x+rand(-e.r,e.r),e.y+rand(-e.r,e.r)*.6,rand(e.r*.5,e.r*1.3),rand(e.r*.3,e.r*.8),rand(0,3),0,7);g.fill();}
   const sp=SPRITES[e.shape||e.T.shape], cs=e.elite?1.25:1;
@@ -1567,7 +1633,7 @@ function spawnMinion(x,y){
     atkCd:skillHas('raise','fury')?.45:.75,spd:140});
   spark(x,y,'#7aff6a',10); smoke(x,y,6);
 }
-function boneBurst(m){m.hp=0; gibs(SPRITES.minion,m.x,m.y+6,1,false,rand(0,6.28),.7); play('urn',m);}
+function boneBurst(m){m.hp=0; if(G.stats.u.plagueskel&&!m.blade) playerHazard(m.x,m.y,55,4,G.stats.dmg*.45*G.stats.u.plagueskel,'#9acd32',{skill:'plague',wither:true}); gibs(SPRITES.minion,m.x,m.y+6,1,false,rand(0,6.28),.7); play('urn',m);}
 function nearAlly(e,r){let best=null; for(const m of G.allies){if(m.hp<=0||m.rise>0) continue; const d=dist(e,m); if(d<r+m.r){r=d-m.r; best=m;}} return best;}
 function damageAlly(m,amt){
   m.hp-=amt*.8; m.flash=.1; m.hurt=2; spark(m.x,m.y,'#ddd5c0',5);
@@ -1605,6 +1671,9 @@ function explosion(x,y,dmg,r){
 }
 function damagePlayer(amt,src,label){
   const p=G.player, s=G.stats; if(p.inv>0||state!=='play'||G.dying) return;
+  if(p.ward>0){p.ward--; p.inv=.3; spark(p.x,p.y,'#e8dcc0',10); text(p.x,p.y-24,'WARDED','#e8dcc0',12); play('urn',p); return;} // a bone ward takes the hit
+  const wasHigh=p.hp>=s.maxHp*.35;
+  later(0,()=>{firePowers('hurt',p.x,p.y,src&&src.hp!==undefined&&!src.dead?src:null); if(wasHigh&&p.hp>0&&p.hp<s.maxHp*.35) firePowers('low');});
   amt=Math.max(1,Math.round(amt*(1-s.armor)*(1+s.dmgTaken)));
   G.dmgTaken=(G.dmgTaken||0)+amt; G.lastHitBy=label||(src&&src.name?(src.boss?src.name:'a '+src.name):'something in the dark');
   p.hp-=amt; p.inv=.3; p.hurtT=.35;
@@ -1668,7 +1737,7 @@ function attack(echo){
   // Twin Fangs: two blows at 60% each at full power; as it fades the first blow takes back the difference
   const tw=s.u.twin||0, o={forceCrit:big}; let mult=(big?1+2*s.u.butcher:1)*(tw?(echo?.6*tw:1-.4*tw):1);
   if(echo){releaseAttack({a,mult,o,heavy:false,big:false,dir:-p.swingDir,kind:c.ranged?'cast':G.cls==='rogue'?'thrust':'swing'}); return;}
-  p.atkT=s.atkCd*(p.frenzyT>0?.7:1); if(s.u.twin) G.pending.push({t:.12,fn:()=>{if(state==='play'&&!G.dying) attack(true);}});
+  p.atkT=s.atkCd*(p.frenzyT>0?.7:1)*(p.hasteT>0?.77:1); if(s.u.twin) G.pending.push({t:.12,fn:()=>{if(state==='play'&&!G.dying) attack(true);}});
   // keep attacking and every third blow is a heavy one
   p.combo=(G.time-(p.lastAtk??-9)<.75)?(p.combo||0)+1:1; p.lastAtk=G.time;
   const heavy=!c.ranged&&p.combo>=3; if(heavy){p.combo=0; mult*=1.6;}
@@ -1729,14 +1798,15 @@ function aimPoint(max){
   let best=null, bd=max; for(const e of G.enemies){ if(e.dead) continue; const d=dist(e,p); if(d<bd&&angDiff(Math.atan2(e.y-p.y,e.x-p.x),p.facing)<.7&&los(p.x,p.y,e.x,e.y)){bd=d; best=e;} }
   return best?{x:best.x,y:best.y}:{x:p.x+Math.cos(p.facing)*max*.6,y:p.y+Math.sin(p.facing)*max*.6};
 }
-function skillHas(id,k){const sk=G.skills[id]; return !!(sk&&sk.muts.includes(k));}
+function skillHas(id,k){const sk=G.skills[id], g=G.stats&&G.stats.mutG; return !!((sk&&sk.muts.includes(k))||(g&&g[id]&&g[id].includes(k)));}
 function tagMul(id){const t=SKILL_INFO[id].tags, s=G.stats; let m=1;
   if(t.includes('fire')) m+=s.fireDmg; if(t.includes('cold')) m+=s.coldDmg; if(t.includes('lightning')) m+=s.lightDmg;
   if(t.includes('phys')) m+=s.physDmg; if(t.includes('chaos')) m+=s.chaosDmg; return m;}
-const skillLvMul=id=>1+.12*(G.skills[id].lvl-1);
+const skillLvMul=id=>1+.12*(effLv(id)-1);
+// (legendaries can cast skills you haven't learned; those cast at level 1 with no mutations)
 function skillCtx(id){
-  const sk=G.skills[id], s=G.stats, p=G.player, M=s.abilDmg*skillLvMul(id)*tagMul(id);
-  return {id,p,s,a:p.facing,tp:aimPoint(300),M,A:1+s.area,D:1+s.dur,P:s.proj,C:s.chainX,m:k=>sk.muts.includes(k),
+  const s=G.stats, p=G.player, M=s.abilDmg*skillLvMul(id)*tagMul(id);
+  return {id,p,s,a:p.facing,tp:aimPoint(300),M,A:1+s.area,D:1+s.dur,P:s.proj,C:s.chainX,m:k=>skillHas(id,k),
     hit:(e,base,ang,o={})=>strike(e,base*M,ang===undefined?Math.atan2(e.y-p.y,e.x-p.x):ang,Object.assign({skill:id,critBonus:s.skillCrit},o))};
 }
 // hazards you create (fire, rot) burn enemies; the extra fields carry a skill's mutations
@@ -1764,7 +1834,8 @@ const SKILLS={
         if(x.m('vortex')) pullIn(p.x,p.y,R*1.6,260);
         for(const e of near(p.x,p.y,R)){x.hit(e,2.2,undefined,{kb:280}); if(x.m('bleed')) e.bleed={t:3,dps:G.stats.dmg*.7*x.M};}
         hitUrns(o=>dist(p,o)<R+8); G.shake=Math.min(14,G.shake+6);};
-      spin(); if(x.m('twice')) later(.5,()=>{play('whirlwind'); spin();});}},
+      spin(); if(x.m('twice')) later(.5,()=>{play('whirlwind'); spin();});
+      if(G.stats.u.endlessspin){p.spinT=3; for(let k=1;k<6;k++) later(k*.5,()=>{play('whirlwind'); spin();});}}},
   shadowstep:{cd:4,d:'Blink forward through enemies, cutting all of them.',
     muts:{twin:'Steps a second time, a moment later.',venom:'Everything you pass through is poisoned.',vanish:'You stay untouchable for a second after.',reset:'A kill with it resets its cooldown.'},
     cast(x){const step=()=>{const p=x.p, a=p.facing, sx=p.x, sy=p.y; smoke(sx,sy,10);
@@ -1773,12 +1844,14 @@ const SKILLS={
         for(const e of G.enemies){ if(e.dead||segDist(e.x,e.y,sx,sy,p.x,p.y)>=e.r+18) continue; x.hit(e,2.6,a);
           if(x.m('venom')&&!e.dead) e.bleed={t:4,dps:G.stats.dmg*.5*x.M}; if(e.dead&&x.m('reset')) G.skills.shadowstep.cdT=0;}
         hitUrns(o=>segDist(o.x,o.y,sx,sy,p.x,p.y)<24,a);};
-      step(); if(x.m('twin')) later(.25,()=>{play('shadowstep'); step();});}},
+      step(); if(x.m('twin')) later(.25,()=>{play('shadowstep'); step();});
+      if(G.stats.u.stormstep) later(.05,()=>SKILLS.lightning.cast(skillCtx('lightning')));}},
   nova:{cd:6,d:'A burst of violet fire that throws enemies back.',
     muts:{frost:'Chills everything it hits.',double:'A second ring follows.',wide:'40% larger.',flame:'Leaves a ring of fire on the ground.'},
     cast(x){const p=x.p, R=160*x.A*(x.m('wide')?1.4:1);
       const ring=(m)=>{G.effects.push({type:'ring',x:p.x,y:p.y,r0:10,r1:R,t:0,max:.35,color:'#a68cff',w:10,light:true}); spark(p.x,p.y,'#b9a3ff',24);
-        for(const e of near(p.x,p.y,R)){x.hit(e,2.5*m,undefined,{kb:320}); if(x.m('frost')) e.slow=2.5;}
+        for(const e of near(p.x,p.y,R)){x.hit(e,2.5*m,undefined,{kb:320}); if(x.m('frost')) e.slow=2.5;
+          if(e.dead&&G.stats.u.novachain){const ex=e.x, ey=e.y; later(.15,()=>{G.effects.push({type:'ring',x:ex,y:ey,r0:6,r1:R*.5,t:0,max:.3,color:'#a68cff',w:6,light:true}); for(const q of near(ex,ey,R*.5)) x.hit(q,1.2,Math.atan2(q.y-ey,q.x-ex),{kb:200});});}}
         hitUrns(o=>dist(p,o)<R+8); G.shake=Math.min(14,G.shake+7);};
       ring(1); if(x.m('double')) later(.4,()=>{play('nova'); ring(.7);});
       if(x.m('flame')) for(let i=0;i<10;i++){const a=i*Math.PI/5; playerHazard(p.x+Math.cos(a)*R*.7,p.y+Math.sin(a)*R*.7,20,3*x.D,G.stats.dmg*.35*x.M,'#ff7a2a');}}},
@@ -1787,11 +1860,12 @@ const SKILLS={
     cast(){raiseDead();}},
   fireball:{cd:1.4,d:'Hurl a fireball that explodes on impact.',
     muts:{split:'Bursts into three smaller fireballs.',ground:'Leaves burning ground where it lands.',big:'Huge and slow, with a 60% bigger, harder blast.',multi:'Fires 2 more fireballs in a fan.'},
-    cast(x){const p=x.p, big=x.m('big'), n=1+x.P+(x.m('multi')?2:0);
+    cast(x){const p=x.p, big=x.m('big'), u=G.stats.u, n=u.bouncefire?1:1+x.P+(x.m('multi')?2:0);
+      if(u.skycaller){meteorAt(x.tp.x,x.tp.y,70*x.A*(big?1.4:1),3*x.M*(big?1.5:1)); return;}
       for(let i=0;i<n;i++){const a=x.a+(i-(n-1)/2)*.2, sp=big?260:380;
         fireProj({x:p.x+Math.cos(a)*12,y:p.y+Math.sin(a)*12,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:big?10:7,color:'#ff7a2a',mult:x.M,skill:'fireball',critBonus:x.s.skillCrit,
           boom:{r:55*x.A*(big?1.6:1),m:x.M*1.4*(big?1.6:1),color:'#ff7a2a',ignite:.4},
-          ground:x.m('ground')?{r:24*x.A,t:3*x.D,m:x.M*.35}:null, split:x.m('split')});}}},
+          ground:x.m('ground')?{r:24*x.A,t:3*x.D,m:x.M*.35}:null, split:x.m('split'), bounce:!!u.bouncefire, life:u.bouncefire?10:1.2});}}},
   iceshards:{cd:1.6,d:'A fan of ice shards that pierce and chill.',
     muts:{more:'3 more shards.',nova:'Shards fly out in every direction.',shatter:'Chilled enemies shatter when they die.',pierce:'Shards pierce 2 more enemies.'},
     cast(x){const p=x.p, n=5+x.P*2+(x.m('more')?3:0), all=x.m('nova'), spread=all?Math.PI*2/n:.9/(n-1||1);
@@ -1806,22 +1880,28 @@ const SKILLS={
         for(let j=0;j<=jumps&&cur;j++){hit.add(cur); pts.push({x:cur.x,y:cur.y}); x.hit(cur,1.3*m*(j===0&&x.m('overload')?1.8:1),undefined,{noKb:true,color:'#cfe8ff'});
           if(x.m('static')) mark(cur,4,.2); let nx=null, nd=170; for(const e of G.enemies){ if(e.dead||hit.has(e)) continue; const d=dist(e,cur); if(d<nd){nd=d; nx=e;}} cur=nx;}
         G.effects.push({type:'zap',pts,t:0,max:.25});};
-      chain(first,4+x.C+(x.m('fork')?3:0),1);
+      if(G.stats.u.lightningrod) chain(first,30,.5); else chain(first,4+x.C+(x.m('fork')?3:0),1);
       if(x.m('storm')) later(.2,()=>{for(let k=0;k<3;k++){const c=near(p.x,p.y,260); if(!c.length) break; chain(pick(c),1,.8);}});}},
   slam:{cd:3,d:'Smash the ground in front of you, hurling enemies back.',
     muts:{quake:'An aftershock hits again for 70%.',wide:'Hits all around you.',fissure:'Rips a burning fissure in the ground.',stun:'Stuns everything hit.'},
-    cast(x){const p=x.p, R=110*x.A, arc=x.m('wide')?Math.PI*2:1.6, a=x.a;
+    cast(x){const P=x.p, R=110*x.A, arc=x.m('wide')?Math.PI*2:1.6, a=x.a;
+      let p={x:P.x,y:P.y};
       const smash=m=>{G.effects.push({type:'slash',x:p.x,y:p.y,a,arc:Math.min(arc,6.2),reach:R,t:0,max:.25,color:'#c8a070'});
         G.effects.push({type:'ring',x:p.x+Math.cos(a)*R*.4,y:p.y+Math.sin(a)*R*.4,r0:10,r1:R*.7,t:0,max:.3,color:'#c8a070',w:6});
         for(let i=0;i<14;i++) dust(p.x+Math.cos(a)*R*.5+rand(-30,30),p.y+Math.sin(a)*R*.5+rand(-20,20));
         for(const e of near(p.x,p.y,R)){ if(arc<6&&angDiff(Math.atan2(e.y-p.y,e.x-p.x),a)>arc/2) continue;
           x.hit(e,2.4*m,a,{kb:360}); e.slow=2; if(x.m('stun')) stun(e,1.2);}
         hitUrns(o=>dist(p,o)<R); G.shake=Math.min(14,G.shake+8);};
+      if(G.stats.u.tectonic){ // Tectonic Maul: a wave of six slams rolling forward
+        for(let k=0;k<6;k++) later(k*.13,()=>{p={x:P.x+Math.cos(a)*k*60,y:P.y+Math.sin(a)*k*60}; if(!solidAt(p.x,p.y)){play('whirlwind'); smash(k?.6:1);}});
+        return;}
       smash(1); if(x.m('quake')) later(.45,()=>{play('whirlwind'); smash(.7);});
       if(x.m('fissure')) for(let i=1;i<=5;i++) playerHazard(p.x+Math.cos(a)*i*34,p.y+Math.sin(a)*i*34,18,2.5*x.D,G.stats.dmg*.4*x.M,'#ff7a2a');}},
   blades:{cd:7,d:'Blades orbit you, cutting anything they touch.',
     muts:{more:'2 more blades.',wide:'The orbit is 50% wider.',long:'Lasts 75% longer.',fire:'The blades set enemies burning.'},
-    cast(x){(G.orbits=G.orbits||[]).push({t:0,ttl:4*x.D*(x.m('long')?1.75:1),n:3+x.P+(x.m('more')?2:0),r:46*x.A*(x.m('wide')?1.5:1),ang:0,mult:x.M*.55,fire:x.m('fire'),hits:new Map()});}},
+    cast(x){ if(G.stats.u.gyre){const g=(G.orbits=G.orbits||[]).find(o=>o.gyre); if(g){g.n=Math.min(12,g.n+1); g.mult=x.M*.55; return;}
+        G.orbits.push({t:0,ttl:1e9,gyre:true,n:3+x.P,r:46*x.A*(x.m('wide')?1.5:1),ang:0,mult:x.M*.55,fire:x.m('fire'),hits:new Map()}); return;}
+      (G.orbits=G.orbits||[]).push({t:0,ttl:4*x.D*(x.m('long')?1.75:1),n:3+x.P+(x.m('more')?2:0),r:46*x.A*(x.m('wide')?1.5:1),ang:0,mult:x.M*.55,fire:x.m('fire'),hits:new Map()});}},
   spikes:{cd:2.5,d:'Bone spikes erupt beneath your target.',
     muts:{prison:'Enemies hit are nearly rooted for 3 seconds.',double:'Erupts a second time.',wide:'40% larger.',marrow:'Each enemy hit heals you 1% of your life.'},
     cast(x){const {x:tx,y:ty}=x.tp, R=60*x.A*(x.m('wide')?1.4:1);
@@ -1845,14 +1925,14 @@ const SKILLS={
         for(const e of near(mx,my,r)){x.hit(e,4.5*m,Math.atan2(e.y-my,e.x-mx),{kb:300}); if(x.m('crater')) stun(e,1.5);}
         hitUrns(o=>Math.hypot(o.x-mx,o.y-my)<r);
         for(let i=0;i<5;i++){const a=i*1.26; playerHazard(mx+Math.cos(a)*r*.45,my+Math.sin(a)*r*.45,22,3*x.D*(x.m('molten')?2:1),G.stats.dmg*.4*x.M,'#ff7a2a');}});};
-      drop(tx,ty,R,1);
+      drop(tx,ty,R,1); if(G.stats.u.meteor3){later(.45,()=>drop(tx,ty,R*.75,.7)); later(.9,()=>drop(tx,ty,R*.5,.5));}
       if(x.m('shower')) for(let k=0;k<3;k++){const a=k*2.1+rand(0,1); drop(tx+Math.cos(a)*R*.9,ty+Math.sin(a)*R*.9,R*.5,.4);}}},
   spectral:{cd:10,d:'Summon spectral swords that hunt for you.',
     muts:{more:'2 more swords.',long:'They last 60% longer.',explode:'They explode when they fade.',fast:'They fly and strike far faster.'},
-    cast(x){const p=x.p, n=3+(x.m('more')?2:0);
+    cast(x){const p=x.p, rain=G.stats.u.swordrain, n=rain?8:3+(x.m('more')?2:0);
       for(let k=0;k<n;k++){const a=k*Math.PI*2/n; spawnMinion(p.x+Math.cos(a)*24,p.y+Math.sin(a)*24);
-        Object.assign(G.allies[G.allies.length-1],{blade:true,rise:0,ttl:12*x.D*(x.m('long')?1.6:1),T:{phase:true},spd:x.m('fast')?260:190,atkCd:x.m('fast')?.35:.6,
-          boomEnd:x.m('explode'),skill:'spectral',mult:x.M});}}},
+        Object.assign(G.allies[G.allies.length-1],{blade:true,rise:0,ttl:rain?4:12*x.D*(x.m('long')?1.6:1),T:{phase:true},spd:x.m('fast')?260:190,atkCd:x.m('fast')?.35:.6,
+          boomEnd:rain||x.m('explode'),skill:'spectral',mult:x.M});}}},
   leap:{cd:4,d:'Leap to your target and crash down on everything there.',
     muts:{quake:'The landing is 50% bigger.',twice:'Cooldown is halved.',fire:'Leaves a ring of fire where you land.',stun:'Stuns everything you land on.'},
     cast(x){const p=x.p; let tx=x.tp.x, ty=x.tp.y; const a=Math.atan2(ty-p.y,tx-p.x), L=Math.hypot(tx-p.x,ty-p.y); let d=0;
@@ -1865,6 +1945,8 @@ const SKILLS={
   voidorb:{cd:4,d:'A slow orb of nothing that tears at everything near it.',
     muts:{pull:'Drags enemies toward it.',bigger:'50% larger.',twin:'Fires a second orb.',collapse:'Collapses in a blast when it ends.'},
     cast(x){const p=x.p, n=1+x.P+(x.m('twin')?1:0);
+      if(G.stats.u.voidtwins){for(let i=0;i<2;i++) fireProj({x:p.x,y:p.y,vx:0,vy:0,r:9,life:6*x.D,color:'#b06aff',pierce:999,noHit:true,skill:'voidorb',orbitP:true,oa:i*Math.PI,
+          pulse:{every:.25,acc:0,r:42*x.A*(x.m('bigger')?1.5:1),m:x.M*.45,pull:x.m('pull')}}); return;}
       for(let i=0;i<n;i++){const a=x.a+(i-(n-1)/2)*.3;
         fireProj({x:p.x+Math.cos(a)*14,y:p.y+Math.sin(a)*14,vx:Math.cos(a)*140,vy:Math.sin(a)*140,r:9,life:3*x.D,color:'#b06aff',pierce:999,noHit:true,skill:'voidorb',
           pulse:{every:.25,acc:0,r:42*x.A*(x.m('bigger')?1.5:1),m:x.M*.45,pull:x.m('pull')},
@@ -1878,13 +1960,21 @@ const SKILLS={
 
 function castSlot(i){
   const id=G.slots[i]; if(!id) return; const sk=G.skills[id], p=G.player, s=G.stats; G.usedAbility=true;
+  if(SKILL_INFO[id].item&&!s.grants.includes(id)) return; // its item isn't worn
   if(sk.cdT>0){ if(sk.cdT<.3){p.bufSlot=i; p.bufT=.3;} return; } // pressed a touch early: cast the moment it's ready
-  p.bufT=0; sk.cdT=SKILLS[id].cd*s.cdMul*(id==='leap'&&skillHas('leap','twice')?.5:1);
-  fireSkill(id);
+  p.bufT=0; sk.cdT=skillCd(id);
+  if(id==='bloodnova'&&s.u.bloodgod){p.hp=Math.max(1,p.hp-p.hp*.2); blood(p.x,p.y,12);}
+  if(id==='shadowstep'&&s.u.ghostcloak){p.hp=Math.max(1,p.hp-s.maxHp*.04);}
+  if(id==='fireball'&&s.u.bouncefire&&G.projectiles.some(q=>q.bounce)){sk.cdT=.2; return;} // the Ricochet Ember: one at a time
+  fireSkill(id); firePowers('cast');
+  if(p.echoNext){p.echoNext=false; later(.3,()=>fireSkill(id));}
+  if(s.u.chaoscast){const others=Object.keys(G.skills).filter(k=>k!==id&&!SKILL_INFO[k].item); if(others.length) later(.2,()=>fireSkill(pick(others)));}
   if(s.u.crown) for(let k=0;k<12;k++){const a=k*Math.PI/6; // Crown of the Drowned
     G.projectiles.push({x:p.x,y:p.y,vx:Math.cos(a)*360,vy:Math.sin(a)*360,r:4,owner:'player',life:.7,color:'#cfe8f0',pierce:1,mult:.6*s.u.crown});}
   if(s.echo) later(.35,()=>fireSkill(id));
 }
+function skillCd(id){const s=G.stats; let cd=SKILLS[id].cd*s.cdMul*(id==='leap'&&skillHas('leap','twice')?.5:1);
+  if(id==='bloodnova'&&s.u.bloodgod) cd=.5; if(id==='shadowstep'&&s.u.ghostcloak) cd=.3; return cd;}
 function fireSkill(id){ if(state!=='play'||G.dying) return; play(SKILL_SFX[id]); SKILLS[id].cast(skillCtx(id)); }
 const useAbility=()=>castSlot(0); // Q, right click and the old ability button all mean slot 1
 function learnSkill(id){
@@ -1909,7 +1999,8 @@ function updateSkills(dt){
   if(p.leap){const L=p.leap; L.t+=dt; const k=Math.min(1,L.t/L.dur); p.x=L.sx+(L.tx-L.sx)*k; p.y=L.sy+(L.ty-L.sy)*k;
     if(k>=1){const x=L.x, R=80*x.A*(x.m('quake')?1.5:1); p.leap=null;
       G.effects.push({type:'ring',x:p.x,y:p.y,r0:10,r1:R,t:0,max:.3,color:'#c89060',w:10}); for(let i=0;i<16;i++) dust(p.x+rand(-R,R)*.6,p.y+rand(-R,R)*.4);
-      for(const e of near(p.x,p.y,R)){x.hit(e,2.2,undefined,{kb:300}); if(x.m('stun')) stun(e,1.2);}
+      const sky=G.stats.u.skyfall; if(sky) meteorAt(p.x,p.y,90,3*sky*x.M);
+      for(const e of near(p.x,p.y,R)){x.hit(e,2.2,undefined,{kb:300,forceCrit:!!sky}); if(x.m('stun')) stun(e,1.2);}
       hitUrns(o=>dist(p,o)<R); G.shake=Math.min(14,G.shake+9); play('splat');
       if(x.m('fire')) for(let i=0;i<8;i++){const a=i*Math.PI/4; playerHazard(p.x+Math.cos(a)*R*.6,p.y+Math.sin(a)*R*.6,20,3*x.D,G.stats.dmg*.35*x.M,'#ff7a2a');}}}
   if(G.orbits) for(const o of G.orbits){o.t+=dt; o.ang+=5*dt;
@@ -1917,10 +2008,200 @@ function updateSkills(dt){
       for(const e of near(bx,by,10)){ if((o.hits.get(e)||0)>G.time) continue; o.hits.set(e,G.time+.25);
         strike(e,o.mult,a+Math.PI/2,{skill:'blades',noKb:true,critBonus:G.stats.skillCrit}); if(o.fire&&!e.dead) e.burn={t:3,dps:G.stats.dmg*.25};}}}
   if(G.orbits) G.orbits=G.orbits.filter(o=>o.t<o.ttl);
+  updatePowers(dt);
+  // legendaries that tick on their own
+  const u=G.stats.u;
+  if(u.spikewalk&&p.moving){p.spikeT=(p.spikeT||0)-dt; if(p.spikeT<=0){p.spikeT=1; SKILLS.spikes.cast(Object.assign(skillCtx('spikes'),{tp:{x:p.x,y:p.y}}));}}
+  if(u.plaguemask){p.maskT=(p.maskT||0)-dt; if(p.maskT<=0){p.maskT=.8; playerHazard(p.x,p.y,40,2.4,G.stats.dmg*.3*u.plaguemask,'#9acd32',{skill:'plague'});}}
+  if(u.frogcrown){p.frogT=(p.frogT||0)-dt; if(p.frogT<=0){p.frogT=8; if(near(p.x,p.y,300).length) frogRain(p.x,p.y,12,.9*u.frogcrown); else p.frogT=1;}}
+  if(u.wheel){p.wheelT=(p.wheelT||0)-dt; if(p.wheelT<=0){p.wheelT=4; const ks=G.slots.filter(k=>k&&G.skills[k].cdT>0); if(ks.length){G.skills[pick(ks)].cdT=0; text(p.x,p.y-34,'The wheel turns','#e0b84a',11);}}}
 }
+// ================= item powers =================
+// Loot is meant to pile up into glorious nonsense. Most magic and rare items carry a power: a trigger (on hit, on kill,
+// when you're hurt, every few seconds...) joined to an effect (rats, bats, meteors, confetti, black holes, frogs...).
+// 13 triggers x 37 effects is several hundred different powers, and everything you wear fires at once.
+// The same effects double as item-granted active skills you put on keys 1-4.
+const TRIG={
+  hit:{d:()=>'On hit',ch:.12,icd:.4}, crit:{d:()=>'On critical hit',ch:.35,icd:.5}, kill:{d:()=>'On kill',ch:.25,icd:.2},
+  elite:{d:()=>'When an elite or boss dies',ch:1,icd:0}, hurt:{d:()=>'When you are hit',ch:.4,icd:1}, dash:{d:()=>'When you dash',ch:1,icd:.8},
+  cast:{d:()=>'When you cast a skill',ch:.4,icd:.5}, gold:{d:()=>'When you pick up gold',ch:.35,icd:.6},
+  timer:{d:pw=>`Every ${pw.icd} seconds`,ch:1,icd:6}, low:{d:()=>'When your life drops below 35%',ch:1,icd:20},
+  floor:{d:()=>'When you arrive on a floor',ch:1,icd:0}, move:{d:()=>'While you keep moving, every 2 seconds',ch:1,icd:2},
+  heal:{d:()=>'When you pick up a healing orb',ch:1,icd:.5},
+};
+const nearestE=(x,y,R=320)=>{let b=null,bd=R; for(const e of G.enemies){ if(e.dead) continue; const d=Math.hypot(e.x-x,e.y-y); if(d<bd){bd=d; b=e;}} return b;};
+const randE=(x,y,R=300)=>{const c=G.enemies.filter(e=>!e.dead&&Math.hypot(e.x-x,e.y-y)<R); return c.length?pick(c):null;};
+// a power's own hit: never triggers other powers (that way lies an infinite rat cascade)
+const pHit=(e,mult,a,o={})=>strike(e,mult,a===undefined?Math.atan2(e.y-G.player.y,e.x-G.player.x):a,Object.assign({proc:false},o));
+function boomAt(x,y,r,mult,color,o={}){
+  G.effects.push({type:'ring',x,y,r0:6,r1:r,t:0,max:.3,color,w:8,light:true}); spark(x,y,color,14); G.shake=Math.min(14,G.shake+3);
+  for(const e of near(x,y,r)) pHit(e,mult,Math.atan2(e.y-y,e.x-x),Object.assign({kb:200,color},o)); hitUrns(q=>Math.hypot(q.x-x,q.y-y)<r);
+}
+function meteorAt(x,y,r,mult){warn(x,y,r,.6,'#ff5a1a'); later(.6,()=>{boomAt(x,y,r,mult,'#ff7a2a'); play('splat',{x,y}); G.shake=Math.min(14,G.shake+6);
+  for(let i=0;i<3;i++){const a=i*2.1; playerHazard(x+Math.cos(a)*r*.4,y+Math.sin(a)*r*.4,18,2.5,G.stats.dmg*.3,'#ff7a2a');}});}
+// homing critters and bolts; they steer toward the nearest enemy
+function critter(x,y,n,o){for(let i=0;i<n;i++){const a=rand(0,6.28), sp=o.spd||240;
+  G.projectiles.push(Object.assign({x:x+Math.cos(a)*8,y:y+Math.sin(a)*8,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,owner:'player',life:o.life||3,r:o.r||3,pierce:0,home:true,proc:false,wob:rand(0,6.28)},o));}}
+function confetti(x,y,mult){boomAt(x,y,80,mult,'#ff5ad8'); text(x,y-24,pick(['POP!','HOORAY','WHEE!','PARTY']),pick(['#ff5ad8','#5affd8','#ffe05a']),16);
+  for(let i=0;i<40;i++){const a=rand(0,6.28), sp=rand(80,260); addP({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-60,life:rand(.6,1.2),max:1.2,size:2,color:pick(['#ff5ad8','#5affd8','#ffe05a','#7a9aff','#ff7a2a']),drag:2.5,emissive:true});}
+  play('crit',{x,y});}
+function frogRain(x,y,n,mult){for(let i=0;i<n;i++){const fx=x+rand(-120,120), fy=y+rand(-90,90); if(solidAt(fx,fy)) continue;
+  warn(fx,fy,16,.3+i*.06,'#7acd5a'); later(.3+i*.06,()=>{for(const e of near(fx,fy,18)) pHit(e,mult,undefined,{color:'#9aff7a',kb:80});
+    G.effects.push({type:'ring',x:fx,y:fy,r0:2,r1:18,t:0,max:.2,color:'#7acd5a',w:3}); spark(fx,fy,'#7acd5a',5); if(Math.random()<.3) text(fx,fy-10,'ribbit','#7acd5a',10);});}}
+function plantTurret(x,y,ttl,mult,color){(G.turrets=G.turrets||[]).push({x,y,t:0,ttl,shot:0,mult,color});}
+
+// id: [item adjective, effect text, colour, active cooldown, run(o)]. o = {x,y,e,p}: where it happens, the enemy involved, and its strength.
+const EFFECTS={
+  rats:{adj:'Rat-King\'s',n:'Rat Swarm',t:'release 4 hungry rats',c:'#a07a5a',cd:6,run:o=>critter(o.x,o.y,4*o.n,{color:'#8a6a4a',mult:.5*o.p,spd:200,r:3,life:3})},
+  bats:{adj:'Bat-Bitten',n:'Blood Bats',t:'loose 3 blood bats that heal you when they bite',c:'#c0101a',cd:7,run:o=>critter(o.x,o.y,3*o.n,{color:'#c0101a',mult:.45*o.p,spd:260,healHit:.012,life:3})},
+  bees:{adj:'Buzzing',n:'Angry Bees',t:'release a swarm of 6 angry bees',c:'#ffd02a',cd:6,run:o=>critter(o.x,o.y,6*o.n,{color:'#ffd02a',mult:.22*o.p,spd:330,r:2,life:2.5,buzz:true})},
+  ghosts:{adj:'Haunted',n:'Wailing Ghosts',t:'release 3 wailing ghosts that pass through walls',c:'#cfe8ff',cd:7,run:o=>critter(o.x,o.y,3*o.n,{color:'#cfe8ff',mult:.6*o.p,spd:170,r:5,life:4,phase:true,pierce:2})},
+  bolts:{adj:'Thundering',n:'Skyfall',t:'call lightning down on 3 nearby enemies',c:'#cfe8ff',cd:5,run:o=>{for(let i=0;i<3*o.n;i++){const e=randE(o.x,o.y); if(!e) break;
+    G.effects.push({type:'zap',pts:[{x:e.x+rand(-20,20),y:e.y-220},{x:e.x,y:e.y}],t:0,max:.2}); pHit(e,1.2*o.p,undefined,{color:'#cfe8ff',noKb:true});} play('blink');}},
+  chain:{adj:'Arcing',n:'Arc',t:'arc lightning through 5 enemies',c:'#9ad8ff',cd:4,run:o=>{const e=o.e||nearestE(o.x,o.y); if(e) chainLightning(e,G.stats.dmg*.9*o.p);}},
+  firering:{adj:'Kindled',n:'Ring of Fire',t:'ring yourself in fire',c:'#ff7a2a',cd:8,run:o=>{const p=G.player; for(let i=0;i<10;i++){const a=i*Math.PI/5; playerHazard(p.x+Math.cos(a)*60,p.y+Math.sin(a)*60,18,3.5,G.stats.dmg*.35*o.p,'#ff7a2a');}}},
+  rot:{adj:'Festering',n:'Rot Cloud',t:'burst into a cloud of rot',c:'#9acd32',cd:7,run:o=>{playerHazard(o.x,o.y,60,4,G.stats.dmg*.4*o.p,'#9acd32',{wither:true}); smoke(o.x,o.y,10);}},
+  shards:{adj:'Splintering',n:'Bone Burst',t:'fire a ring of 10 bone shards',c:'#e8dcc0',cd:4,run:o=>{for(let i=0;i<10;i++){const a=i*Math.PI/5;
+    G.projectiles.push({x:o.x,y:o.y,vx:Math.cos(a)*380,vy:Math.sin(a)*380,r:4,owner:'player',life:.8,color:'#e8dcc0',pierce:1,mult:.55*o.p,proc:false});}}},
+  meteor:{adj:'Starfallen',n:'Falling Star',t:'drop a meteor on the nearest enemy',c:'#ff5a1a',cd:7,run:o=>{const e=o.e||nearestE(o.x,o.y); if(e) meteorAt(e.x,e.y,80,3*o.p);}},
+  fireballs:{adj:'Volcanic',n:'Fire Fan',t:'hurl 5 fireballs in a fan',c:'#ff7a2a',cd:5,run:o=>{const p=G.player; for(let i=0;i<5;i++){const a=p.facing+(i-2)*.22;
+    fireProj({x:p.x,y:p.y,vx:Math.cos(a)*380,vy:Math.sin(a)*380,r:6,color:'#ff7a2a',mult:.6*o.p,proc:false,boom:{r:45,m:.6*o.p,color:'#ff7a2a'}});}}},
+  freeze:{adj:'Rimed',n:'Deep Freeze',t:'freeze everything nearby solid for 2 seconds',c:'#9fd6ff',cd:9,run:o=>{G.effects.push({type:'ring',x:o.x,y:o.y,r0:10,r1:140,t:0,max:.4,color:'#9fd6ff',w:8,light:true});
+    for(const e of near(o.x,o.y,140)) if(!e.boss) e.frozenT=2; else e.slow=2;}},
+  scream:{adj:'Shrieking',n:'Dread Scream',t:'let out a scream that sends enemies fleeing',c:'#d3c7ae',cd:9,run:o=>{const p=G.player; G.effects.push({type:'ring',x:p.x,y:p.y,r0:10,r1:200,t:0,max:.5,color:'#d3c7ae',w:3});
+    for(const e of near(p.x,p.y,200)) if(!e.boss) e.fearT=2.5; play('boss');}},
+  blind:{adj:'Dazzling',n:'Flash',t:'dazzle nearby enemies for a second',c:'#fff4c0',cd:6,run:o=>{G.flash=Math.max(G.flash||0,.2); for(const e of near(G.player.x,G.player.y,160)) stun(e,1.2);}},
+  mend:{adj:'Mending',n:'Mend',t:'heal 6% of your life',c:'#7fd16a',cd:10,run:o=>healP(G.stats.maxHp*.06*Math.min(2,o.p*o.n))},
+  orb:{adj:'Bountiful',n:'Red Harvest',t:'drop a healing orb',c:'#ff2a2a',cd:12,run:o=>G.drops.push({kind:'orb',x:o.x+rand(-10,10),y:o.y+rand(-10,10),t:0})},
+  ward:{adj:'Warded',n:'Bone Ward',t:'gain a bone ward that stops the next hit',c:'#e8dcc0',cd:8,run:o=>{const p=G.player; p.ward=Math.min(5,(p.ward||0)+o.n);}},
+  haste:{adj:'Quicksilver',n:'Quicken',t:'move and attack 30% faster for 3 seconds',c:'#8fd8ff',cd:10,run:o=>{G.player.hasteT=3*o.n;}},
+  phase:{adj:'Ghostly',n:'Fade',t:'become untouchable for a second',c:'#b8a8ff',cd:8,run:o=>{const p=G.player; p.inv=Math.max(p.inv,1*o.n); smoke(p.x,p.y,8);}},
+  goldrain:{adj:'Gilded',n:'Spill Coin',t:'spill gold out of nowhere',c:'#e0b84a',cd:15,run:o=>dropGold(o.x,o.y,2+G.depth*.6)},
+  coins:{adj:'Spendthrift\'s',n:'Coin Shot',t:'fling 5 of your gold as deadly coins',c:'#e0b84a',cd:3,run:o=>{ if(G.gold<5) return; G.gold-=5; const p=G.player;
+    for(let i=0;i<7;i++){const a=p.facing+(i-3)*.12; G.projectiles.push({x:p.x,y:p.y,vx:Math.cos(a)*520,vy:Math.sin(a)*520,r:3,owner:'player',life:.7,color:'#ffd27a',pierce:2,mult:(.5+Math.min(2,G.gold/400))*o.p,proc:false});} play('pick');}},
+  skeleton:{adj:'Gravebound',n:'Call the Dead',t:'raise a skeleton for 15 seconds',c:'#7aff6a',cd:9,run:o=>{for(let i=0;i<o.n;i++){spawnMinion(o.x+rand(-14,14),o.y+rand(-14,14)); G.allies[G.allies.length-1].ttl=15;}}},
+  sword:{adj:'Spectral',n:'Phantom Blade',t:'summon a spectral sword for 8 seconds',c:'#8fd8ff',cd:8,run:o=>{for(let i=0;i<o.n;i++){const p=G.player; spawnMinion(p.x,p.y);
+    Object.assign(G.allies[G.allies.length-1],{blade:true,rise:0,ttl:8,T:{phase:true},spd:220,atkCd:.45,skill:null,mult:.8*o.p});}}},
+  pull:{adj:'Grasping',n:'Gather',t:'drag nearby enemies together',c:'#b06aff',cd:6,run:o=>{pullIn(o.x,o.y,180,520); G.effects.push({type:'ring',x:o.x,y:o.y,r0:180,r1:10,t:0,max:.35,color:'#b06aff',w:4});}},
+  blast:{adj:'Thunderous',n:'Shockwave',t:'blast enemies away from you',c:'#e8c8a8',cd:6,run:o=>{const p=G.player; boomAt(p.x,p.y,110,.8*o.p,'#e8c8a8',{kb:520});}},
+  mark:{adj:'Accursed',n:'Hex',t:'curse nearby enemies to take 30% more damage',c:'#c0101a',cd:8,run:o=>{for(const e of near(o.x,o.y,150)) mark(e,5,.3);
+    G.effects.push({type:'ring',x:o.x,y:o.y,r0:150,r1:20,t:0,max:.4,color:'#c0101a',w:3});}},
+  poison:{adj:'Venomous',n:'Venom Mist',t:'poison everything nearby',c:'#7acd5a',cd:6,run:o=>{for(const e of near(o.x,o.y,130)){e.bleed={t:4,dps:G.stats.dmg*.5*o.p}; spark(e.x,e.y,'#7acd5a',4);}}},
+  spikes:{adj:'Ossified',n:'Bone Spires',t:'raise bone spikes under 3 nearby enemies',c:'#e8dcc0',cd:5,run:o=>{for(let i=0;i<3*o.n;i++){const e=randE(o.x,o.y,260); if(!e) break; const ex=e.x, ey=e.y;
+    warn(ex,ey,34,.3,'#e8dcc0'); later(.3,()=>{G.effects.push({type:'spikes',x:ex,y:ey,r:34,t:0,max:.4}); for(const q of near(ex,ey,34)) pHit(q,1.1*o.p,undefined,{kb:100});});}}},
+  hole:{adj:'Abyssal',n:'Black Hole',t:'open a small black hole',c:'#b06aff',cd:9,run:o=>{const e=o.e||nearestE(o.x,o.y,260), x=e?e.x:o.x, y=e?e.y:o.y;
+    fireProj({x,y,vx:0,vy:0,r:10,life:2.5,color:'#6a2aaa',pierce:999,noHit:true,proc:false,pulse:{every:.25,acc:0,r:70,m:.3*o.p,pull:true}});}},
+  blink:{adj:'Wandering',n:'Blink Strike',t:'blink to a random enemy and cut it',c:'#9ab89a',cd:5,run:o=>{const e=randE(G.player.x,G.player.y,300); if(!e) return; const p=G.player;
+    smoke(p.x,p.y,8); const a=rand(0,6.28), nx=e.x+Math.cos(a)*(e.r+14), ny=e.y+Math.sin(a)*(e.r+14); if(!collides(nx,ny,p.r)){p.x=nx; p.y=ny;}
+    smoke(p.x,p.y,8); pHit(e,2*o.p,undefined,{forceCrit:true}); play('shadowstep');}},
+  confetti:{adj:'Festive',n:'Confetti Bomb',t:'set off a confetti bomb',c:'#ff5ad8',cd:6,run:o=>confetti(o.x,o.y,1.6*o.p)},
+  frogs:{adj:'Froggy',n:'Rain of Frogs',t:'make it rain frogs',c:'#7acd5a',cd:9,run:o=>frogRain(o.x,o.y,10*o.n,.8*o.p)},
+  turret:{adj:'Ballistic',n:'Bone Turret',t:'plant a bone turret that shoots for 6 seconds',c:'#e8dcc0',cd:10,run:o=>plantTurret(G.player.x,G.player.y,6*o.n,.45*o.p,'#e8dcc0')},
+  wild:{adj:'Capricious',n:'Wild Magic',t:'cast a random skill you know, for free',c:'#ff8aff',cd:6,run:o=>{const ks=Object.keys(G.skills).filter(k=>!SKILL_INFO[k].item); if(ks.length) fireSkill(pick(ks));}},
+  reset:{adj:'Clockwork',n:'Rewind',t:'reset a random skill\'s cooldown',c:'#8fd8ff',cd:12,run:o=>{const ks=G.slots.filter(k=>k&&G.skills[k].cdT>0); if(ks.length){G.skills[pick(ks)].cdT=0; text(G.player.x,G.player.y-30,'REWOUND','#8fd8ff',12);}}},
+  echo:{adj:'Echoing',n:'Echo',t:'make your next skill cast twice',c:'#b9a3ff',cd:10,run:o=>{G.player.echoNext=true;}},
+  // the silly ones: mostly here because they're funny, though most of them do still hurt
+  goose:{adj:'Honking',n:'Angry Goose',t:'summon an angry goose that honks at and bites everything',c:'#f2f2e8',cd:8,funny:true,run:o=>critter(o.x,o.y,o.n,{color:'#f2f2e8',mult:1.1*o.p,spd:190,r:6,life:6,pierce:6,honk:true})},
+  chicken:{adj:'Poultry',n:'Chickenize',t:'turn the nearest enemy into a chicken for 5 seconds',c:'#fff4c0',cd:8,funny:true,run:o=>{const e=o.e||nearestE(o.x,o.y,260); if(!e||e.boss) return;
+    e.chickenT=5; smoke(e.x,e.y,10); text(e.x,e.y-20,'BAWK','#fff4c0',14); play('pick');}},
+  kazoo:{adj:'Kazoo-Playing',n:'Kazoo Solo',t:'play a kazoo so badly that nearby enemies wander about confused',c:'#ffb0d8',cd:9,funny:true,run:o=>{const p=G.player; text(p.x,p.y-30,'BRRRRT','#ffb0d8',16);
+    for(const e of near(p.x,p.y,200)) if(!e.boss){e.fearT=2.5; e.confused=true;} for(let i=0;i<10;i++) addP({x:p.x,y:p.y-10,vx:rand(-80,80),vy:rand(-90,-30),life:1,max:1,size:3,color:'#ffb0d8',drag:1,emissive:true});}},
+  banana:{adj:'Slippery',n:'Banana Peel',t:'drop a banana peel for an enemy to slip on',c:'#ffe05a',cd:4,funny:true,run:o=>(G.peels=G.peels||[]).push({x:o.x+rand(-30,30),y:o.y+rand(-20,20),t:0,p:o.p})},
+  pigeon:{adj:'Pigeon-Haunted',n:'Thief Pigeons',t:'send 3 pigeons to peck enemies for loose change',c:'#9a9aa8',cd:7,funny:true,run:o=>critter(o.x,o.y,3*o.n,{color:'#9a9aa8',mult:.3*o.p,spd:230,r:4,life:3,coin:true})},
+  sneeze:{adj:'Sneezing',n:'Mighty Sneeze',t:'sneeze so hard enemies in front of you go flying',c:'#cfe8c0',cd:6,funny:true,run:o=>{const p=G.player, a=p.facing; text(p.x,p.y-30,'ACHOO','#cfe8c0',16);
+    G.effects.push({type:'slash',x:p.x,y:p.y,a,arc:1.4,reach:140,t:0,max:.25,color:'#cfe8c0'});
+    for(const e of near(p.x,p.y,150)) if(angDiff(Math.atan2(e.y-p.y,e.x-p.x),a)<.75) pHit(e,.6*o.p,a,{kb:900});}},
+  disco:{adj:'Groovy',n:'Disco Inferno',t:'start a disco: everything nearby has to dance for 2 seconds',c:'#ff5ad8',cd:12,funny:true,run:o=>{const p=G.player; text(p.x,p.y-30,'DISCO','#5affd8',18);
+    for(const e of near(p.x,p.y,220)){stun(e,2); pHit(e,.5*o.p,undefined,{noKb:true,color:pick(['#ff5ad8','#5affd8','#ffe05a'])});}
+    for(let k=0;k<6;k++) G.effects.push({type:'ring',x:p.x,y:p.y,r0:10,r1:220,t:-k*.15,max:.5,color:pick(['#ff5ad8','#5affd8','#ffe05a','#7a9aff']),w:4,light:true});}},
+  boomerang:{adj:'Returning',n:'Boomerang',t:'throw a boomerang that comes back',c:'#c8a070',cd:3,funny:true,run:o=>{const p=G.player, a=p.facing;
+    G.projectiles.push({x:p.x,y:p.y,vx:Math.cos(a)*460,vy:Math.sin(a)*460,r:6,owner:'player',life:2.5,color:'#c8a070',pierce:99,mult:.9*o.p,proc:false,boomer:0,phase:true});}},
+  spoons:{adj:'Spoon-Laden',n:'Spoons',t:'fire 12 spoons. They do almost nothing. Almost',c:'#d8d8e0',cd:5,funny:true,run:o=>{const p=G.player; for(let i=0;i<12;i++){const a=p.facing+rand(-.5,.5);
+    G.projectiles.push({x:p.x,y:p.y,vx:Math.cos(a)*rand(300,460),vy:Math.sin(a)*rand(300,460),r:2,owner:'player',life:.8,color:'#d8d8e0',pierce:0,mult:Math.random()<.06?20*o.p:.05,proc:false});}}},
+  hiccup:{adj:'Hiccuping',n:'Hiccup',t:'hiccup, and blink a short way in a random direction',c:'#b8a8ff',cd:3,funny:true,run:o=>{const p=G.player; for(let tr=0;tr<10;tr++){const a=rand(0,6.28), x=p.x+Math.cos(a)*70, y=p.y+Math.sin(a)*70;
+    if(!collides(x,y,p.r)){smoke(p.x,p.y,6); p.x=x; p.y=y; p.inv=Math.max(p.inv,.3); text(p.x,p.y-24,'hic!','#b8a8ff',13); break;}}}},
+  // the big ones only show up as item skills
+  timestop:{adj:'Timeless',n:'Hourglass',t:'stop time for every enemy on screen for 3 seconds',c:'#e8dcc0',cd:22,act:true,run:o=>{G.flash=.4; for(const e of G.enemies) if(!e.dead&&Math.abs(e.x-G.player.x)<520&&Math.abs(e.y-G.player.y)<380) e.frozenT=e.boss?1:3; play('shrine');}},
+  swap:{adj:'Two-Faced',n:'Body Swap',t:'swap places with the farthest enemy you can see, and stun it',c:'#b8a8ff',cd:8,act:true,run:o=>{const p=G.player; let b=null,bd=0;
+    for(const e of G.enemies){ if(e.dead||e.boss) continue; const d=dist(e,p); if(d>bd&&d<420&&los(p.x,p.y,e.x,e.y)){bd=d; b=e;}}
+    if(!b) return; const x=p.x,y=p.y; smoke(x,y,10); smoke(b.x,b.y,10); p.x=b.x; p.y=b.y; b.x=x; b.y=y; stun(b,2); pHit(b,1.5*o.p); play('blink');}},
+  bell:{adj:'Tolling',n:'Grave Bell',t:'toll a bell that stuns everything nearby and shakes it to pieces',c:'#c9a84a',cd:14,act:true,run:o=>{const p=G.player; G.shake=14; play('boss');
+    for(let k=0;k<3;k++) G.effects.push({type:'ring',x:p.x,y:p.y,r0:10+k*30,r1:300,t:-k*.12,max:.6,color:'#c9a84a',w:4,light:true});
+    for(const e of near(p.x,p.y,300)){stun(e,2); pHit(e,1.6*o.p,undefined,{noKb:true});}}},
+  keg:{adj:'Explosive',n:'Powder Keg',t:'drop a keg of powder that goes off very hard after a moment',c:'#ff9a3c',cd:10,act:true,run:o=>{const p=G.player, x=p.x, y=p.y;
+    warn(x,y,140,1.2,'#ff9a3c'); later(1.2,()=>{boomAt(x,y,140,6*o.p,'#ff9a3c',{kb:500}); G.flash=.3; G.shake=14; play('boss');});}},
+  midas:{adj:'Golden',n:'Midas Storm',t:'throw 10% of your gold in a storm of coins: the richer you are, the harder it hits',c:'#ffd27a',cd:8,act:true,run:o=>{const p=G.player, spend=Math.max(5,Math.floor(G.gold*.1)); if(G.gold<5) return; G.gold-=spend;
+    for(let i=0;i<24;i++){const a=i*Math.PI/12; G.projectiles.push({x:p.x,y:p.y,vx:Math.cos(a)*480,vy:Math.sin(a)*480,r:4,owner:'player',life:.8,color:'#ffd27a',pierce:3,mult:(.4+spend/60)*o.p,proc:false});}
+    text(p.x,p.y-30,`-${spend} gold`,'#e0b84a',13); play('legendary');}},
+  chaos3:{adj:'Unhinged',n:'Pandemonium',t:'cast 3 random skills, even ones you have never learned',c:'#ff8aff',cd:12,act:true,run:o=>{const all=Object.keys(SKILLS).filter(k=>!SKILL_INFO[k].item);
+    for(let i=0;i<3;i++) later(i*.2,()=>fireSkill(pick(all)));}},
+};
+const EFFECT_IDS=Object.keys(EFFECTS), PASSIVE_EFFECTS=EFFECT_IDS.filter(k=>!EFFECTS[k].act);
+const NO_PAIR={heal:['orb','mend'],gold:['coins'],timer:['coins'],move:['coins']};
+const cap1=t=>t[0].toUpperCase()+t.slice(1);
+function powerText(pw){const T=TRIG[pw.t], E=EFFECTS[pw.e]; return `${T.d(pw)}: ${pw.ch<.999?Math.round(pw.ch*100)+'% chance to '+E.t:cap1(E.t)}.`;}
+function rollPower(depth){
+  let t,e; do{ t=pick(Object.keys(TRIG)); e=pick(PASSIVE_EFFECTS); } while((NO_PAIR[t]||[]).includes(e));
+  const T=TRIG[t]; return {t,e,ch:T.ch>=1?1:Math.min(.9,+(T.ch*rand(.8,1.3)).toFixed(2)),icd:t==='timer'?ri(4,9):T.icd,p:+((1+Math.min(depth,60)*.04)*rand(.85,1.15)).toFixed(2),cd:0};
+}
+// every item skill is a real skill: it goes on a key, has a cooldown, and levels from its kills
+for(const id of EFFECT_IDS){const E=EFFECTS[id], sid='it_'+id;
+  SKILL_INFO[sid]={n:E.n,tags:['item'],c:E.c,item:true};
+  SKILLS[sid]={cd:E.cd,d:cap1(E.t)+'.',muts:{},cast(x){const p=G.player, it=G.itemSkillPow&&G.itemSkillPow[sid]||1;
+    E.run({x:p.x,y:p.y,e:nearestE(p.x,p.y,300),p:it*2.2*skillLvMul(sid),n:2});}};
+  SKILL_SFX[sid]=SKILL_SFX[sid]||'nova';}
+// ----- skill mods on gear: +levels to one skill, +levels to a kind of skill, or a mutation for free while worn -----
+const SKILL_TAGS={fire:'Fire',cold:'Cold',lightning:'Lightning',phys:'Physical',chaos:'Chaos',summon:'Summoning',spell:'Spell',melee:'Melee',area:'Area',proj:'Projectile'};
+const treeSkills=()=>Object.keys(SKILL_INFO).filter(k=>!SKILL_INFO[k].item);
+function rollSkillMod(depth){
+  const known=G?Object.keys(G.skills).filter(k=>!SKILL_INFO[k].item):[], id=known.length&&Math.random()<.7?pick(known):pick(treeSkills()), r=Math.random();
+  if(r<.45) return {k:'lv',id,v:1+(Math.random()<Math.min(.5,depth*.02)?1:0)};
+  if(r<.75) return {k:'tag',tag:pick(Object.keys(SKILL_TAGS)),v:1};
+  return {k:'mut',id,m:pick(Object.keys(SKILLS[id].muts))};
+}
+function skillModText(m){
+  if(m.k==='lv') return `+${m.v} to ${SKILL_INFO[m.id].n} level`;
+  if(m.k==='tag') return `+${m.v} to all ${SKILL_TAGS[m.tag]} skill levels`;
+  return `${SKILL_INFO[m.id].n} gains ${cap1(m.m)}: ${SKILLS[m.id].muts[m.m]}`;
+}
+// a skill's level counting gear: its own level, plus +levels to it, plus +levels to any kind it belongs to
+function effLv(id){const sk=G.skills[id], s=G.stats; let l=sk?sk.lvl:1; if(!s||!s.skLv) return l;
+  l+=s.skLv[id]||0; for(const t of SKILL_INFO[id].tags) l+=s.tagLv[t]||0; return l;}
+// fire every worn power with this trigger. x,y is where it happens; e is the enemy involved, if any
+function firePowers(t,x,y,e){
+  if(!G||!G.stats||!G.stats.powers||G.dying) return;
+  for(const pw of G.stats.powers){ if(pw.t!==t||pw.cd>0) continue; if(Math.random()>pw.ch) continue;
+    pw.cd=pw.icd; const E=EFFECTS[pw.e]; E.run({x:x??G.player.x,y:y??G.player.y,e,p:pw.p,n:1});
+    if(pw.t!=='hit'&&pw.t!=='move') text(G.player.x+rand(-10,10),G.player.y-38,E.n,E.c,11);}
+}
+function updatePowers(dt){
+  const p=G.player, s=G.stats; if(!s.powers) return;
+  for(const pw of s.powers){ if(pw.cd>0) pw.cd-=dt; }
+  for(const pw of s.powers) if(pw.t==='timer'&&pw.cd<=0) firePowers('timer'); // timers fire on their own
+  if(p.moving){p.moveT=(p.moveT||0)+dt; if(p.moveT>=2){p.moveT=0; firePowers('move');}} else p.moveT=0;
+  p.hasteT=Math.max(0,(p.hasteT||0)-dt);
+  if(G.turrets) for(const t of G.turrets){t.t+=dt; t.shot-=dt;
+    if(t.shot<=0){const e=nearestE(t.x,t.y,280); if(e){t.shot=.35; const a=Math.atan2(e.y-t.y,e.x-t.x);
+      G.projectiles.push({x:t.x,y:t.y-8,vx:Math.cos(a)*420,vy:Math.sin(a)*420,r:3,owner:'player',life:.9,color:t.color,pierce:0,mult:t.mult,proc:false});}}}
+  if(G.turrets) G.turrets=G.turrets.filter(t=>t.t<t.ttl);
+  if(G.peels){ for(const b of G.peels){b.t+=dt; for(const e of near(b.x,b.y,14)){ if(b.used) break; b.used=true; stun(e,2); e.kb.x+=rand(-200,200); e.kb.y-=160;
+        pHit(e,1.2*b.p,undefined,{noKb:true}); text(e.x,e.y-20,'WHOOPS','#ffe05a',14);} }
+    G.peels=G.peels.filter(b=>!b.used&&b.t<20); }
+}
+// a chicken: white, round, comb, a little bob. It can't hurt you, and it knows it.
+function drawChicken(g,e){const x=Math.round(e.x/2)*2, y=Math.round(e.y/2)*2, b=Math.sin(G.time*14+e.ph)>0?2:0, f=Math.cos(e.face)<0?-1:1;
+  g.fillStyle='rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(x,y+8,8,3,0,0,7); g.fill();
+  g.fillStyle='#f2f2e8'; g.fillRect(x-6,y-6-b,12,10); g.fillRect(x+f*2-2,y-12-b,6,6); g.fillStyle='#d01a1a'; g.fillRect(x+f*2,y-14-b,2,2);
+  g.fillStyle='#ffb02a'; g.fillRect(x+f*6-(f<0?2:0),y-10-b,2,2); g.fillRect(x-3,y+4,2,4); g.fillRect(x+1,y+4,2,4); g.fillStyle='#1a0e0a'; g.fillRect(x+f*3,y-11-b,1,1);}
+function drawPeel(g,b){const x=Math.round(b.x/2)*2, y=Math.round(b.y/2)*2; g.fillStyle='#ffe05a'; g.fillRect(x-4,y-2,8,4); g.fillRect(x-6,y,2,2); g.fillRect(x+4,y,2,2); g.fillStyle='#8a6a2a'; g.fillRect(x-1,y-3,2,2);}
+function drawTurret(g,t){const x=Math.round(t.x/2)*2, y=Math.round(t.y/2)*2, k=t.ttl-t.t<1?(t.ttl-t.t):1; g.globalAlpha=k;
+  g.fillStyle='rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(x,y+6,10,4,0,0,7); g.fill();
+  g.fillStyle='#8a8070'; g.fillRect(x-6,y-4,12,10); g.fillStyle='#e8dcc0'; g.fillRect(x-4,y-12,8,8); g.fillStyle='#1a0e0a'; g.fillRect(x-2,y-10,2,2); g.fillRect(x+1,y-10,2,2); g.globalAlpha=1;}
 function dash(){
   const p=G.player, s=G.stats; if(!s.canDash) return;
-  if(p.dashT>0||p.dashTime>0){ if(p.dashT<.25) p.bufDash=.2; return; } p.bufDash=0; // pressed a touch early: dash the moment it's ready
+  if(p.dashT>0||p.dashTime>0||p.leap){ if(p.dashT<.25) p.bufDash=.2; return; } p.bufDash=0; // pressed a touch early: dash the moment it's ready
+  firePowers('dash');
+  if(s.u.leapdash){p.dashT=1; SKILLS.leap.cast(Object.assign(skillCtx('leap'),{tp:aimPoint(220)})); play('dash'); return;} // Hammerfall Greaves
   let [mx,my]=moveInput(); if(!mx&&!my){mx=Math.cos(p.facing);my=Math.sin(p.facing);}
   p.dashTime=.17; p.dvx=mx*560; p.dvy=my*560; p.dashT=1; p.inv=Math.max(p.inv,.22); play('dash');
 }
@@ -1975,9 +2256,10 @@ function update(dt){
   p.ghost+= (p.hp-p.ghost)*Math.min(1,dt*(p.ghost>p.hp?2.5:10));
   if(p.hp<s.maxHp*.3){p.beatT-=dt; if(p.beatT<=0){p.beatT=.95; play('beat');}}
   const [mx,my]=G.dying||p.leap?[0,0]:moveInput(); // mid-leap you're in the air
+  p.moving=!!(mx||my); if(p.spinT>0) p.spinT-=dt;
   if(p.dashTime>0){p.dashTime-=dt; move(p,p.dvx*dt,p.dvy*dt);
     if(s.u.gravewalk){p.fireT=(p.fireT||0)-dt; if(p.fireT<=0){p.fireT=.035; addHazard(p.x,p.y+6,16,2.6,s.dmg*.45*s.u.gravewalk,'#ff7a2a',0,'player');}} addP({x:p.x,y:p.y,vx:0,vy:0,life:.25,max:.25,size:9,color:CLASSES[G.cls].color,drag:0,fade:true});}
-  else { move(p,mx*s.speed*dt,my*s.speed*dt);
+  else { const spd=s.speed*(p.hasteT>0?1.3:1)*(p.spinT>0?.6:1); move(p,mx*spd*dt,my*spd*dt);
     if(mx||my){p.stepT=(p.stepT||0)-dt; if(p.stepT<=0){p.stepT=48/s.speed; play('step');}} }
   for(const o of G.props){ if(o.kind==='urn') continue; const R=o.kind==='table'||o.kind==='hearth'?15:o.kind==='shrine'||o.kind==='altar'?13:11, dx=p.x-o.x, dy=p.y-o.y, d=Math.hypot(dx,dy);
     if(d<R+p.r&&d>.01) move(p,dx/d*(R+p.r-d),dy/d*(R+p.r-d)); }
@@ -2030,15 +2312,30 @@ function update(dt){
       if(!b.boss) b.T.phase?(b.x+=nx*push,b.y+=ny*push):move(b,nx*push,ny*push);}
   }
   for(const pr of G.projectiles){
+    if(pr.home){ // critters: steer at the nearest enemy, with a little wobble so swarms look alive
+      pr.tgT=(pr.tgT||0)-dt; if(pr.tgT<=0||!pr.tg||pr.tg.dead){pr.tgT=.2; pr.tg=nearestE(pr.x,pr.y,320);}
+      const sp=Math.hypot(pr.vx,pr.vy)||200; let a=Math.atan2(pr.vy,pr.vx);
+      if(pr.tg){const want=Math.atan2(pr.tg.y-pr.y,pr.tg.x-pr.x); a+=clamp(Math.atan2(Math.sin(want-a),Math.cos(want-a)),-7*dt,7*dt);}
+      a+=Math.sin(G.time*(pr.buzz?22:9)+pr.wob)*(pr.buzz?6:2)*dt; pr.vx=Math.cos(a)*sp; pr.vy=Math.sin(a)*sp;}
+    if(pr.boomer!==undefined){pr.boomer+=dt; if(pr.boomer>.45){const a=Math.atan2(p.y-pr.y,p.x-pr.x); pr.vx=Math.cos(a)*480; pr.vy=Math.sin(a)*480; pr.hit=null;
+      if(Math.hypot(p.x-pr.x,p.y-pr.y)<16){pr.life=0; continue;}}}
+    if(pr.orbitP){pr.oa+=dt*3.2; const tx=p.x+Math.cos(pr.oa)*64, ty=p.y+Math.sin(pr.oa)*64; pr.vx=(tx-pr.x)/dt; pr.vy=(ty-pr.y)/dt;} // Twin Abyss
     pr.x+=pr.vx*dt; pr.y+=pr.vy*dt; pr.life-=dt;
-    if(solidAt(pr.x,pr.y)){pr.x-=pr.vx*dt; pr.y-=pr.vy*dt; spark(pr.x,pr.y,pr.color,5); pr.life=0; continue;}
+    if(!pr.phase&&!pr.orbitP&&solidAt(pr.x,pr.y)){
+      if(pr.bounce){ // the Ricochet Ember: bounce off whichever wall it hit
+        const bx=solidAt(pr.x,pr.y-pr.vy*dt), by=solidAt(pr.x-pr.vx*dt,pr.y); pr.x-=pr.vx*dt; pr.y-=pr.vy*dt;
+        if(bx||!by) pr.vx*=-1; if(by||!bx) pr.vy*=-1; spark(pr.x,pr.y,pr.color,4); play('step');}
+      else {pr.x-=pr.vx*dt; pr.y-=pr.vy*dt; spark(pr.x,pr.y,pr.color,5); pr.life=0; continue;}}
     if(pr.owner==='player'&&!pr.noHit) for(const o of G.props) if(o.kind==='urn'&&!o.broken&&Math.hypot(o.x-pr.x,o.y-pr.y)<12){breakUrn(o,Math.atan2(pr.vy,pr.vx)); pr.life=0;}
     if(pr.life<=0) continue;
     if(pr.pulse){const q=pr.pulse; q.acc+=dt; if(q.pull) pullIn(pr.x,pr.y,q.r*1.8,220*dt*8); // the void orb gnaws at everything near it
       if(q.acc>=q.every){q.acc-=q.every; for(const e of near(pr.x,pr.y,q.r)) strike(e,q.m,Math.atan2(e.y-pr.y,e.x-pr.x),{skill:pr.skill,noKb:true,quiet:true,critBonus:G.stats.skillCrit,color:'#c79aff'});}}
     if(pr.owner==='player'&&!pr.noHit){for(const e of G.enemies){if(e.dead) continue; if(pr.hit&&pr.hit.has(e)) continue;
-      if(Math.hypot(e.x-pr.x,e.y-pr.y)<e.r+pr.r){strike(e,pr.mult||1,Math.atan2(pr.vy,pr.vx),{forceCrit:pr.forceCrit,skill:pr.skill,critBonus:pr.critBonus}); spark(pr.x,pr.y,pr.color,6);
-        if(pr.chill&&!e.dead) e.slow=Math.max(e.slow,pr.chill);
+      if(Math.hypot(e.x-pr.x,e.y-pr.y)<e.r+pr.r){strike(e,pr.mult||1,Math.atan2(pr.vy,pr.vx),{forceCrit:pr.forceCrit,skill:pr.skill,critBonus:pr.critBonus,proc:pr.proc,quiet:pr.home&&!pr.honk}); spark(pr.x,pr.y,pr.color,6);
+        if(pr.chill&&!e.dead){ if(s.u.iceprison&&!e.boss) e.frozenT=1.5; else e.slow=Math.max(e.slow,pr.chill);}
+        if(pr.healHit) healP(s.maxHp*pr.healHit,true);
+        if(pr.honk&&Math.random()<.5){text(pr.x,pr.y-14,'HONK','#f2f2e8',13); play('hit',pr);}
+        if(pr.coin&&Math.random()<.4) dropGold(e.x,e.y,1);
         if(pr.pierce>0){pr.pierce--; (pr.hit||(pr.hit=new Set())).add(e);} else {pr.life=0; break;}}}}
     else if(pr.owner==='player'){} // void orbs never touch-hit (and never hit you)
     else if(Math.hypot(p.x-pr.x,p.y-pr.y)<p.r+pr.r){
@@ -2053,9 +2350,10 @@ function update(dt){
   for(let i=G.drops.length-1;i>=0;i--){const d=G.drops[i]; d.t+=dt; const dd=Math.hypot(d.x-p.x,d.y-p.y);
     if(d.kind==='tome'){ if(dd<p.r+16){G.drops.splice(i,1); learnSkill(d.skill);} continue; } // walk over a Skill Tome to read it
     if(d.kind==='gold'){ if(dd<90&&d.t>.4){const a=Math.atan2(p.y-d.y,p.x-d.x); d.x+=Math.cos(a)*300*dt; d.y+=Math.sin(a)*300*dt;}
-      if(dd<p.r+8&&d.t>.4){G.gold+=d.n; G.drops.splice(i,1); play('pick'); text(p.x+rand(-8,8),p.y-24,`+${d.n}`,'#e0b84a',11);} continue; }
+      if(dd<p.r+8&&d.t>.4){G.gold+=d.n; G.drops.splice(i,1); play('pick'); text(p.x+rand(-8,8),p.y-24,`+${d.n}`,'#e0b84a',11); firePowers('gold');
+        if(s.u.gildedheart&&G.time-(G.gildT||-9)>.3){G.gildT=G.time; boomAt(p.x,p.y,60+Math.min(80,d.n*4),(.5+d.n*.08)*s.u.gildedheart,'#ffd27a');}} continue; }
     if(d.kind==='orb'){ if(dd<80){const a=Math.atan2(p.y-d.y,p.x-d.x);d.x+=Math.cos(a)*220*dt;d.y+=Math.sin(a)*220*dt;}
-      if(dd<p.r+10){healP(s.maxHp*.12); G.drops.splice(i,1); play('pick');} }
+      if(dd<p.r+10){ if(!s.u.plagueskel) healP(s.maxHp*.12); G.drops.splice(i,1); play('pick'); firePowers('heal');} }
     else if(dd<nd){nd=dd; G.near=d;}}
   if(G.near&&!G.gear[G.near.item.slot]&&dist(G.near,p)<22) takeNear(); // nothing in that slot yet: just put it on
   for(const t of G.torches){ if(Math.abs(t.x-p.x)>520||Math.abs(t.y-p.y)>420||Math.random()>dt*3.5) continue;
@@ -2129,7 +2427,7 @@ function render(){
   for(const t of G.torches){ if(!inView(t.x,t.y,150)) continue; if(!t.poly) t.poly=visPoly(t.x,t.y+14,150,120);
     lctx.save(); clipPoly(lctx,t.poly); L(t.x,t.y+8,130*(.92+.08*Math.sin(G.time*9+t.ph))+rand(-3,3),.9); lctx.restore();}
   for(const pr of G.projectiles) L(pr.x,pr.y,pr.owner==='player'?70:42,.7);
-  for(const f of G.effects) if(f.type==='ring') L(f.x,f.y,f.r1*1.3,(f.light?.95:.6)*(1-f.t/f.max));
+  for(const f of G.effects) if(f.type==='ring'&&f.t>=0) L(f.x,f.y,f.r1*1.3,(f.light?.95:.6)*(1-f.t/f.max));
   for(const d of G.drops) L(d.x,d.y,d.kind==='orb'?34:d.kind==='gold'?22:d.kind==='tome'?60:d.item.rarity==='legendary'?70:30,d.kind==='tome'||(d.kind==='item'&&d.item.rarity==='legendary')?.8:.45);
   for(const o of G.props) if(o.kind==='hearth') L(o.x,o.y,190*(.95+.05*Math.sin(G.time*7)),1); else if(o.kind==='keeper') L(o.x,o.y+4,110,.9); else if(o.kind==='table') L(o.x,o.y-4,50,.6);
   for(const e of G.enemies) if(e.burn) L(e.x,e.y,40,.5);
@@ -2152,14 +2450,19 @@ function render(){
     for(let i=0;i<5;i++){const an=G.time*.5+i*Math.PI*2/5, an2=an+Math.PI*4/5; ctx.beginPath(); ctx.moveTo(G.stairs.x+Math.cos(an)*18,G.stairs.y+Math.sin(an)*18); ctx.lineTo(G.stairs.x+Math.cos(an2)*18,G.stairs.y+Math.sin(an2)*18); ctx.stroke();}}
   else {const a=.25+.12*Math.sin(G.time*2); const g=ctx.createRadialGradient(G.stairs.x,G.stairs.y,0,G.stairs.x,G.stairs.y,30); g.addColorStop(0,`rgba(120,150,200,${a})`); g.addColorStop(1,'rgba(120,150,200,0)'); ctx.fillStyle=g; ctx.fillRect(G.stairs.x-30,G.stairs.y-30,60,60);}
   for(const e of G.enemies){ if(!inView(e.x,e.y,e.r)) continue;
-    const s=e.elite?1.25:1, ec=e.boss?e.bossDef.pc:e.elite?MODS[e.mod].c:e.T.eye, er=e.boss?2.6:1.8*s, blink=Math.sin(G.time*1.3+e.ph*5)>.97;
+    const s=e.elite?1.25:1, ec=e.boss?e.bossDef.pc:e.elite?MODS[e.mod].c:e.T.eye, er=e.boss?2.6:1.8*s, blink=e.chickenT>0||Math.sin(G.time*1.3+e.ph*5)>.97;
     if(!blink) for(const q of eyeSpots(SPRITES[e.shape||e.T.shape],e.x,e.y+e.r*.7,Math.cos(e.face)<0,s)){
       // eyes glow hard in the dark but stay subtle inside your light, where the sprite itself is visible
       const lit=dist(e,G.player)<G.stats.light*.8; ctx.fillStyle=hexA(ec,lit?.08:.2); ctx.beginPath(); ctx.arc(q.x,q.y,er*(lit?2:3.4),0,7); ctx.fill();
       ctx.fillStyle=hexA(ec,1); ctx.fillRect(q.x-s,q.y-s,2*s,2*s);}
     if(e.burn){ctx.fillStyle='rgba(255,120,30,.25)';ctx.beginPath();ctx.arc(e.x,e.y,e.r*1.4,0,7);ctx.fill();}
     if(e.slow>0){ctx.strokeStyle='rgba(150,210,255,.35)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(e.x,e.y,e.r+3,0,7);ctx.stroke();}
+    if(e.frozenT>0){ctx.fillStyle='rgba(150,220,255,.3)'; ctx.fillRect(e.x-e.r-2,e.y-e.r*1.6,e.r*2+4,e.r*2.6);}
+    if(e.markT>0){ctx.strokeStyle=`rgba(220,20,30,${.4+.2*Math.sin(G.time*6)})`; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(e.x,e.y-e.r-12,4,0,7); ctx.stroke();}
+    if(e.fearT>0&&Math.sin(G.time*8+e.ph)>0){ctx.fillStyle='rgba(255,255,255,.7)'; ctx.fillRect(e.x-1,e.y-e.r-16,2,6); ctx.fillRect(e.x-1,e.y-e.r-8,2,2);}
   }
+  if(p.ward>0) for(let i=0;i<p.ward;i++){const a=G.time*3+i*Math.PI*2/p.ward; ctx.fillStyle='rgba(232,220,192,.85)'; ctx.fillRect(p.x+Math.cos(a)*18-2,p.y+Math.sin(a)*12-1,4,2);} // bone ward
+  if(p.hasteT>0&&Math.random()<.5) addP({x:p.x+rand(-6,6),y:p.y+rand(-4,8),vx:0,vy:0,life:.25,max:.25,size:2,color:'#8fd8ff',drag:0,emissive:true});
   {const pc=SPRITE_DEFS[G.cls].pal.e; for(const q of eyeSpots(SPRITES[G.cls],p.x,p.y+9,Math.cos(p.facing)<0)){
     ctx.fillStyle=hexA(pc,.18); ctx.beginPath(); ctx.arc(q.x,q.y,5,0,7); ctx.fill(); ctx.fillStyle=hexA(pc,.9); ctx.fillRect(q.x-1,q.y-1,2,2);}}
   if(G.cls==='mage'||G.cls==='necro'){const ps=weaponPose(), wa=ps.ang, nc=G.cls==='necro', tip=(WEAPONS[G.cls].tip||(nc?28:26))+ps.ext; const x=p.x+Math.cos(wa)*tip, y=p.y+2+Math.sin(wa)*tip;
@@ -2203,6 +2506,8 @@ function render(){
     const x=p.x+((i*97.3+G.time*sp)%(R*2))-R, y=p.y+((i*53.7+G.time*sp*.6+Math.sin(G.time*.7+i)*12)%(R*2))-R;
     const fall=1-Math.hypot(x-p.x,y-p.y)/R; if(fall<=0) continue;
     ctx.fillStyle=`rgba(230,200,160,${.22*fall*(.5+.5*Math.sin(G.time*2+i))})`; ctx.fillRect(Math.round(x),Math.round(y),2,2);}
+  for(const b of G.peels||[]) if(inView(b.x,b.y)) drawPeel(ctx,b);
+  for(const t of G.turrets||[]) if(inView(t.x,t.y)) drawTurret(ctx,t);
   for(const f of G.effects) drawEffect(ctx,f);
   for(const q of G.particles) if(q.emissive){ctx.globalAlpha=clamp(q.life/q.max,0,1); ctx.fillStyle=q.color; ctx.fillRect(q.x-q.size/2,q.y-q.size/2,q.size,q.size);}
   ctx.globalAlpha=1; ctx.globalCompositeOperation='source-over';
@@ -2346,6 +2651,7 @@ function drawPlayer(g){
   g.restore();
 }
 function drawEnemy(g,e){
+  if(e.chickenT>0){drawChicken(g,e); return;}
   const sp=SPRITES[e.shape||e.T.shape], s=e.elite?1.25:1, flip=Math.cos(e.face)<0, feet=e.y+e.r*.7;
   const fr=sprFrame(sp,isMoving(e)||e.T.shape==='wraith',e.ph);
   g.save(); if(e.T.phase) g.globalAlpha=.55+.25*Math.sin(G.time*6+e.ph);
@@ -2375,6 +2681,7 @@ function drawSmear(g,f){
   g.restore();
 }
 function drawEffect(g,f){
+  if(f.t<0) return; // a staggered effect that hasn't started yet
   if(f.type==='smear'){g.save(); g.globalAlpha=.35; drawSmear(g,f); g.restore(); return;} // mainly drawn in the world pass; this adds a faint glow
   const k=f.t/f.max, a=1-k;
   if(f.type==='slash'){const r=f.reach*.85; g.strokeStyle=hexA(f.color,.55*a); g.lineWidth=7*a+1; g.lineCap='round';
@@ -2422,7 +2729,7 @@ function drawHUD(){
   const c=CLASSES[G.cls], pa=PAD.active, PADK=['LB','LT','RB','B'];
   const slots=[{k:pa?'RT':'LMB',n:G.cls==='necro'?'Spear':c.ranged?'Bolt':'Strike',cd:Math.max(0,p.atkT)/s.atkCd}];
   G.slots.forEach((id,i)=>{ if(!id){slots.push({k:pa?PADK[i]:String(i+1),n:'—',cd:0,empty:true}); return;}
-    const sk=G.skills[id], full=SKILLS[id].cd*s.cdMul*(id==='leap'&&skillHas('leap','twice')?.5:1);
+    const sk=G.skills[id], full=skillCd(id);
     slots.push({k:(pa?PADK[i]:i===0?'1 / Q':String(i+1))+(id==='raise'?` · ${G.allies.filter(m=>!m.blade).length}/${maxMinions()}`:''),n:SKILL_INFO[id].n,col:SKILL_INFO[id].c,lv:sk.lvl,cd:Math.max(0,sk.cdT)/full,sec:sk.cdT,xp:sk.xp/skillNeed(sk.lvl)});});
   slots.push({k:pa?'A':'SPACE',n:s.canDash?'Dash':'No dash',cd:s.canDash?Math.max(0,p.dashT):1});
   // on touch the buttons are the ability bar, so cards and prompts sit above them instead
@@ -2452,7 +2759,7 @@ function drawHUD(){
       ctx.textAlign='left'; ctx.font=`10px ${FB}`; ctx.fillStyle='#857a72'; ctx.fillText(lab.toUpperCase(),X+10,Y+12);
       ctx.font=`19px ${FD}`; ctx.fillStyle=RAR[ci.rarity].c; ctx.fillText(fit(ci.name,cw-20),X+10,Y+30);
       ctx.font=`11px ${FB}`; ctx.fillStyle='#857a72'; ctx.fillText(`${RAR[ci.rarity].n} ${ci.slot} · lv ${ci.level} · found at depth ${ci.ilvl||1}`,X+10,Y+45);
-      ctx.font=`13px ${FB}`; lines.forEach((l,j)=>{ctx.fillStyle=l.leg?'#ff8c1a':l.bad?'#e04a30':'#d3c7ae'; ctx.fillText(fit(l.t,cw-20),X+10,Y+62+j*17);});
+      ctx.font=`13px ${FB}`; lines.forEach((l,j)=>{ctx.fillStyle=lineCol(l); ctx.fillText(fit(l.t,cw-20),X+10,Y+62+j*17);});
       X+=cw+10;}}
   // prompt for a chest or shrine within reach
   if(!G.near&&G.nearProp){const o=G.nearProp, sh=o.kind==='shrine', al=o.kind==='altar', kp=o.kind==='keeper', hr=o.kind==='hearth';
@@ -2622,14 +2929,14 @@ function openBag(shop){
 }
 // how wearing an item would change you, by trying it on for a moment
 function statDelta(it){
-  const p=G.player, hp=p.hp, prev=G.stats, old=G.gear[it.slot]; G.gear[it.slot]=it; recalc(); const a=G.stats; G.gear[it.slot]=old; G.stats=prev; p.hp=hp;
+  const p=G.player, hp=p.hp, prev=G.stats, old=G.gear[it.slot], isp=G.itemSkillPow; G._try=1; G.gear[it.slot]=it; recalc(); const a=G.stats; G.gear[it.slot]=old; G.stats=prev; p.hp=hp; G._try=0; G.itemSkillPow=isp;
   const rows=[['damage',a.dmg-prev.dmg,v=>v.toFixed(1)],['life',a.maxHp-prev.maxHp,v=>Math.round(v)],['reduction',a.armor-prev.armor,pct],['crit',a.crit-prev.crit,pct],
     ['attacks/s',1/a.atkCd-1/prev.atkCd,v=>v.toFixed(2)],['skill dmg',a.abilDmg-prev.abilDmg,pct],['speed',a.speed-prev.speed,v=>Math.round(v)]];
   return rows.filter(r=>Math.abs(r[1])>.004).slice(0,4).map(([n,v,f])=>`<b class="${v>0?'up':'dn'}">${v>0?'+':'−'}${f(Math.abs(v))}</b> ${n}`).join(' · ');
 }
 function itemCard(it,btns,sub){
   return `<div class="bi"><div class="it-n" style="color:${RAR[it.rarity].c}">${esc(it.name)}</div><div class="it-m">${RAR[it.rarity].n} ${it.slot} · level ${it.level} · depth ${it.ilvl||1}</div>
-    ${itemLines(it).map(l=>`<div class="it-a${l.bad?' bad':''}${l.leg?' leg':''}">${esc(l.t)}</div>`).join('')}${sub?`<div class="cmp">${sub}</div>`:''}<div class="row">${btns}</div></div>`;
+    ${itemLines(it).map(l=>`<div class="it-a" style="color:${lineCol(l)}">${esc(l.t)}</div>`).join('')}${sub?`<div class="cmp">${sub}</div>`:''}<div class="row">${btns}</div></div>`;
 }
 const bbtn=(act,i,label,dis)=>`<button class="btn sm" data-act="${act}" data-i="${i}"${dis?' disabled':''}>${label}</button>`;
 function renderBag(){
@@ -2678,14 +2985,14 @@ function refreshChar(){
   if(G.cls==='necro') rows.push(['Skeletons',`${G.allies.length} / ${maxMinions()}`],['Skeleton damage',(s.dmg*(.55+s.minionDmg)*s.abilDmg).toFixed(1)]);
   let h=`<div><div class="sp-h">Skills</div>`;
   for(const id of Object.keys(G.skills)){const sk=G.skills[id], I=SKILL_INFO[id], need=skillNeed(sk.lvl);
-    h+=`<div class="sk"><div class="sk-top"><span class="sk-n" style="color:${I.c}">${I.n}</span><span class="sk-l">Lv ${sk.lvl} · ${(SKILLS[id].cd*s.cdMul).toFixed(1)}s</span></div>
+    h+=`<div class="sk"><div class="sk-top"><span class="sk-n" style="color:${I.c}">${I.n}</span><span class="sk-l">Lv ${sk.lvl}${effLv(id)>sk.lvl?` (+${effLv(id)-sk.lvl})`:''} · ${skillCd(id).toFixed(1)}s${I.item?(s.grants.includes(id)?' · item':' · item not worn'):''}</span></div>
       <div class="sk-bar"><i style="width:${Math.min(100,sk.xp/need*100)}%"></i></div>
       <div class="sk-m">${SKILLS[id].d}</div>${sk.muts.map(k=>`<div class="sk-m">◆ <b>${k[0].toUpperCase()+k.slice(1)}</b>: ${SKILLS[id].muts[k]}</div>`).join('')}
       <div class="sk-slots">${[0,1,2,3].map(k=>`<button data-sk="${id}" data-k="${k}" class="${G.slots[k]===id?'on':''}" title="Put on key ${k+1}">${k+1}</button>`).join('')}</div></div>`;}
   h+=`<div class="it-m" style="text-transform:none">Learn more from skill nodes in the tree and from Skill Tomes. Skills grow from their kills and mutate at levels ${MUT_LV.join(', ')}.</div></div>`;
   h+=`<div><div class="sp-h">Level ${G.level} ${CLASSES[G.cls].name}</div>${rows.map(([k,v])=>`<div class="sp-row"><span>${k}</span><b>${v}</b></div>`).join('')}</div><div><div class="sp-h">Carried</div>`;
   for(const k of SLOTS){const it=G.gear[k];
-    h+=it?`<div class="it"><div class="it-n" style="color:${RAR[it.rarity].c}">${esc(it.name)}</div><div class="it-m">${RAR[it.rarity].n} ${it.slot} · level ${it.level} · found at depth ${it.ilvl||1}</div>${itemLines(it).map(l=>`<div class="it-a${l.bad?' bad':''}${l.leg?' leg':''}">${esc(l.t)}</div>`).join('')}${it.leg?`<div class="flav">${esc(LEG[it.leg].fl)}</div>`:''}</div>`
+    h+=it?`<div class="it"><div class="it-n" style="color:${RAR[it.rarity].c}">${esc(it.name)}</div><div class="it-m">${RAR[it.rarity].n} ${it.slot} · level ${it.level} · found at depth ${it.ilvl||1}</div>${itemLines(it).map(l=>`<div class="it-a" style="color:${lineCol(l)}">${esc(l.t)}</div>`).join('')}${it.leg?`<div class="flav">${esc(LEG[it.leg].fl)}</div>`:''}</div>`
       :`<div class="it"><div class="it-m">No ${k}</div></div>`;}
   $('statPanel').innerHTML=h+'</div>';
   $('statPanel').querySelectorAll('[data-sk]').forEach(b=>b.onclick=()=>slotSkill(b.dataset.sk,+b.dataset.k));
@@ -2878,7 +3185,7 @@ function syncTouchUI(){
   const p=G.player, s=G.stats, cd=(el,k)=>{el.style.background=k>0?`conic-gradient(rgba(0,0,0,.65) ${k*360}deg, rgba(20,8,9,.6) 0)`:'';};
   G.slots.forEach((id,i)=>{const el=$('tSk'+i); el.hidden=!id; if(!id) return;
     const nm=SKILL_INFO[id].n.toUpperCase(); if(el.textContent!==nm){el.textContent=nm; el.style.borderColor=hexA(SKILL_INFO[id].c,.8);}
-    cd(el,Math.max(0,G.skills[id].cdT)/(SKILLS[id].cd*s.cdMul));});
+    cd(el,Math.max(0,G.skills[id].cdT)/skillCd(id));});
   cd($('tDash'),s.canDash?Math.max(0,p.dashT):1);
 }
 addEventListener('pointerdown',e=>{ if(e.pointerType==='touch') setTouch(true); },true);
@@ -2941,7 +3248,7 @@ $('btnCopyRun').onclick=()=>{ const b=$('btnCopyRun'), t=$('runSummary'), shown=
   try{ navigator.clipboard.writeText(G.summary).then(()=>{b.textContent='Copied. Paste it to the dev';},()=>{b.textContent='Select the text below and copy it'; shown();}); }
   catch(e){ b.textContent='Select the text below and copy it'; shown(); } };
 // one place for the build number: the title screen and run summaries both read it
-const BUILD='0.22';
+const BUILD='0.23';
 // ----- first-time tips: each shows once ever, worded for whatever you're playing with -----
 const HINTS=(()=>{try{return new Set(JSON.parse(localStorage.getItem('deepening.hints')||'[]'))}catch(e){return new Set()}})();
 const keyFor=a=>({dash:TOUCH.active?'Tap DASH':PAD.active?'Press A':'Press Space', use:TOUCH.active?'Tap USE':PAD.active?'Press X':'Press E',
