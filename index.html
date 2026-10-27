@@ -115,6 +115,57 @@ h2{font-family:var(--display);font-weight:400;font-size:clamp(34px,5vw,58px);lin
 #ovChar[data-tab=tree] #statPanel{display:none}
 #ovChar[data-tab=char] .treeWrap,#ovChar[data-tab=char] #ptsPill{display:none}
 #ovChar[data-tab=char] #statPanel{width:min(1140px,100%);margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));align-items:start;gap:28px}
+/* inventory: paper doll left, bag grid right, tooltip on hover */
+.inv{display:flex;gap:28px;align-items:flex-start;justify-content:center;flex-wrap:wrap}
+.dollWrap{display:flex;flex-direction:column;gap:12px;align-items:center}
+.doll{position:relative;display:grid;grid-template-columns:repeat(3,76px);grid-auto-rows:76px;gap:10px 14px;padding:18px 22px;
+  grid-template-areas:". helm charm" "weapon armor ring" "weapon armor ." "gloves belt ." ". boots .";
+  background:radial-gradient(ellipse at 50% 45%,rgba(60,20,18,.55),rgba(8,5,6,.9) 70%);border:1px solid var(--edge);box-shadow:inset 0 0 40px rgba(0,0,0,.8)}
+.doll .hero{position:absolute;left:50%;top:50%;width:150px;transform:translate(-50%,-50%);image-rendering:pixelated;opacity:.13;pointer-events:none;filter:grayscale(.4)}
+.slot{display:flex;flex-direction:column;align-items:center;gap:2px;position:relative;z-index:1}
+.slot .cell{width:60px;height:60px}
+.slot.tall .cell{height:146px}
+.slot .sn{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#6a5e58}
+.slot.tall .sn{position:absolute;bottom:-14px}
+.cell{position:relative;width:56px;height:56px;padding:0;border:1px solid #2e1c1e;background:radial-gradient(circle at 50% 40%,#1c1214,#0a0607);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.cell img{width:48px;height:48px;image-rendering:pixelated;pointer-events:none}
+.cell.empty{cursor:default;background:#0c0809;border-color:#1e1416}
+.cell .ph{font-size:10px;color:#3a302c;letter-spacing:.08em;text-transform:uppercase}
+.cell .lv{position:absolute;right:2px;bottom:1px;font-size:10px;font-weight:600;color:#d3c7ae;text-shadow:0 0 3px #000}
+.cell .price{position:absolute;left:0;right:0;bottom:-16px;font-size:11px;color:#e0b84a;text-align:center}
+.cell .price.poor{color:#7a4a3a}
+.cell:hover,.cell:focus-visible{outline:none;filter:brightness(1.35)}
+.r-common{border-color:#4a4440}
+.r-magic{border-color:#4a5a9a;box-shadow:inset 0 0 12px rgba(80,110,220,.25)}
+.r-rare{border-color:#a08030;box-shadow:inset 0 0 14px rgba(224,184,74,.25)}
+.r-cursed{border-color:#902a1a;box-shadow:inset 0 0 14px rgba(224,74,48,.3)}
+.r-legendary{border-color:#ff8c1a;box-shadow:inset 0 0 18px rgba(255,140,26,.4),0 0 8px rgba(255,140,26,.35)}
+.invRight{display:flex;flex-direction:column;gap:8px;min-width:0}
+.invRight h3{font-family:var(--display);font-weight:400;font-size:24px;margin:6px 0 2px;color:var(--bone)}
+.invRight h3 small{font-family:var(--body);font-size:13px;color:var(--ash);margin-left:10px}
+.grid{display:grid;grid-template-columns:repeat(10,56px);gap:4px}
+.invRight .grid:not(.bag){row-gap:22px;margin-bottom:12px}
+.invHelp{font-size:12px;color:var(--ash);margin:4px 0 0;max-width:600px}
+.sets{display:flex;flex-direction:column;gap:6px;width:100%}
+.sets .setRow{display:flex;gap:6px;align-items:center}
+.setN{font-family:var(--display);font-size:18px;min-width:56px;color:var(--bone)}
+#itemTip{position:fixed;z-index:20;max-width:330px;min-width:220px;background:rgba(8,5,6,.97);border:1px solid #4a3a30;box-shadow:0 6px 24px rgba(0,0,0,.8);padding:10px 14px;pointer-events:none;text-align:left}
+#itemTip .tb{pointer-events:auto}
+#itemTip .tn{font-family:var(--display);font-size:22px;line-height:1.1}
+#itemTip .tm{font-size:11px;color:var(--ash);margin:2px 0 8px;text-transform:capitalize}
+#itemTip .tl{font-size:13px;line-height:1.45}
+#itemTip .tf{font-style:italic;font-size:12px;color:#8a7a6a;margin-top:6px}
+#itemTip .tc{font-size:12px;color:var(--ash);margin-top:8px;padding-top:6px;border-top:1px solid #2e1c1e}
+#itemTip .tc b.up{color:#8fd88f}#itemTip .tc b.dn{color:#e04a30}
+#itemTip .th{font-size:11px;color:#e07a2c;margin-top:6px}
+#itemTip .tb{display:flex;gap:6px;margin-top:8px}
+@media (max-width:900px){.grid{grid-template-columns:repeat(6,52px)}.cell{width:52px;height:52px}.cell img{width:44px;height:44px}
+  .doll{grid-template-columns:repeat(3,64px);grid-auto-rows:64px;gap:8px 10px;padding:12px}.slot .cell{width:54px;height:54px}.slot.tall .cell{height:126px}}
+/* character sheet groups */
+.sp-g{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#e07a2c;margin:12px 0 2px}
+.sp-row b.hi{font-family:var(--display);font-size:20px;font-weight:400}
+.fx{display:flex;gap:8px;align-items:flex-start;padding:4px 0;border-bottom:1px solid rgba(46,28,30,.6);font-size:13px;line-height:1.4}
+.fx img{width:24px;height:24px;image-rendering:pixelated;flex:none}
 #goldPill{font-family:var(--display);font-size:22px;color:#e0b84a}
 .bagBody{width:min(1240px,100%);flex:1;min-height:0;overflow-y:auto;text-align:left;display:flex;flex-direction:column;gap:18px;padding-bottom:12px}
 .bagSec h3{font-family:var(--display);font-weight:400;font-size:24px;margin:0 0 8px;color:var(--bone)}
@@ -219,6 +270,8 @@ h2{font-family:var(--display);font-weight:400;font-size:clamp(34px,5vw,58px);lin
   <div class="charHead"><h2 id="bagTitle">Bags</h2><span id="goldPill"></span><button class="btn sm" id="btnCloseBag">Close (I)</button></div>
   <div class="bagBody" id="bagBody"></div>
 </div>
+
+<div id="itemTip" hidden></div>
 
 <div id="ovPause" class="ov" hidden>
   <h2>The dark waits for you</h2>
@@ -457,7 +510,9 @@ const CLASSES={
 };
 const NOUNS={weapon:{warrior:['Cleaver','Greataxe','Flail','Maul','Headsman\'s Blade'],rogue:['Shiv','Kris','Gutting Hook','Fang','Needle'],mage:['Rod','Censer','Skull-Staff','Grimoire','Bone Wand'],
     necro:['Bone Wand','Ossuary Staff','Grave Scythe','Skull Rod','Finger Wand']},
-  armor:['Shroud','Hauberk','Grave-Wrappings','Carapace','Penitent Mail'],charm:['Finger-Bone','Reliquary','Eye-Stone','Tooth Charm','Saint\'s Knuckle']};
+  armor:['Shroud','Hauberk','Grave-Wrappings','Carapace','Penitent Mail'],charm:['Amulet','Reliquary','Eye-Stone','Tooth Charm','Saint\'s Pendant'],
+  helm:['Hood','Horned Helm','Skull Mask','Iron Crown','Gaol Helm'],gloves:['Gauntlets','Grave Gloves','Hand-Wraps','Talons'],belt:['Belt','Rope Girdle','Bone Sash','Chain Belt'],
+  boots:['Boots','Grave-Treads','Sabatons','Foot-Wraps'],ring:['Ring','Signet','Bone Band','Coil']};
 const RAR={common:{c:'#a39a8c',n:'Common'},magic:{c:'#7b97de',n:'Magic'},rare:{c:'#e0b84a',n:'Rare'},cursed:{c:'#e04a30',n:'Cursed'},legendary:{c:'#ff8c1a',n:'Legendary'}};
 // Legendaries: one fixed effect each that changes how a run plays. The hooks live where the effect happens (search s.u.<id>).
 const LEGS=[
@@ -465,44 +520,47 @@ const LEGS=[
   {id:'twin',slot:'weapon',n:'Twin Fangs',d:'Every attack strikes twice, each at 60% damage.',fl:'Two mouths, one hunger.'},
   {id:'storm',slot:'weapon',n:'Stormcaller\'s Rod',d:'Every hit arcs lightning. Lightning deals 40% less.',fl:'The sky is very far away. It reaches anyway.'},
   {id:'bleed',slot:'weapon',n:'Bloodletter',d:'Hits bleed for 50% more over 3s. You drink the blood.',fl:'Thirsty work.'},
-  {id:'crown',slot:'charm',n:'Crown of the Drowned',d:'Every skill you cast also looses a ring of 12 bone shards.',fl:'Pulled from the chapel floor, still wet.'},
-  {id:'gravewalk',slot:'armor',n:'Gravewalker\'s Shroud',d:'Dashing leaves a trail of fire that burns enemies.',fl:'Where you walk, nothing grows.'},
-  {id:'mirror',slot:'armor',n:'Mirror of the Gaoler',d:'30% of projectiles that would hit you fly back at their owner.',fl:'He liked to watch them try.'},
-  {id:'hollow',slot:'charm',n:'Heart of the Hollow',d:'Kills heal you for 3% of max life. Healing orbs never appear.',fl:'It beats, but not for you.'},
+  {id:'crown',slot:'helm',n:'Crown of the Drowned',d:'Every skill you cast also looses a ring of 12 bone shards.',fl:'Pulled from the chapel floor, still wet.'},
+  {id:'gravewalk',slot:'boots',n:'Gravewalker\'s Shroud',d:'Dashing leaves a trail of fire that burns enemies.',fl:'Where you walk, nothing grows.'},
+  {id:'mirror',slot:'gloves',n:'Mirror of the Gaoler',d:'30% of projectiles that would hit you fly back at their owner.',fl:'He liked to watch them try.'},
+  {id:'hollow',slot:'ring',n:'Heart of the Hollow',d:'Kills heal you for 3% of max life. Healing orbs never appear.',fl:'It beats, but not for you.'},
   {id:'ember',slot:'charm',n:'Ember Heart',d:'+25% ignite chance. Burning enemies explode when they die.',fl:'Still warm. Always warm.'},
   {id:'night',slot:'armor',n:'The Long Night',d:'Your light is halved. +50% damage.',fl:'You stopped needing to see.'},
-  {id:'saint',slot:'charm',n:'Saint\'s Lantern',d:'+60% light radius. Enemies inside your light take 15% more damage.',fl:'Her light outlived her.'},
-  {id:'ossuary',slot:'charm',n:'Ossuary Crown',d:'Kills have a 10% chance to raise a skeleton that fights for you.',fl:'They were waiting for someone to ask.'},
+  {id:'saint',slot:'belt',n:'Saint\'s Lantern',d:'+60% light radius. Enemies inside your light take 15% more damage.',fl:'Her light outlived her.'},
+  {id:'ossuary',slot:'helm',n:'Ossuary Crown',d:'Kills have a 10% chance to raise a skeleton that fights for you.',fl:'They were waiting for someone to ask.'},
   // these rewrite a skill. They work even if you haven't learned it: wear the item and the skill's rules change (or it casts anyway).
   {id:'meteor3',slot:'charm',n:'Thrice-Fallen Star',d:'Meteor falls three times, each one smaller.',fl:'It keeps remembering how to fall.'},
   {id:'bouncefire',slot:'weapon',n:'The Ricochet Ember',d:'Fireball bounces off walls until it hits something. Only one can exist at a time.',fl:'It has never once missed. It has simply not hit yet.'},
-  {id:'leapdash',slot:'armor',n:'Hammerfall Greaves',d:'Your dash is a Leap Slam toward where you aim.',fl:'Why walk.'},
+  {id:'leapdash',slot:'boots',n:'Hammerfall Greaves',d:'Your dash is a Leap Slam toward where you aim.',fl:'Why walk.'},
   {id:'endlessspin',slot:'weapon',n:'The Unending Top',d:'Whirlwind spins six times over three seconds. You move 40% slower while spinning.',fl:'The room is spinning. Good.'},
   {id:'chaoscast',slot:'charm',n:'Wildheart',d:'Every skill you cast also casts a random other skill you know.',fl:'It does not take requests.'},
   {id:'plagueskel',slot:'armor',n:'Rotting Reliquary',d:'Skeletons burst into Plague Clouds when they fall. Healing orbs do nothing for you.',fl:'Holy, once.'},
-  {id:'stormstep',slot:'armor',n:'Stormwalker Wraps',d:'Shadow Step looses Chain Lightning from where you land.',fl:'You arrive like weather.'},
+  {id:'stormstep',slot:'gloves',n:'Stormwalker Wraps',d:'Shadow Step looses Chain Lightning from where you land.',fl:'You arrive like weather.'},
   {id:'novachain',slot:'charm',n:'The Ringing Bell',d:'Anything Nova kills rings out a smaller Nova of its own.',fl:'Every death is a note.'},
   {id:'iceprison',slot:'armor',n:'Glacier Heart',d:'Ice Shards freeze enemies solid instead of chilling them.',fl:'Cold all the way down.'},
   {id:'bloodgod',slot:'charm',n:'Chalice of the Red God',d:'Blood Nova has almost no cooldown, but costs 20% of your life.',fl:'Drink. Pour. Drink.'},
   {id:'gyre',slot:'weapon',n:'Planetary Gyre',d:'Orbiting Blades never fade. Each cast adds one more blade, up to 12.',fl:'Small moons, sharp edges.'},
   {id:'swordrain',slot:'charm',n:'The Rain of Swords',d:'Spectral Swords summons 8 swords that last 4 seconds and explode.',fl:'Briefly, the sky was all steel.'},
-  {id:'spikewalk',slot:'armor',n:'Ossein Treads',d:'While you move, Bone Spikes erupt beneath you every second.',fl:'Every step a grave.'},
+  {id:'spikewalk',slot:'boots',n:'Ossein Treads',d:'While you move, Bone Spikes erupt beneath you every second.',fl:'Every step a grave.'},
   {id:'lightningrod',slot:'weapon',n:'The Lightning Rod',d:'Chain Lightning chains 30 times, but each jump deals 50% less.',fl:'It does not know when to stop.'},
   {id:'tectonic',slot:'weapon',n:'Tectonic Maul',d:'Ground Slam rolls forward as a wave of six slams.',fl:'The ground agrees with you.'},
-  {id:'ledger',slot:'charm',n:'The Executioner\'s Ledger',d:'Your critical hits Death Mark what they hit.',fl:'Every name, written in red.'},
-  {id:'voidtwins',slot:'charm',n:'Twin Abyss',d:'Void Orb summons two orbs that circle you for 6 seconds.',fl:'They watch your back. They are your back.'},
-  {id:'plaguemask',slot:'armor',n:'Plaguebearer\'s Mask',d:'You breathe out rot: a Plague Cloud follows you everywhere.',fl:'Breathe in. Do not breathe in.'},
-  {id:'skyfall',slot:'armor',n:'Skyfall Pauldrons',d:'Leap Slam always lands a critical hit and calls down a meteor where you land.',fl:'Heaven, used as a weapon.'},
+  {id:'ledger',slot:'ring',n:'The Executioner\'s Ledger',d:'Your critical hits Death Mark what they hit.',fl:'Every name, written in red.'},
+  {id:'voidtwins',slot:'ring',n:'Twin Abyss',d:'Void Orb summons two orbs that circle you for 6 seconds.',fl:'They watch your back. They are your back.'},
+  {id:'plaguemask',slot:'helm',n:'Plaguebearer\'s Mask',d:'You breathe out rot: a Plague Cloud follows you everywhere.',fl:'Breathe in. Do not breathe in.'},
+  {id:'skyfall',slot:'gloves',n:'Skyfall Pauldrons',d:'Leap Slam always lands a critical hit and calls down a meteor where you land.',fl:'Heaven, used as a weapon.'},
   {id:'skycaller',slot:'weapon',n:'Sky-Caller\'s Rod',d:'Fireball calls down a meteor on your target instead.',fl:'Why throw what you can drop.'},
-  {id:'gildedheart',slot:'charm',n:'The Gilded Heart',d:'Picking up gold sets off a golden nova. More gold, bigger nova.',fl:'Money talks. This one screams.'},
+  {id:'gildedheart',slot:'belt',n:'The Gilded Heart',d:'Picking up gold sets off a golden nova. More gold, bigger nova.',fl:'Money talks. This one screams.'},
   {id:'ghostcloak',slot:'armor',n:'Ghost Cloak',d:'Shadow Step has almost no cooldown, but costs 4% of your life.',fl:'You are mostly elsewhere.'},
-  {id:'wheel',slot:'charm',n:'The Spinning Wheel',d:'Every 4 seconds, a random skill comes off cooldown.',fl:'Round and round it goes.'},
-  {id:'ratcrown',slot:'charm',n:'Crown of the Rat King',d:'Every kill releases a hungry rat. They are very loyal.',fl:'All hail.'},
-  {id:'partyhat',slot:'armor',n:'Party Hat of the Damned',d:'Every critical hit sets off a confetti bomb.',fl:'It\'s somebody\'s birthday. Somebody\'s always dying.'},
-  {id:'frogcrown',slot:'charm',n:'Crown of the Frog Prince',d:'Every 8 seconds, it rains frogs around you.',fl:'He was kissed. It did not go well.'},
+  {id:'wheel',slot:'ring',n:'The Spinning Wheel',d:'Every 4 seconds, a random skill comes off cooldown.',fl:'Round and round it goes.'},
+  {id:'ratcrown',slot:'helm',n:'Crown of the Rat King',d:'Every kill releases a hungry rat. They are very loyal.',fl:'All hail.'},
+  {id:'partyhat',slot:'helm',n:'Party Hat of the Damned',d:'Every critical hit sets off a confetti bomb.',fl:'It\'s somebody\'s birthday. Somebody\'s always dying.'},
+  {id:'frogcrown',slot:'helm',n:'Crown of the Frog Prince',d:'Every 8 seconds, it rains frogs around you.',fl:'He was kissed. It did not go well.'},
 ];
 const LEG=Object.fromEntries(LEGS.map(l=>[l.id,l]));
-const SLOTS=['weapon','armor','charm'];
+// eight body slots, laid out on the paper doll. The first three (weapon, chest, neck) are the big pieces: they level fastest.
+const SLOTS=['weapon','helm','armor','gloves','belt','boots','charm','ring'], MAIN_SLOTS=['weapon','armor','charm'];
+const SLOT_N={weapon:'Main hand',helm:'Head',armor:'Chest',gloves:'Hands',belt:'Waist',boots:'Feet',charm:'Neck',ring:'Finger'};
+const SLOT_W={weapon:1,armor:1,charm:1,helm:.7,gloves:.7,belt:.6,boots:.7,ring:.8}; // how strong a slot's affixes roll
 
 const AFX={
   dmgPct:{n:'Cruel',base:.10,f:v=>`+${pct(v)} damage`},
@@ -786,7 +844,7 @@ const SHRINES=[
   {n:'Hollow Shrine',c:'#9a7aff',d:'Gain a skill point. Your light shrinks for the rest of the run.',
     f:()=>{G.points++; G.bonus.light-=15; return 'Something in you goes quiet. Press K.';}},
   {n:'Hungry Shrine',c:'#e0b84a',d:'Every item you carry grows a level.',
-    f:()=>{for(const k of SLOTS){const it=G.gear[k]; if(it){it.level++; growBase(it); G.draftQueue.push(it);}} return 'Your gear feeds.';}},
+    f:()=>{for(const k of MAIN_SLOTS){const it=G.gear[k]; if(it){it.level++; growBase(it); G.draftQueue.push(it);}} return 'Your gear feeds.';}},
   {n:'Gambler\'s Shrine',c:'#40d0a0',d:'Something good, or something terrible.',
     f:()=>{const p=G.player; if(Math.random()<.5){dropItem(p.x,p.y+24,null,.6,'rare'); return 'Fortune smiles. Once.';}
       for(let k=0;k<3;k++){const a=k*2.1, x=p.x+Math.cos(a)*70, y=p.y+Math.sin(a)*70; if(!collides(x,y,12)){const e=spawnEnemy(pick(['husk','gnawer']),x,y,G.depth,true); e.state='chase'; G.enemies.push(e); smoke(x,y,10);}}
@@ -911,6 +969,7 @@ function loadArt(){
       const src=artCut(atlas,...r), c=document.createElement('canvas'); c.width=src.height; c.height=src.width; const g=c.getContext('2d');
       g.translate(c.width,0); g.rotate(Math.PI/2); g.drawImage(src,0,0);
       const cv=artMap(c,artGrade()); WEAPONS[cls]={w:cv.width,h:cv.height,frames:[cv],art:true,tip:4+cv.width*2-4};}
+    ARTX.atlas=atlas; // item icons cut their weapon pictures from it
     ARTX.flask=artSprite([artCut(atlas,...A72_ONE.flask)],[]); ARTX.stairs=artCut(atlas,...A72_ONE.stairs);
     ARTX.spikes=artStrip(atlas,A72_ONE.spikes); ARTX.torch=[t1,t2,t3,t4];
     // floors: three rows of six 32px stone slabs; walls: the long brick strip
@@ -978,9 +1037,14 @@ function makeItem(slot,depth,bias=0,force){
   it.noun=pick(slot==='weapon'?NOUNS.weapon[G.cls]:NOUNS[slot]);
   if(slot==='weapon') it.baseDmg=Math.round(2+depth*1.4*rand(.9,1.1));
   if(slot==='armor'){it.baseHp=Math.round(8+depth*4.5*rand(.9,1.1)); it.baseArmor=+(.02+Math.min(.08,depth*.003)).toFixed(3);}
-  let n={common:0,magic:1,rare:2,cursed:3}[r]; if(slot==='charm') n+=1;
+  // the smaller pieces: a little life, reduction or damage each
+  if(slot==='helm'){it.baseHp=Math.round(4+depth*2*rand(.9,1.1)); it.baseArmor=+(.01+Math.min(.04,depth*.0015)).toFixed(3);}
+  if(slot==='gloves') it.baseDmg=Math.round(1+depth*.5*rand(.9,1.1));
+  if(slot==='boots'){it.baseHp=Math.round(3+depth*1.5*rand(.9,1.1)); it.baseArmor=+(.01+Math.min(.03,depth*.001)).toFixed(3);}
+  if(slot==='belt') it.baseHp=Math.round(5+depth*2.5*rand(.9,1.1));
+  let n={common:0,magic:1,rare:2,cursed:3}[r]; if(slot==='charm'||slot==='ring') n+=1;
   const used=new Set();
-  while(it.affixes.length<n){const id=pick(goodFor()); if(used.has(id)) continue; used.add(id); it.affixes.push(rollAffix(id,depth,r==='cursed'?1.6:1));}
+  while(it.affixes.length<n){const id=pick(goodFor()); if(used.has(id)) continue; used.add(id); it.affixes.push(rollAffix(id,depth,(r==='cursed'?1.6:1)*(SLOT_W[slot]||1)));}
   if(r==='cursed') it.affixes.push(rollAffix(pick(BAD),depth));
   // the fun part: powers, skill mods and item skills. Better rarities carry more of them.
   it.powers=[]; it.sk=[];
@@ -996,7 +1060,7 @@ function makeItem(slot,depth,bias=0,force){
 }
 function baseLines(it){const l=[]; if(it.baseDmg) l.push(`+${it.baseDmg} damage`); if(it.baseHp) l.push(`+${it.baseHp} max life`); if(it.baseArmor) l.push(`+${pct(it.baseArmor)} damage reduction`); return l;}
 function makeLegendary(depth,slot){
-  const pool=LEGS.filter(l=>!slot||l.slot===slot), L=pick(pool), it=makeItem(L.slot,depth,0,'rare');
+  const fit=LEGS.filter(l=>!slot||l.slot===slot), L=pick(fit.length?fit:LEGS), it=makeItem(L.slot,depth,0,'rare');
   it.rarity='legendary'; it.leg=L.id; it.name=L.n; if(!it.powers.length) it.powers.push(rollPower(depth)); return it;
 }
 // roll a drop, and announce legendaries as they land: 6% from bosses, 0.6% from anything else
@@ -1019,10 +1083,91 @@ function growBase(it){if(it.baseDmg) it.baseDmg=Math.max(it.baseDmg+(Math.random
 // A legendary is at full strength on the floor it was found, then fades 6% per floor deeper, never below 25%.
 const legPow=it=>clamp(1-Math.max(0,(G?G.depth:it.ilvl||1)-(it.ilvl||1))*.06,.25,1);
 
+// ================= item icons =================
+// Every item gets a 32px picture: weapons are cut from the 0x72 atlas, everything else is drawn from a pixel template.
+// Rarity picks the metal and cloth colours; the item's first power colours its gem.
+const ICON_T={
+  hood:['......kkkk......','....kkcccckk....','...kcccccccck...','..kccccccccccK..','..kcccDDDDccck..','..kccDkkkkDcck..','..kcDk.e.ekDck..','..kcDk....kDck..',
+    '..kccDkkkkDcck..','..kcccccccccck..','...kcccccccck...','..kcccccccccck..','.kccckkkkkkccck.','.kkkk......kkkk.'],
+  horned:['.k............k.','.Hk..........kH.','.kHk..kkkk..kHk.','..kHkkMMMMkkHk..','...kMMHHHHMMk...','..kMMHHMMMMMMk..','..kMMMMMMMMMMk..','..kMDkkkkkkDMk..',
+    '..kMDk.ee.kDMk..','..kMDkkkkkkDMk..','..kMMMMggMMMMk..','...kMMMggMMMk...','....kkkkkkkk....'],
+  skull:['.....kkkkkk.....','....kHHHHHHk....','...kHHMMMMHHk...','..kHMMMMMMMMHk..','..kMMMMMMMMMMk..','..kMkkkMMkkkMk..','..kMkeeMMeekMk..','..kMkkkMMkkkMk..',
+    '..kMMMMkkMMMMk..','...kMMMkkMMMk...','...kMkMkMkMk....','....kkkkkkkk....'],
+  crown:['................','..k..k.kk.k..k..','.kHk.kHkkHk.kHk.','.kMHkkMHHMkkHMk.','.kMMHMMMMMMHMMk.','.kMMMMeMMeMMMMk.','.kMgMgMgMgMgMMk.','.kDDDDDDDDDDDDk.','..kkkkkkkkkkkk..'],
+  plate:['...kkk....kkk...','..kHHMk..kMHHk..','.kHMMMMkkMMMMHk.','.kMMMMHHHHMMMMk.','.kMDkMHMMHMkDMk.','..kk.kMMMMk.kk..','.....kMggMk.....','.....kMeeMk.....',
+    '.....kMMMMk.....','.....kDMMDk.....','....kMMDDMMk....','....kkkkkkkk....'],
+  shroud:['....kk....kk....','...kcck..kcck...','..kcccckkcccck..','.kcccccDDccccck.','.kckcccDDccckck.','.kk.kccDDcck.kk.','....kccDDcck....','....kcccccck....',
+    '...kccLLLLcck...','...kcccgecccck..','..kcccDccDccck..','..kccDkccDkcck..','..kkk..kk..kkk..'],
+  mail:['...kkk....kkk...','..kMHMkkkkMHMk..','.kHMHMHMHMHMHMk.','.kMHMHMHMHMHMHk.','.kHkHMHMHMHMkHk.','..k.kMHMHMHk.k..','....kHMHMHMk....','....kMHgeHMk....',
+    '....kHMHMHMk....','....kMHMHMHk....','...kHMHMHMHMk...','...kkkkkkkkkk...'],
+  gloves:['................','....k.k.k.......','...kMkMkMk......','...kMkMkMkk.....','...kMMMMMMHk....','...kMMMMMMMk....','..kHkMMMMMMk....','..kMMkMMMMMk....',
+    '...kMMMMMMk.....','....kLLLLLk.....','....kLgeLLk.....','....kLLLLLk.....','....kkkkkkk.....'],
+  talons:['................','..k...k...k.....','..kHk.kHk.kHk...','...kMkkMkkMk....','...kMMMMMMMk....','..kMMMMMMMMMk...','..kMMDMMDMMMk...','...kMMMMMMMk....',
+    '....kcccccck....','....kcgeecck....','....kcccccck....','....kkkkkkkk....'],
+  boots:['................','....kkkkk.......','....kLLLLk......','....kLHLLk......','....kLLLLk......','....kLgeLk......','....kLLLLk......','....kLLLLLkk....',
+    '....kLLLLLLLkk..','...kLLLLLLLLLLk.','...kMMMMMMMMMMk.','...kkkkkkkkkkkk.'],
+  sabatons:['................','....kkkkk.......','....kMHMMk......','....kMMMMk......','....kMHMMk......','....kMMMMk......','....kMeMMk......','....kMMMMMkk....',
+    '....kMHMMMMMkk..','...kMMMMMMMMMMk.','...kDDDDDDDDDDk.','...kkkkkkkkkkkk.'],
+  belt:['................','................','................','kkkkkkkkkkkkkkkk','kLLLLLkkkkkLLLLk','kLHLLkgHHgkLLHLk','kLLLLkgeegkLLLLk','kLLLLLkkkkLLLLLk',
+    'kkkkkkkkkkkkkkkk','.......kLk......','.......kLk......','........k.......'],
+  amulet:['....kkkkkkkk....','...k........k...','..k..........k..','..k..........k..','...k........k...','....k......k....','.....kkggkk.....','....kgHHHHgk....',
+    '...kgHeeeeHgk...','...kgHeeeeHgk...','....kgHHHHgk....','.....kggggk.....','......kkkk......'],
+  eyestone:['.....kkkkkk.....','....kMMMMMMk....','...kMHHMMMMMk...','..kMHkkkkkkMMk..','..kMkeeeeeekMk..','..kMkeekkeekMk..','..kMkeeeeeekMk..','..kMMkkkkkkMMk..',
+    '...kMMMMMMMMk...','....kMMMMMMk....','.....kkkkkk.....'],
+  ring:['................','......kkkk......','.....keeeek.....','......kggk......','....kkggggkk....','...kgHk..kggk...','..kgHk....kgk...','..kgk......kgk..',
+    '..kgk......kgk..','...kgk....kgk...','....kggggggk....','.....kkkkkk.....'],
+  wand:['..............ke','.............keH','............kHk.','...........kMk..','..........kMk...','.........kMk....','........kMk.....','.......kMk......',
+    '......kMk.......','.....kMk........','....kDk.........','...kDk..........','..kDk...........','..kk............'],
+  book:['..kkkkkkkkkkk...','..kcccccccccHk..','..kcgggggggcHk..','..kcgceeecgcHk..','..kcgceeecgcHk..','..kcgcceccgcHk..','..kcgggggggcHk..','..kcccccccccHk..',
+    '..kcccccccccHk..','..kkkkkkkkkkkHk.','...kHHHHHHHHHHk.','....kkkkkkkkkkk.'],
+};
+const ICON_FOR={helm:['hood','horned','skull','crown','horned'],armor:['shroud','mail','shroud','plate','mail'],gloves:['plate','gloves','gloves','talons'].map(k=>k==='plate'?'gloves':k),
+  boots:['boots','boots','sabatons','boots'],belt:['belt'],charm:['amulet','amulet','eyestone','amulet','amulet'],ring:['ring']};
+// weapon nouns to pictures in the 0x72 atlas (null: drawn from a template instead)
+const WEAPON_ART={Cleaver:'cleaver',Greataxe:'double_axe',Flail:'baton_with_spikes',Maul:'big_hammer','Headsman\'s Blade':'knight_sword',Shiv:'knife',Kris:'machete',
+  'Gutting Hook':'saw_sword',Fang:'katana',Needle:'duel_sword',Rod:'red_magic_staff',Censer:'mace','Skull-Staff':'green_magic_staff',Grimoire:null,'Bone Wand':null,
+  'Ossuary Staff':'green_magic_staff','Grave Scythe':'waraxe','Skull Rod':'red_magic_staff','Finger Wand':null};
+const A72_WPN={anime_sword:[322,65,12,30],baton_with_spikes:[323,41,10,22],big_hammer:[291,26,10,37],double_axe:[288,167,16,24],cleaver:[310,108,9,19],duel_sword:[325,97,9,30],
+  golden_sword:[291,137,10,22],green_magic_staff:[340,129,8,30],hammer:[307,39,10,24],katana:[293,66,6,29],knife:[293,10,6,13],knight_sword:[339,98,10,29],lavish_sword:[307,129,10,30],
+  mace:[339,39,10,24],saw_sword:[307,70,10,25],machete:[294,105,5,22],red_gem_sword:[339,10,10,21],red_magic_staff:[324,129,8,30],regular_sword:[323,10,10,21],
+  rusty_sword:[307,10,10,21],spear:[309,161,6,30],waraxe:[324,168,12,23],axe:[341,74,9,21]};
+const ICON_PAL={
+  common:{M:'#7a7268',H:'#a39a8c',D:'#4a4440',c:'#4a3e34',L:'#5a3a22',g:'#8a6a2a'},
+  magic:{M:'#5a6a9a',H:'#9ab0e8',D:'#2e3a5a',c:'#2e3a6a',L:'#4a3a3a',g:'#7b97de'},
+  rare:{M:'#a08030',H:'#f0d070',D:'#5a4010',c:'#5a2018',L:'#5a3a1a',g:'#e0b84a'},
+  cursed:{M:'#5a2020',H:'#a03a2a',D:'#2a0a0a',c:'#2a0c0c',L:'#3a1a10',g:'#e04a30'},
+  legendary:{M:'#b06010',H:'#ffc060',D:'#5a2a08',c:'#3a120a',L:'#5a2a10',g:'#ff8c1a'},
+};
+const ICON_TINT={magic:[110,140,230,.3],rare:[230,190,90,.35],cursed:[220,60,40,.4],legendary:[255,150,40,.4]};
+const ICON_CACHE=new WeakMap();
+function itemIcon(it){
+  let c=ICON_CACHE.get(it); if(c) return c;
+  c=document.createElement('canvas'); c.width=c.height=32; const g=c.getContext('2d'); g.imageSmoothingEnabled=false;
+  const nIdx=Math.max(0,(it.slot==='weapon'?(NOUNS.weapon[G?G.cls:'warrior']||[]):NOUNS[it.slot]||[]).indexOf(it.noun));
+  const gem=it.powers&&it.powers.length?EFFECTS[it.powers[0].e].c:RAR[it.rarity].c;
+  let art=it.slot==='weapon'?WEAPON_ART[it.noun]:null;
+  if(it.slot==='weapon'&&it.rarity==='legendary') art=['golden_sword','lavish_sword','anime_sword','red_gem_sword'][(it.name.length)%4];
+  if(it.slot==='weapon'&&art!==null&&ARTX.atlas){ // a picture from the atlas, laid diagonally like it's resting in a slot
+    const r=A72_WPN[art]||A72_WPN.rusty_sword, src=artCut(ARTX.atlas,...r), tint=ICON_TINT[it.rarity];
+    const cv=artMap(src,artGrade(tint?tint:null,1.05)), sc=Math.min(1,40/r[3]);
+    g.save(); g.translate(16,16); g.rotate(Math.PI/4); g.drawImage(cv,-r[2]*sc/2,-r[3]*sc/2,r[2]*sc,r[3]*sc); g.restore();
+  } else {
+    const key=it.slot==='weapon'?(it.noun==='Grimoire'?'book':'wand'):(ICON_FOR[it.slot]||['amulet'])[nIdx%(ICON_FOR[it.slot]||['amulet']).length];
+    const rows=ICON_T[key], pal=Object.assign({k:'#0a0607',K:'#0a0607',e:gem},ICON_PAL[it.rarity]||ICON_PAL.common), oy=Math.floor((16-rows.length)/2);
+    rows.forEach((row,y)=>{for(let x=0;x<16;x++){const ch=row[x]; if(!ch||ch==='.'||!pal[ch]) continue; g.fillStyle=pal[ch]; g.fillRect(x*2,(y+oy)*2,2,2);}});
+    // a lit edge on the top-left of each shape
+    g.globalCompositeOperation='source-atop'; const lg=g.createLinearGradient(0,0,32,32); lg.addColorStop(0,'rgba(255,240,210,.18)'); lg.addColorStop(.6,'rgba(0,0,0,0)'); lg.addColorStop(1,'rgba(0,0,0,.25)');
+    g.fillStyle=lg; g.fillRect(0,0,32,32); g.globalCompositeOperation='source-over';
+  }
+  ICON_CACHE.set(it,c); return c;
+}
+const ICON_URL=new WeakMap();
+function iconUrl(it){let u=ICON_URL.get(it); if(!u){u=itemIcon(it).toDataURL(); ICON_URL.set(it,u);} return u;}
+
 // ================= bags, gold & taverns =================
 // Spare gear lives in your bags so you can swap pieces (or a whole saved set) to suit the build you're running.
 // Gold drops from the dead; every 5th floor is a tavern where you rest, sell and buy.
-const BAG_MAX=12;
+const BAG_MAX=30; // a 10 x 3 grid
 const isTavernDepth=d=>d%5===0, isBigBossDepth=d=>d%10===9;
 const sellPrice=it=>Math.round(({common:4,magic:10,rare:24,cursed:16,legendary:70}[it.rarity]||5)*(1+(it.ilvl||1)*.18)*(1+.1*(it.level-1)));
 const buyPrice=it=>sellPrice(it)*3;
@@ -1051,7 +1196,7 @@ function genTavern(depth){
   const props=[{kind:'keeper',x:cw(room.cx),y:cw(y0+1)},{kind:'hearth',x:cw(room.cx),y:cw(y0+h-3),used:false}];
   for(const [tx,ty] of [[x0+4,y0+3],[x0+4,y0+h-4],[x0+w-6,y0+3],[x0+w-6,y0+h-4]]) props.push({kind:'table',x:cw(tx),y:cw(ty)});
   // the keeper's stock: rolled a little deeper than here, so it's worth buying
-  const stock=[]; for(let k=0;k<5;k++) stock.push(makeItem(SLOTS[k%3],depth+2,.35,k===0?'rare':undefined));
+  const stock=[]; for(let k=0;k<8;k++) stock.push(makeItem(SLOTS[k],depth+2,.35,k<2?'rare':undefined));
   if(Math.random()<.08) stock.push(makeLegendary(depth+1));
   const mapCv=renderMap(map,theme,torches);
   const decalCv=document.createElement('canvas'); decalCv.width=MW*TILE/2; decalCv.height=MH*TILE/2;
@@ -1064,7 +1209,7 @@ function genTavern(depth){
 
 // ================= run lifecycle =================
 function newRun(cls){
-  G={cls,depth:0,level:1,xp:0,points:0,bonus:{dmgPct:0,light:0},alloc:new Set([CLASS_START[cls]]),gear:{weapon:null,armor:null,charm:null},kills:0,time:0,paused:false,
+  G={cls,depth:0,level:1,xp:0,points:0,bonus:{dmgPct:0,light:0},alloc:new Set([CLASS_START[cls]]),gear:Object.fromEntries(SLOTS.map(k=>[k,null])),kills:0,time:0,paused:false,
     draftQueue:[],stats:null,
     player:{x:0,y:0,r:10,hp:1,ghost:1,atkT:0,abilT:0,dashT:0,dashTime:0,inv:0,facing:0,swing:0,swingDir:1,dvx:0,dvy:0,hurtT:0,beatT:0},
     allies:[],corpses:[],skills:{},slots:[null,null,null,null],orbits:[],bag:[],sets:[null,null],gold:0,cam:{x:0,y:0},shake:0,particles:[],texts:[],effects:[],projectiles:[],drops:[],enemies:[],pending:[],banner:null,transition:null,near:null};
@@ -1528,7 +1673,7 @@ function killEnemy(e){
   if(e.boss) dropTome(e.x+rand(-20,20),e.y+30); else if(Math.random()<(e.elite?.06:.008)) dropTome(e.x,e.y);
   if(!e.boss&&Math.random()<(e.elite?1:.4)) dropGold(e.x,e.y,(2+G.depth*.8)*(e.elite?4:1)*rand(.7,1.3));
   if(e.big){ // a great boss's hoard: five pieces of rare or better from deeper than here, gold, and a moment to breathe
-    for(let k=0;k<5;k++){const an=k*Math.PI*2/5-Math.PI/2; dropItem(e.x+Math.cos(an)*44,e.y+Math.sin(an)*34,SLOTS[k%3],.6,'rare',LEG_CHANCE_BOSS,G.depth+3);}
+    for(let k=0;k<5;k++){const an=k*Math.PI*2/5-Math.PI/2; dropItem(e.x+Math.cos(an)*44,e.y+Math.sin(an)*34,pick(SLOTS),.6,'rare',LEG_CHANCE_BOSS,G.depth+3);}
     dropGold(e.x,e.y,60+G.depth*14); G.bonusSouls=(G.bonusSouls||0)+150; healP(G.stats.maxHp);
     G.effects.push({type:'ring',x:e.x,y:e.y,r0:10,r1:320,t:0,max:1,color:'#ffd27a',w:10,light:true}); G.flash=1; G.hitstop=.5;
     G.bossDeath={t:0,name:e.name};
@@ -1707,7 +1852,7 @@ function gainXp(x){
   }
 }
 function itemXp(x){
-  for(const k of SLOTS){const it=G.gear[k]; if(!it) continue; it.xp+=x;
+  for(const k of SLOTS){const it=G.gear[k]; if(!it) continue; it.xp+=x*(MAIN_SLOTS.includes(k)?1:.3); // the small pieces grow slower, or drafts would never stop
     while(it.xp>=itemNeed(it.level)){it.xp-=itemNeed(it.level); it.level++; growBase(it); G.draftQueue.push(it);}}
   recalc();
 }
@@ -2564,7 +2709,7 @@ function drawDrop(g,d){
     g.fillStyle='#c8961e'; g.fillRect(x-4,y-3,6,3); g.fillRect(x,y-5,4,3); g.fillStyle='#ffe08a'; g.fillRect(x-2,y-3,2,1); if(Math.sin(G.time*6+d.x)>.9) g.fillRect(x+2,y-5,1,1); return;}
   if(d.kind==='orb'&&ARTX.ready){drawSprite(g,ARTX.flask,d.x,d.y+10+bob,false,0); return;}
   if(d.kind==='orb'){g.fillStyle='#4a0606'; g.fillRect(Math.round(d.x)-4,Math.round(d.y)-4+bob,8,8); g.fillStyle='#a01a10'; g.fillRect(Math.round(d.x)-2,Math.round(d.y)-4+bob,4,6); g.fillStyle='#ff6a4a'; g.fillRect(Math.round(d.x)-2,Math.round(d.y)-2+bob,2,2); return;}
-  drawSprite(g,ICONS[d.item.slot],d.x,d.y+8+bob,false,0);
+  g.drawImage(itemIcon(d.item),Math.round(d.x)-12,Math.round(d.y)-14+bob,24,24);
 }
 function drawProp(g,o){
   if(o.kind==='keeper'||o.kind==='hearth'||o.kind==='table'){drawTavernProp(g,o); return;}
@@ -2744,13 +2889,14 @@ function drawHUD(){
     if(sl.sec>0){ctx.textAlign='center'; ctx.font=`600 11px ${FB}`; ctx.fillStyle='#d3c7ae'; ctx.fillText(sl.sec.toFixed(1),X+bw-14,by+9);}});
   // gear
   const bigFight=G.bossBar&&G.bossBar.big;
-  if(W>760&&!bigFight){SLOTS.forEach((k,i)=>{const it=G.gear[k], X=20, Y=H-20-(3-i)*44+4, gw=210;
-    ctx.fillStyle='rgba(10,6,7,.78)'; ctx.fillRect(X,Y,gw,38); ctx.strokeStyle='#2e1c1e'; ctx.strokeRect(X+.5,Y+.5,gw-1,37);
-    ctx.textAlign='left'; ctx.font=`10px ${FB}`; ctx.fillStyle='#857a72'; ctx.fillText(k.toUpperCase(),X+8,Y+10);
-    if(it){ctx.font=`16px ${FD}`; ctx.fillStyle=RAR[it.rarity].c; ctx.fillText(fit(it.name,gw-56),X+8,Y+24);
-      ctx.textAlign='right'; ctx.font=`600 11px ${FB}`; ctx.fillStyle='#d3c7ae'; ctx.fillText('Lv '+it.level,X+gw-8,Y+10);
-      ctx.fillStyle='rgba(0,0,0,.6)'; ctx.fillRect(X+1,Y+34,gw-2,3); ctx.fillStyle='#8a7a5a'; ctx.fillRect(X+1,Y+34,(gw-2)*it.xp/itemNeed(it.level),3);}
-    else {ctx.font=`italic 13px ${FB}`; ctx.fillStyle='#4a403c'; ctx.fillText('Empty',X+8,Y+24);}});}
+  // gear: eight small pictures in two rows, each with a level bar
+  if(W>760&&!bigFight){ctx.imageSmoothingEnabled=false; SLOTS.forEach((k,i)=>{const it=G.gear[k], sz=44, X=20+(i%4)*(sz+6), Y=H-20-56+(i<4?-sz-14:0)+6;
+    ctx.fillStyle='rgba(10,6,7,.82)'; ctx.fillRect(X,Y,sz,sz); ctx.strokeStyle=it?hexA(RAR[it.rarity].c,.7):'#2e1c1e'; ctx.strokeRect(X+.5,Y+.5,sz-1,sz-1);
+    if(it){ctx.drawImage(itemIcon(it),X+4,Y+4,sz-8,sz-8);
+      ctx.fillStyle='rgba(0,0,0,.6)'; ctx.fillRect(X+1,Y+sz-4,sz-2,3); ctx.fillStyle='#8a7a5a'; ctx.fillRect(X+1,Y+sz-4,(sz-2)*clamp(it.xp/itemNeed(it.level),0,1),3);
+      if(it.level>1){ctx.textAlign='right'; ctx.font=`600 10px ${FB}`; ctx.fillStyle='#d3c7ae'; ctx.fillText(it.level,X+sz-4,Y+9);}}
+    else {ctx.textAlign='center'; ctx.font=`9px ${FB}`; ctx.fillStyle='#3a302c'; ctx.fillText(SLOT_N[k].toUpperCase(),X+sz/2,Y+sz/2);}});
+    ctx.imageSmoothingEnabled=true;}
   // ground item
   if(G.near){const it=G.near.item, eq=G.gear[it.slot]; const cards=[[it,`On the floor · ${TOUCH.active?'tap USE':PAD.active?'X':'E'} to wear${TOUCH.active||PAD.active?'':' · F to bag'}`]]; if(eq) cards.push([eq,'You carry']);
     const cw=230, tot=cards.length*cw+(cards.length-1)*10; let X=W/2-tot/2;
@@ -2758,7 +2904,7 @@ function drawHUD(){
       ctx.fillStyle='rgba(8,5,6,.92)'; ctx.fillRect(X,Y,cw,ch); ctx.strokeStyle=hexA(RAR[ci.rarity].c,.6); ctx.strokeRect(X+.5,Y+.5,cw-1,ch-1);
       ctx.textAlign='left'; ctx.font=`10px ${FB}`; ctx.fillStyle='#857a72'; ctx.fillText(lab.toUpperCase(),X+10,Y+12);
       ctx.font=`19px ${FD}`; ctx.fillStyle=RAR[ci.rarity].c; ctx.fillText(fit(ci.name,cw-20),X+10,Y+30);
-      ctx.font=`11px ${FB}`; ctx.fillStyle='#857a72'; ctx.fillText(`${RAR[ci.rarity].n} ${ci.slot} · lv ${ci.level} · found at depth ${ci.ilvl||1}`,X+10,Y+45);
+      ctx.font=`11px ${FB}`; ctx.fillStyle='#857a72'; ctx.fillText(`${RAR[ci.rarity].n} ${SLOT_N[ci.slot].toLowerCase()} · lv ${ci.level} · found at depth ${ci.ilvl||1}`,X+10,Y+45);
       ctx.font=`13px ${FB}`; lines.forEach((l,j)=>{ctx.fillStyle=lineCol(l); ctx.fillText(fit(l.t,cw-20),X+10,Y+62+j*17);});
       X+=cw+10;}}
   // prompt for a chest or shrine within reach
@@ -2855,7 +3001,7 @@ function renderHub(){
     :'<span class="small">Slay a boss to open a shortcut past it.</span>';
   $('hubStart').querySelectorAll('.chip').forEach(b=>b.onclick=()=>{META.start=+b.dataset.d; saveMeta(); renderHub();});
 }
-function hideAll(){OVS.forEach(id=>$(id).hidden=true); syncPause();}
+function hideAll(){OVS.forEach(id=>$(id).hidden=true); $('itemTip').hidden=true; syncPause();}
 function showOnly(id){OVS.forEach(o=>$(o).hidden=o!==id); syncPause();
   if(PAD.active){const f=$(id).querySelector('button:not([disabled]),input'); if(f) f.focus({preventScroll:true});}}
 function syncPause(){ if(G) G.paused=state!=='play'||!$('ovDraft').hidden||!$('ovChar').hidden||!$('ovBag').hidden||!$('ovPause').hidden||!$('ovSettings').hidden; mouse.down=false; }
@@ -2934,67 +3080,121 @@ function statDelta(it){
     ['attacks/s',1/a.atkCd-1/prev.atkCd,v=>v.toFixed(2)],['skill dmg',a.abilDmg-prev.abilDmg,pct],['speed',a.speed-prev.speed,v=>Math.round(v)]];
   return rows.filter(r=>Math.abs(r[1])>.004).slice(0,4).map(([n,v,f])=>`<b class="${v>0?'up':'dn'}">${v>0?'+':'−'}${f(Math.abs(v))}</b> ${n}`).join(' · ');
 }
-function itemCard(it,btns,sub){
-  return `<div class="bi"><div class="it-n" style="color:${RAR[it.rarity].c}">${esc(it.name)}</div><div class="it-m">${RAR[it.rarity].n} ${it.slot} · level ${it.level} · depth ${it.ilvl||1}</div>
-    ${itemLines(it).map(l=>`<div class="it-a" style="color:${lineCol(l)}">${esc(l.t)}</div>`).join('')}${sub?`<div class="cmp">${sub}</div>`:''}<div class="row">${btns}</div></div>`;
+// ----- the inventory: a paper doll of body slots on the left, a 10 x 3 bag on the right, a tooltip for whatever you point at -----
+const INV={sel:null,ptr:'mouse'};
+function tomeIcon(skill){const c=document.createElement('canvas'); c.width=c.height=32; const g=c.getContext('2d'), col=SKILL_INFO[skill].c;
+  const pal={k:'#0a0607',c:col,g:'#1a0e0a',e:'#f2e6d8',H:'#e8dcc0'}; ICON_T.book.forEach((row,y)=>{for(let x=0;x<16;x++){const ch=row[x]; if(!ch||ch==='.'||!pal[ch]) continue; g.fillStyle=pal[ch]; g.fillRect(x*2,(y+2)*2,2,2);}}); return c.toDataURL();}
+// what an item cell shows: the picture, a rarity frame, its level
+function cellHTML(it,attrs,extra=''){
+  return `<button class="cell r-${it.rarity}" ${attrs}><img src="${iconUrl(it)}" alt="">${it.level>1?`<span class="lv">${it.level}</span>`:''}${extra}</button>`;}
+function tipHTML(it,where){
+  const lines=itemLines(it).map(l=>`<div class="tl" style="color:${lineCol(l)}">${esc(l.t)}</div>`).join('');
+  let h=`<div class="tn" style="color:${RAR[it.rarity].c}">${esc(it.name)}</div><div class="tm">${RAR[it.rarity].n} · ${SLOT_N[it.slot]} · level ${it.level} · depth ${it.ilvl||1}</div>${lines}`;
+  if(it.leg) h+=`<div class="tf">${esc(LEG[it.leg].fl)}</div>`;
+  if(where!=='eq'){const d=statDelta(it), eq=G.gear[it.slot]; h+=`<div class="tc">${d?'If worn: '+d:'If worn: no change to your main stats'}${eq?`<br>Replaces <span style="color:${RAR[eq.rarity].c}">${esc(eq.name)}</span>`:''}</div>`;}
+  const shop=G.shopMode;
+  const how=where==='eq'?(it.slot==='weapon'?'You always keep a weapon in hand':'Click: put it in your bag')
+    :where==='shop'?`Click: buy for ${buyPrice(it)} gold`
+    :`Click: wear it${shop?` · Right-click: sell for ${sellPrice(it)} gold`:' · Ctrl+click: drop it'}`;
+  return h+`<div class="th">${INV.ptr==='mouse'?how:''}</div>`;
 }
-const bbtn=(act,i,label,dis)=>`<button class="btn sm" data-act="${act}" data-i="${i}"${dis?' disabled':''}>${label}</button>`;
+// touch has no hover: a tap pins the tooltip with buttons in it instead
+function tipButtons(where,i){
+  if(INV.ptr==='mouse') return '';
+  const b=(a,l)=>`<button class="btn sm" data-tact="${a}" data-i="${i}">${l}</button>`;
+  if(where==='eq') return `<div class="tb">${i!=='weapon'?b('unwear','To bag'):''}${b('close','Close')}</div>`;
+  if(where==='shop') return `<div class="tb">${b('buy','Buy')}${b('close','Close')}</div>`;
+  return `<div class="tb">${b('wear','Wear')}${G.shopMode?b('sell','Sell'):b('drop','Drop')}${b('close','Close')}</div>`;
+}
+function showTip(el){
+  const where=el.dataset.where, i=el.dataset.i, it=where==='eq'?G.gear[i]:where==='shop'?G.shop.stock[+i]:where==='bag'?G.bag[+i]:null, tip=$('itemTip');
+  if(where==='tome'){const t=G.shop.tome, I=SKILL_INFO[t.skill];
+    tip.innerHTML=`<div class="tn" style="color:${I.c}">Skill Tome: ${I.n}</div><div class="tm">${G.skills[t.skill]?'You know it: reading levels it up':'Teaches you a new skill'}</div><div class="tl">${SKILLS[t.skill].d}</div><div class="th">Click: buy for ${t.price} gold</div>`;}
+  else if(!it){hideTip(); return;}
+  else tip.innerHTML=tipHTML(it,where)+tipButtons(where,i);
+  tip.hidden=false; const r=el.getBoundingClientRect(), tw=tip.offsetWidth, th=tip.offsetHeight;
+  let x=r.right+10; if(x+tw>innerWidth-8) x=r.left-10-tw; x=clamp(x,8,innerWidth-tw-8);
+  tip.style.left=x+'px'; tip.style.top=clamp(r.top,8,innerHeight-th-8)+'px';
+}
+function hideTip(){$('itemTip').hidden=true; INV.sel=null;}
 function renderBag(){
-  const shop=G.shopMode, S=G.shop, full=G.bag.length>=BAG_MAX; let h='';
-  $('bagTitle').textContent=shop?G.tavernName:'Bags'; $('goldPill').textContent=`${G.gold} gold`;
+  const shop=G.shopMode, S=G.shop; hideTip();
+  $('bagTitle').textContent=shop?G.tavernName:'Inventory'; $('goldPill').textContent=`${G.gold} gold`;
+  const hero=SPRITES[G.cls]&&SPRITES[G.cls].frames[0];
+  let h=`<div class="inv"><div class="dollWrap"><div class="doll">${hero?`<img class="hero" src="${hero.toDataURL()}" alt="">`:''}`;
+  for(const k of SLOTS){const it=G.gear[k];
+    h+=it?`<div class="slot${k==='weapon'||k==='armor'?' tall':''}" style="grid-area:${k}">${cellHTML(it,`data-where="eq" data-i="${k}"`)}<span class="sn">${SLOT_N[k]}</span></div>`
+      :`<div class="slot${k==='weapon'||k==='armor'?' tall':''}" style="grid-area:${k}"><button class="cell empty" data-where="none" tabindex="-1"><span class="ph">${SLOT_N[k]}</span></button><span class="sn">${SLOT_N[k]}</span></div>`;}
+  h+=`</div><div class="sets">`;
+  for(let i=0;i<2;i++){const s=G.sets[i]; h+=`<div class="setRow"><span class="setN">Set ${i?'II':'I'}</span><button class="btn sm" data-act="saveset" data-i="${i}">Save</button><button class="btn sm" data-act="wearset" data-i="${i}"${s?'':' disabled'}>Wear</button></div>`;}
+  h+=`<p class="invHelp">Save a set for each build, then swap between them in one press.</p></div></div><div class="invRight">`;
   if(shop){
-    h+=`<div class="bagSec"><h3>For sale<small>The keeper's stock. Prices are what they are.</small></h3><div class="bagGrid">`;
-    const vs=it=>{const d=statDelta(it); return d?'If worn: '+d:'';};
-    S.stock.forEach((it,i)=>{const pr=buyPrice(it); h+=itemCard(it,bbtn('buy',i,`Buy · ${pr}g`,G.gold<pr||full),vs(it));});
-    if(S.tome){const I=SKILL_INFO[S.tome.skill]; h+=`<div class="bi"><div class="it-n" style="color:${I.c}">Skill Tome: ${I.n}</div><div class="it-m">${G.skills[S.tome.skill]?'You know it: reading levels it up':'Teaches you a new skill'}</div>
-      <div class="it-a">${SKILLS[S.tome.skill].d}</div><div class="row">${bbtn('tome',0,`Buy · ${S.tome.price}g`,G.gold<S.tome.price)}</div></div>`;}
-    if(!S.stock.length&&!S.tome) h+=`<div class="it-m">Sold out.</div>`;
-    h+=`</div></div>`;}
-  h+=`<div class="bagSec"><h3>Wearing</h3><div class="bagGrid">`;
-  for(const k of SLOTS){const it=G.gear[k]; h+=it?itemCard(it,k==='weapon'?'':bbtn('unwear',k,'Put in bag',full)):`<div class="bi empty"><div class="it-m">No ${k}</div></div>`;}
-  h+=`</div></div><div class="bagSec"><h3>Sets<small>Save what you're wearing, then switch back to it in one press. Pieces must be in your bags.</small></h3><div class="setRow">`;
-  for(let i=0;i<2;i++){const s=G.sets[i]; h+=`<span class="small" style="min-width:150px">Set ${i?'II':'I'}: ${s?SLOTS.map(k=>s[k]?esc(s[k].name):'—').join(', '):'empty'}</span>${bbtn('saveset',i,'Save')}${bbtn('wearset',i,'Wear',!s)}`;}
-  h+=`</div></div><div class="bagSec"><h3>Bags<small>${G.bag.length} / ${BAG_MAX}${shop?' · sell what you don\'t need':''}</small></h3><div class="bagGrid">`;
-  G.bag.forEach((it,i)=>{h+=itemCard(it,bbtn('wear',i,'Wear')+(shop?bbtn('sell',i,`Sell · ${sellPrice(it)}g`):bbtn('drop',i,'Drop')),(d=>d?'If worn: '+d:'')(statDelta(it)));});
-  if(!G.bag.length) h+=`<div class="it-m">Empty. Press F over loot to bag it; whatever you swap out goes here too.</div>`;
-  h+=`</div></div>`;
+    h+=`<h3>The keeper's stock<small>Rolled deeper than here. Hover to compare.</small></h3><div class="grid">`;
+    S.stock.forEach((it,i)=>{h+=cellHTML(it,`data-where="shop" data-i="${i}"${G.gold<buyPrice(it)?' data-poor="1"':''}`,`<span class="price${G.gold<buyPrice(it)?' poor':''}">${buyPrice(it)}g</span>`);});
+    if(S.tome) h+=`<button class="cell r-rare" data-where="tome" data-i="0"><img src="${tomeIcon(S.tome.skill)}" alt=""><span class="price${G.gold<S.tome.price?' poor':''}">${S.tome.price}g</span></button>`;
+    if(!S.stock.length&&!S.tome) h+=`<span class="invHelp">Sold out.</span>`;
+    h+=`</div>`;}
+  h+=`<h3>Bag<small>${G.bag.length} / ${BAG_MAX}</small></h3><div class="grid bag">`;
+  for(let i=0;i<BAG_MAX;i++){const it=G.bag[i]; h+=it?cellHTML(it,`data-where="bag" data-i="${i}"`):`<div class="cell empty"></div>`;}
+  h+=`</div><p class="invHelp">${TOUCH.active?'Tap an item to see it, tap again to wear it.':PAD.active?'Highlight an item to see it; A wears it.':'Hover an item to see it. Click to wear'+(shop?', right-click to sell.':', Ctrl+click to drop.')} Press F over loot on the floor to bag it.</p></div></div>`;
   $('bagBody').innerHTML=h;
 }
-$('bagBody').addEventListener('click',ev=>{const b=ev.target.closest('button[data-act]'); if(!b||b.disabled) return; const i=b.dataset.i, n=+i, p=G.player;
-  switch(b.dataset.act){
+function invAct(act,where,i,el){
+  const n=+i, p=G.player;
+  if(act==='use'){ if(where==='bag') act='wear'; else if(where==='eq') act='unwear'; else if(where==='shop') act='buy'; else if(where==='tome') act='tome'; else return; }
+  switch(act){
     case 'wear': bagEquip(n); break;
     case 'unwear': bagUnequip(i); break;
-    case 'drop': {const it=G.bag.splice(n,1)[0]; G.drops.push({kind:'item',x:p.x+rand(-12,12),y:p.y+14,t:0,item:it}); break;}
-    case 'sell': {const it=G.bag.splice(n,1)[0]; G.gold+=sellPrice(it); for(const s of G.sets) if(s) for(const k of SLOTS) if(s[k]===it) s[k]=null; play('pick'); break;}
-    case 'buy': {const it=G.shop.stock[n], pr=buyPrice(it); if(G.gold<pr||!bagAdd(it)) break; G.gold-=pr; G.shop.stock.splice(n,1); play('legendary'); break;}
-    case 'tome': {const t=G.shop.tome; if(G.gold<t.price) break; G.gold-=t.price; G.shop.tome=null; hideAll(); learnSkill(t.skill); return;}
-    case 'saveset': gearSetSave(n); break;
-    case 'wearset': gearSetWear(n); break;
+    case 'drop': {const it=G.bag.splice(n,1)[0]; if(it) G.drops.push({kind:'item',x:p.x+rand(-12,12),y:p.y+14,t:0,item:it}); break;}
+    case 'sell': {const it=G.bag.splice(n,1)[0]; if(!it) break; G.gold+=sellPrice(it); for(const s of G.sets) if(s) for(const k of SLOTS) if(s[k]===it) s[k]=null; play('pick'); break;}
+    case 'buy': {const it=G.shop.stock[n], pr=buyPrice(it); if(G.gold<pr){text(p.x,p.y-30,'Not enough gold','#e04a30',12); break;} if(!bagAdd(it)) break; G.gold-=pr; G.shop.stock.splice(n,1); play('legendary'); break;}
+    case 'tome': {const t=G.shop.tome; if(G.gold<t.price) break; G.gold-=t.price; G.shop.tome=null; hideAll(); hideTip(); learnSkill(t.skill); return;}
+    case 'close': hideTip(); return;
   }
-  renderBag();});
-$('btnCloseBag').onclick=()=>hideAll();
+  renderBag();
+}
+$('bagBody').addEventListener('pointerdown',ev=>{INV.ptr=ev.pointerType||'mouse';},true);
+$('bagBody').addEventListener('pointerover',ev=>{const el=ev.target.closest('[data-where]'); if(INV.ptr==='mouse'&&el&&el.dataset.where!=='none') showTip(el);});
+$('bagBody').addEventListener('pointerout',ev=>{const el=ev.target.closest('[data-where]'); if(INV.ptr==='mouse'&&el&&!el.contains(ev.relatedTarget)) hideTip();});
+$('bagBody').addEventListener('focusin',ev=>{const el=ev.target.closest('[data-where]'); if(el&&el.dataset.where!=='none') showTip(el);});
+$('bagBody').addEventListener('click',ev=>{
+  const b=ev.target.closest('button[data-act]'); if(b&&!b.disabled){const n=+b.dataset.i; if(b.dataset.act==='saveset') gearSetSave(n); else gearSetWear(n); renderBag(); return;}
+  const el=ev.target.closest('[data-where]'); if(!el||el.dataset.where==='none') return; const where=el.dataset.where, i=el.dataset.i;
+  if(INV.ptr!=='mouse'&&INV.sel!==el){INV.sel=el; showTip(el); return;} // touch: first tap looks, second tap acts
+  if(where==='bag'&&(ev.ctrlKey||ev.metaKey)){invAct('drop',where,i); return;}
+  invAct('use',where,i,el);});
+$('bagBody').addEventListener('contextmenu',ev=>{const el=ev.target.closest('[data-where="bag"]'); if(!el) return; ev.preventDefault(); if(G.shopMode) invAct('sell','bag',el.dataset.i);});
+$('itemTip').addEventListener('click',ev=>{const b=ev.target.closest('[data-tact]'); if(!b) return; const el=INV.sel; invAct(b.dataset.tact,el?el.dataset.where:'bag',b.dataset.i);});
+$('btnCloseBag').onclick=()=>{hideTip(); hideAll();};
+
+// ----- the character sheet: skills, then your numbers grouped the way you think about them, then everything your gear does -----
 function refreshChar(){
   $('ptsPill').textContent=G.points?`${G.points} point${G.points>1?'s':''} to spend`:'No points to spend';
-  const s=G.stats, rows=[['Life',`${Math.ceil(G.player.hp)} / ${s.maxHp}`],['Damage',s.dmg.toFixed(1)],['Attacks per second',(1/s.atkCd).toFixed(2)],
-    ['Critical chance',pct(s.crit)],['Critical damage',pct(s.critMult)],['Damage reduction',pct(s.armor)],['Move speed',Math.round(s.speed)],
-    ['Light radius',Math.round(s.light)],['Skill damage',pct(s.abilDmg)],['Skill cooldowns',Math.round(s.cdMul*100)+'%'],['Skill area','+'+pct(s.area)],['Skill duration','+'+pct(s.dur)]];
-  if(s.proj) rows.push(['Extra projectiles','+'+s.proj]); if(s.chainX) rows.push(['Extra chains','+'+s.chainX]); if(s.skillCrit) rows.push(['Skill critical chance','+'+pct(s.skillCrit)]);
-  if(s.lifesteal) rows.push(['Life leech',(s.lifesteal*100).toFixed(1)+'%']); if(s.regen) rows.push(['Regeneration',s.regen.toFixed(1)+'/s']);
-  if(s.drain) rows.push(['Life lost',s.drain.toFixed(1)+'/s']); if(s.dmgTaken) rows.push(['Extra damage taken',pct(s.dmgTaken)]);
-  for(const k of ['thorns','ignite','chain','explode','frost']) if(s[k]) rows.push([AFX[k].n,pct(s[k])]);
-  if(G.cls==='necro') rows.push(['Skeletons',`${G.allies.length} / ${maxMinions()}`],['Skeleton damage',(s.dmg*(.55+s.minionDmg)*s.abilDmg).toFixed(1)]);
+  const s=G.stats, row=(k,v,hi)=>`<div class="sp-row"><span>${k}</span><b${hi?' class="hi"':''}>${v}</b></div>`;
+  const off=[['Damage',s.dmg.toFixed(1),1],['Attacks per second',(1/s.atkCd).toFixed(2)],['Critical chance',pct(s.crit)],['Critical damage',pct(s.critMult)],['Skill damage',pct(s.abilDmg)]];
+  for(const [k,n] of [['fireDmg','Fire'],['coldDmg','Cold'],['lightDmg','Lightning'],['physDmg','Physical'],['chaosDmg','Chaos']]) if(s[k]) off.push([`${n} damage`,'+'+pct(s[k])]);
+  for(const k of ['ignite','chain','explode','frost']) if(s[k]) off.push([AFX[k].n,pct(s[k])]);
+  const def=[['Life',`${Math.ceil(G.player.hp)} / ${s.maxHp}`,1],['Damage reduction',pct(s.armor)]];
+  if(s.regen) def.push(['Regeneration',s.regen.toFixed(1)+'/s']); if(s.lifesteal) def.push(['Life leech',(s.lifesteal*100).toFixed(1)+'%']);
+  if(s.thorns) def.push([AFX.thorns.n,pct(s.thorns)]); if(s.drain) def.push(['Life lost',s.drain.toFixed(1)+'/s']); if(s.dmgTaken) def.push(['Extra damage taken',pct(s.dmgTaken)]);
+  const ut=[['Move speed',Math.round(s.speed)],['Light radius',Math.round(s.light)],['Skill cooldowns',Math.round(s.cdMul*100)+'%'],['Skill area','+'+pct(s.area)],['Skill duration','+'+pct(s.dur)]];
+  if(s.proj) ut.push(['Extra projectiles','+'+s.proj]); if(s.chainX) ut.push(['Extra chains','+'+s.chainX]); if(s.skillCrit) ut.push(['Skill critical chance','+'+pct(s.skillCrit)]);
+  if(G.cls==='necro'||s.minionMax) ut.push(['Skeletons',`${G.allies.filter(m=>!m.blade).length} / ${maxMinions()}`]);
   let h=`<div><div class="sp-h">Skills</div>`;
   for(const id of Object.keys(G.skills)){const sk=G.skills[id], I=SKILL_INFO[id], need=skillNeed(sk.lvl);
     h+=`<div class="sk"><div class="sk-top"><span class="sk-n" style="color:${I.c}">${I.n}</span><span class="sk-l">Lv ${sk.lvl}${effLv(id)>sk.lvl?` (+${effLv(id)-sk.lvl})`:''} · ${skillCd(id).toFixed(1)}s${I.item?(s.grants.includes(id)?' · item':' · item not worn'):''}</span></div>
       <div class="sk-bar"><i style="width:${Math.min(100,sk.xp/need*100)}%"></i></div>
-      <div class="sk-m">${SKILLS[id].d}</div>${sk.muts.map(k=>`<div class="sk-m">◆ <b>${k[0].toUpperCase()+k.slice(1)}</b>: ${SKILLS[id].muts[k]}</div>`).join('')}
+      <div class="sk-m">${SKILLS[id].d}</div>${sk.muts.concat((s.mutG[id]||[]).filter(m=>!sk.muts.includes(m))).map(k=>`<div class="sk-m">◆ <b>${cap1(k)}</b>: ${SKILLS[id].muts[k]}${sk.muts.includes(k)?'':' <i>(gear)</i>'}</div>`).join('')}
       <div class="sk-slots">${[0,1,2,3].map(k=>`<button data-sk="${id}" data-k="${k}" class="${G.slots[k]===id?'on':''}" title="Put on key ${k+1}">${k+1}</button>`).join('')}</div></div>`;}
-  h+=`<div class="it-m" style="text-transform:none">Learn more from skill nodes in the tree and from Skill Tomes. Skills grow from their kills and mutate at levels ${MUT_LV.join(', ')}.</div></div>`;
-  h+=`<div><div class="sp-h">Level ${G.level} ${CLASSES[G.cls].name}</div>${rows.map(([k,v])=>`<div class="sp-row"><span>${k}</span><b>${v}</b></div>`).join('')}</div><div><div class="sp-h">Carried</div>`;
-  for(const k of SLOTS){const it=G.gear[k];
-    h+=it?`<div class="it"><div class="it-n" style="color:${RAR[it.rarity].c}">${esc(it.name)}</div><div class="it-m">${RAR[it.rarity].n} ${it.slot} · level ${it.level} · found at depth ${it.ilvl||1}</div>${itemLines(it).map(l=>`<div class="it-a" style="color:${lineCol(l)}">${esc(l.t)}</div>`).join('')}${it.leg?`<div class="flav">${esc(LEG[it.leg].fl)}</div>`:''}</div>`
-      :`<div class="it"><div class="it-m">No ${k}</div></div>`;}
-  $('statPanel').innerHTML=h+'</div>';
+  h+=`<div class="it-m" style="text-transform:none">Learn more from skill nodes in the tree, Skill Tomes and gear. Skills grow from their kills and mutate at levels ${MUT_LV.join(', ')}.</div></div>`;
+  h+=`<div><div class="sp-h">Level ${G.level} ${CLASSES[G.cls].name}</div>
+    <div class="sp-g">Offence</div>${off.map(r=>row(...r)).join('')}<div class="sp-g">Defence</div>${def.map(r=>row(...r)).join('')}<div class="sp-g">Utility</div>${ut.map(r=>row(...r)).join('')}</div>`;
+  // what everything you wear does, gathered in one list
+  const fx=[]; for(const k of SLOTS){const it=G.gear[k]; if(!it) continue; for(const l of itemLines(it)) if(l.leg||l.gr||l.pw||l.skm) fx.push({l,it});}
+  h+=`<div><div class="sp-h">Your gear does</div>${fx.length?fx.map(({l,it})=>`<div class="fx"><img src="${iconUrl(it)}" alt=""><span style="color:${lineCol(l)}">${esc(l.t)}</span></div>`).join('')
+    :`<div class="it-m" style="text-transform:none">Nothing strange yet. Magic and rare gear carries powers, item skills and skill bonuses: they all show up here.</div>`}
+    <div class="it-m" style="text-transform:none;margin-top:10px">Your gear is on the Inventory screen (I).</div></div>`;
+  $('statPanel').innerHTML=h;
   $('statPanel').querySelectorAll('[data-sk]').forEach(b=>b.onclick=()=>slotSkill(b.dataset.sk,+b.dataset.k));
   if(TS.run!==G){TS.run=G; TS.z=.75; const n=TREE.nodes[CLASS_START[G.cls]]; TS.vx=n.x; TS.vy=n.y; TS.hover=-1;}
   requestAnimationFrame(drawTree);
@@ -3248,7 +3448,7 @@ $('btnCopyRun').onclick=()=>{ const b=$('btnCopyRun'), t=$('runSummary'), shown=
   try{ navigator.clipboard.writeText(G.summary).then(()=>{b.textContent='Copied. Paste it to the dev';},()=>{b.textContent='Select the text below and copy it'; shown();}); }
   catch(e){ b.textContent='Select the text below and copy it'; shown(); } };
 // one place for the build number: the title screen and run summaries both read it
-const BUILD='0.23';
+const BUILD='0.24';
 // ----- first-time tips: each shows once ever, worded for whatever you're playing with -----
 const HINTS=(()=>{try{return new Set(JSON.parse(localStorage.getItem('deepening.hints')||'[]'))}catch(e){return new Set()}})();
 const keyFor=a=>({dash:TOUCH.active?'Tap DASH':PAD.active?'Press A':'Press Space', use:TOUCH.active?'Tap USE':PAD.active?'Press X':'Press E',
