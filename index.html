@@ -719,6 +719,12 @@ const ETYPES={
   shade:{name:'Shade',hp:28,dmg:15,speed:90,r:9,xp:16,minD:7,w:2,atk:'blink',reach:18,windup:.5,cd:3,body:'#100c14',eye:'#ff2a6a',shape:'shade'},
   knight:{name:'Bone Knight',hp:90,dmg:24,speed:60,r:12,xp:24,minD:10,w:2,atk:'melee',reach:24,windup:.6,cd:1.6,body:'#6b645c',eye:'#ff7a2a',shape:'knight',shield:true},
   stalker:{name:'The Stalker',hp:900,dmg:38,speed:96,r:13,xp:200,minD:999,w:0,atk:'melee',reach:26,windup:.45,cd:1.1,body:'#16121a',eye:'#ff1a1a',shape:'stalker',phase:true},
+  slime:{name:'Slime',hp:34,dmg:8,speed:72,r:11,xp:8,minD:2,w:3,atk:'melee',reach:14,windup:.45,cd:1.2,body:'#3a7a3a',eye:'#d4ff5a',shape:'slime',split:'slimelet'},
+  slimelet:{name:'Slimelet',hp:10,dmg:4,speed:125,r:6,xp:2,minD:999,w:0,atk:'melee',reach:10,windup:.25,cd:.8,body:'#3a7a3a',eye:'#d4ff5a',shape:'slimelet'},
+  mud:{name:'Mud Monster',hp:58,dmg:11,speed:56,r:11,xp:11,minD:4,w:2,atk:'melee',reach:16,windup:.6,cd:1.4,body:'#4a3a22',eye:'#ffb02a',shape:'mud',mud:true},
+  ant:{name:'Crystal Ant',hp:9,dmg:5,speed:168,r:6,xp:2,minD:3,w:3,atk:'melee',reach:10,windup:.2,cd:.7,body:'#5ab4d8',eye:'#cfefff',shape:'ant',swarm:4},
+  geode:{name:'Geode Warrior',hp:85,dmg:18,speed:62,r:12,xp:22,minD:7,w:2,atk:'melee',reach:22,windup:.6,cd:1.5,body:'#6a4a9a',eye:'#e0b0ff',shape:'geode',shards:true},
+  goblin:{name:'Treasure Goblin',hp:70,dmg:0,speed:150,r:9,xp:40,minD:999,w:0,atk:'flee',body:'#5a7a2a',eye:'#ffd02a',shape:'goblin'},
   mimic:{name:'Mimic',hp:70,dmg:16,speed:100,r:12,xp:30,minD:999,w:0,atk:'melee',reach:20,windup:.3,cd:.9,body:'#5a3a22',eye:'#ff3a1c',shape:'mimic'},
   warden:{name:'Warden',hp:380,dmg:22,speed:72,r:24,xp:120,minD:999,w:0,atk:'boss',body:'#2a1012',eye:'#ff2a10',shape:'boss'},
 };
@@ -886,9 +892,11 @@ const SPRITES={}, WEAPONS={}, ICONS={};
 for(const k in SPRITE_DEFS) SPRITES[k]=buildSprite(SPRITE_DEFS[k]);
 BOSSES.forEach((b,i)=>SPRITES['boss'+i]=buildSprite(Object.assign({},SPRITE_DEFS.boss,{pal:Object.assign({},SPRITE_DEFS.boss.pal,b.pal)})));
 for(const k in WEAPON_DEFS) WEAPONS[k]=buildSprite(WEAPON_DEFS[k]);
+for(const [k,f] of [['goblin','gnawer'],['slime','bloat'],['slimelet','gnawer'],['mud','husk'],['ant','gnawer'],['geode','knight']]) if(!SPRITES[k]) SPRITES[k]=SPRITES[f];
 for(const k in ICON_DEFS) ICONS[k]=buildSprite(ICON_DEFS[k]);
 function drawSprite(g,sp,x,feet,flip,fr,variant,s=1,alpha){
-  const src=(variant==='white'?sp.white:variant==='red'?sp.red:sp.frames)[fr%sp.frames.length];
+  if(variant==='shadow'&&!sp.shadow) sp.shadow=sp.frames.map(f=>artMap(f,(r,g,b)=>{const l=.3*r+.59*g+.11*b; return [l*.35+18,l*.18+6,l*.6+40];})); // a shadow soldier: the same body in violet-black
+  const src=(variant==='white'?sp.white:variant==='red'?sp.red:variant==='shadow'?sp.shadow:sp.frames)[fr%sp.frames.length];
   g.save(); if(alpha!==undefined) g.globalAlpha*=alpha;
   g.translate(Math.round(x),Math.round(feet)); if(flip) g.scale(-1,1);
   g.drawImage(src,-sp.cx*2*s,-sp.h*2*s,sp.w*2*s,sp.h*2*s); g.restore();
@@ -912,14 +920,16 @@ const A72={ // [x,y,w,h,frames] in the 0x72 atlas; frames sit side by side
   bigDemon:{idle:[16,428,32,36,4],run:[144,428,32,36,4]}, wogol:{idle:[368,249,16,23,4],run:[432,249,16,23,4]},
   orcShaman:{idle:[368,201,16,23,4],run:[432,201,16,23,4]}, swampy:{idle:[432,112,16,16,4]},
   chort:{idle:[368,273,16,23,4],run:[432,273,16,23,4]}, maskedOrc:{idle:[368,153,16,23,4],run:[432,153,16,23,4]},
-  mimic:{idle:[304,432,16,16,3]}, chest:{idle:[304,416,16,16,1]}, chestOpen:{idle:[336,416,16,16,1]},
+  mimic:{idle:[304,432,16,16,3]}, goblin:{idle:[368,40,16,16,4],run:[432,40,16,16,4]}, slug:{idle:[368,369,16,23,4]}, tinySlug:{idle:[432,376,16,16,4]},
+  muddy:{idle:[368,112,16,16,4]}, imp:{idle:[368,64,16,16,4],run:[432,64,16,16,4]}, chest:{idle:[304,416,16,16,1]}, chestOpen:{idle:[336,416,16,16,1]},
 };
 const A72_ONE={flask:[288,352,16,16], stairs:[80,192,16,16], spikes:[16,192,16,16,4]};
 const A72_WEAPON={warrior:[339,98,10,29], rogue:[293,10,6,13], mage:[324,129,8,30], necro:[340,129,8,30]};
 // which pack sprite plays which part; tint is [r,g,b,strength], dark scales brightness
 const ART_USE={warrior:['knight'],rogue:['elf'],mage:['wizard'],necro:['necromancer'],husk:['orcWarrior'],brute:['ogre'],
   wraith:['wogol'],priest:['orcShaman'],bloat:['swampy'],shade:['chort'],knight:['maskedOrc'],stalker:['bigDemon',null,.45],
-  minion:['skelet',[120,255,110,.25]],mimic:['mimic'],chest:['chest'],chestOpen:['chestOpen'],
+  minion:['skelet',[120,255,110,.25]], goblin:['goblin',[255,210,80,.15]], slime:['slug',[110,230,110,.4]], slimelet:['tinySlug',[110,230,110,.4]], mud:['muddy'],
+  ant:['imp',[120,210,255,.6]], geode:['maskedOrc',[170,120,240,.5]],mimic:['mimic'],chest:['chest'],chestOpen:['chestOpen'],
   boss0:['ogre',[200,40,30,.25]],boss1:['bigZombie',[150,210,60,.3]],boss2:['bigDemon',[80,160,230,.45]],boss3:['bigDemon',[255,120,30,.3]],boss4:['bigZombie',[120,90,200,.5],.6]};
 const ARTX={ready:false}; // extra art: flask, stairs, spikes, torch frames, weapon art, map textures
 
@@ -962,7 +972,7 @@ function loadArt(){
     const side=img=>artStrip(img,[0,0,16,16,Math.max(1,img.width/16|0)]);
     SPRITES.archer=artSprite(side(skM),side(skI)); SPRITES.gnawer=artSprite(side(baM),side(baI));
     // monsters whose eyes weren't found get two set on the face, a little toward the front, about a quarter of the way down
-    for(const k of ['husk','brute','wraith','priest','bloat','shade','knight','stalker','minion','mimic','gnawer','archer','boss0','boss1','boss2','boss3','boss4']){
+    for(const k of ['husk','brute','wraith','priest','bloat','shade','knight','stalker','minion','mimic','gnawer','archer','goblin','slime','slimelet','mud','ant','geode','boss0','boss1','boss2','boss3','boss4']){
       const sp=SPRITES[k]; if(sp.eyes.length) continue; let top=sp.h; for(const [,y] of sp.pixels) top=Math.min(top,y);
       const ey=Math.round(top+(sp.h-top)*.28), ex=Math.round(sp.cx); sp.eyes=[[ex-1,ey],[ex+1+(sp.w>16?1:0),ey]];}
     for(const [cls,r] of Object.entries(A72_WEAPON)){ // stored blade-up in the atlas; turn them to point right
@@ -1231,9 +1241,9 @@ function descend(){
   const p=G.player; p.x=f.spawn.x; p.y=f.spawn.y; G.cam.x=p.x; G.cam.y=p.y;
   G.corpses=[]; G.floorT=0; G.stalkWarned=false; G.stalker=null; G.stalkDone=false; // your skeletons follow you down; the Stalker does not
   for(const m of G.allies){m.x=p.x; m.y=p.y; m.tgt=null; for(let tr=0;tr<12;tr++){const a=rand(0,6.28), x=p.x+Math.cos(a)*30, y=p.y+Math.sin(a)*30; if(!collides(x,y,8)){m.x=x; m.y=y; break;}}}
-  G.projectiles=[]; G.drops=[]; G.particles=[]; G.effects=[]; G.texts=[]; G.pending=[]; G.hazards=[]; G.darkT=0; G.turrets=[]; G.peels=[];
-  later(.5,()=>firePowers('floor'));
-  if(G.depth>1) healP(G.stats.maxHp*.2);
+  G.projectiles=[]; G.drops=[]; G.particles=[]; G.effects=[]; G.texts=[]; G.pending=[]; G.hazards=[]; G.darkT=0; G.turrets=[]; G.peels=[]; G.souls=[];
+  later(.5,()=>firePowers('floor')); newQuest();
+  if(G.depth>1) healP(G.stats.maxHp*.08);
   // a Skill Tome lies somewhere on floor 2 and every third floor after, so new skills come early and keep coming
   if(G.depth%3===2&&!G.isBoss&&!G.isTavern){const d=bfs(G.map,tileIdx(p.x,p.y)); let far=0; for(const v of d) if(v>far) far=v;
     const opts=[]; for(let i=0;i<d.length;i++) if(d[i]>far*.45&&d[i]<far*.8) opts.push(i);
@@ -1311,10 +1321,12 @@ function genFloor(depth){
   const enemies=[], avail=Object.entries(ETYPES).filter(([,t])=>t.minD<=depth&&t.w>0);
   const pickType=()=>{let r=Math.random()*avail.reduce((s,[,t])=>s+t.w,0);for(const [k,t] of avail){r-=t.w;if(r<=0)return k;}return avail[0][0];};
   for(const r of rooms){ if(r===spawnRoom||(isBoss&&r===stairRoom)) continue;
-    const n=Math.min(8,ri(1,2)+Math.floor(depth/3));
+    const n=Math.min(10,ri(2,3)+Math.floor(depth/2.5));
     for(let k=0;k<n;k++){const tx=ri(r.x,r.x+r.w-1), ty=ri(r.y,r.y+r.h-1), x=cw(tx), y=cw(ty);
       if(map[ty*MW+tx]||Math.hypot(x-spawn.x,y-spawn.y)<260) continue;
-      enemies.push(spawnEnemy(pickType(),x,y,depth,Math.random()<.07+depth*.004));}}
+      const kind=pickType(); enemies.push(spawnEnemy(kind,x,y,depth,Math.random()<.09+depth*.005));
+      for(let s=0;s<(ETYPES[kind].swarm||0);s++){const sx=x+rand(-30,30), sy=y+rand(-30,30), stx=Math.floor(sx/TILE), sty=Math.floor(sy/TILE); if(!map[sty*MW+stx]) enemies.push(spawnEnemy(kind,sx,sy,depth,false));}}}
+  if(!isBoss&&depth>=2&&Math.random()<.18){const r=pick(rooms.filter(q=>q!==spawnRoom)); if(r) enemies.push(spawnEnemy('goblin',cw(r.cx),cw(r.cy),depth,false));}
   if(isBoss){enemies.push(spawnBoss(depth,stairs.x,stairs.y-TILE*3));
     enemies.push(spawnEnemy('husk',stairs.x-80,stairs.y,depth,false)); enemies.push(spawnEnemy('husk',stairs.x+80,stairs.y,depth,false));}
   // props: urns along the walls, maybe a chest and a shrine, spike traps from depth 2
@@ -1408,7 +1420,7 @@ function renderMap(map,theme,torches){
 }
 // ================= enemies =================
 function spawnEnemy(type,x,y,depth,elite){
-  const T=ETYPES[type], hs=1+.25*(depth-1)+.012*(depth-1)**2, ds=1+.11*(depth-1);
+  const T=ETYPES[type], hs=(1+.3*(depth-1)+.016*(depth-1)**2)*1.1, ds=(1+.13*(depth-1))*1.2;
   const e={type,T,x,y,r:T.r*(elite?1.25:1),maxHp:Math.round(T.hp*hs*(elite?2.6:1)),dmg:T.dmg*ds*(elite?1.4:1),speed:T.speed*(elite?1.05:1),
     xp:Math.round(T.xp*(1+.1*(depth-1))*(elite?3:1)),elite,state:'idle',t:0,cd:rand(0,1),flash:0,slow:0,burn:null,burnTick:0,face:rand(0,6.28),
     hurt:0,dead:false,kb:{x:0,y:0},ph:rand(0,6.28),name:(elite?pick(ELITE_P)+' ':'')+T.name,boss:false,aim:0,hitDone:false};
@@ -1496,6 +1508,13 @@ function updateEnemy(e,dt){
     const k=Math.max(0,1-dt*9); e.kb.x*=k; e.kb.y*=k; if(Math.abs(e.kb.x)+Math.abs(e.kb.y)<4){e.kb.x=e.kb.y=0;} }
   const p=G.player, d=dist(e,p), sp=e.speed*(e.slow>0?.55:1), a=Math.atan2(p.y-e.y,p.x-e.x), T=e.T;
   if(e.boss) return updateBoss(e,dt,d,a,sp);
+  if(T.atk==='flee'){ // the Treasure Goblin: catch it before it escapes
+    if(e.state==='idle'){ if(d<240||e.hurt>0){e.state='flee'; e.t=14; text(e.x,e.y-20,pick(['Mine! MINE!','No no no!','Hee hee hee!','Not the gold!']),'#ffd02a',13); play('pick');} return;}
+    e.t-=dt; const fa=Math.atan2(e.y-p.y,e.x-p.x)+Math.sin(G.time*1.7+e.ph)*.9; move(e,Math.cos(fa)*sp*dt,Math.sin(fa)*sp*dt); e.face=fa;
+    if(Math.random()<dt*4) addP({x:e.x+rand(-6,6),y:e.y-6,vx:rand(-20,20),vy:rand(-50,-20),life:.6,max:.6,size:2,color:'#ffd02a',drag:1,emissive:true});
+    if(e.t<=0){e.dead=true; smoke(e.x,e.y,20); G.effects.push({type:'ring',x:e.x,y:e.y,r0:30,r1:2,t:0,max:.5,color:'#ffd02a',w:6,light:true}); text(e.x,e.y-24,'It got away!','#ffd02a',15); play('blink',e);}
+    return;}
+  if(T.mud&&e.state!=='idle'){e.mudT=(e.mudT||0)-dt; if(e.mudT<=0){e.mudT=.55; addHazard(e.x,e.y+e.r*.5,18,4,0,'#5a4428',0,'mud');}}
   switch(e.state){
     case 'idle': if(d<230*G.stats.aggro||e.hurt>0) e.state='chase'; break;
     case 'chase':
@@ -1626,7 +1645,7 @@ function hitEnemy(e,dmg,o={}){
     if(Math.random()<s.chain) chainLightning(e,dmg*.6*(s.u.storm?.6:1));
     if(s.u.bleed){e.bleed={t:3,dps:dmg*.5*s.u.bleed/3}; e.bleedTick=e.bleedTick||.5;}
     firePowers('hit',e.x,e.y,e);
-    if(o.crit){firePowers('crit',e.x,e.y,e); if(s.u.ledger) mark(e,4,.35);
+    if(o.crit){firePowers('crit',e.x,e.y,e); questEvent('crit'); if(s.u.ledger) mark(e,4,.35);
       if(s.u.partyhat&&G.time-(G.partyT||-9)>.5){G.partyT=G.time; const x=e.x,y=e.y; later(.05,()=>confetti(x,y,1.2*s.u.partyhat));}}
   }
   if(!o.quiet){play(o.crit?'crit':'hit',e); if(o.crit) hitStop(.045);
@@ -1641,7 +1660,7 @@ function chainLightning(from,dmg){
   if(pts.length>1) G.effects.push({type:'zap',pts,t:0,max:.25});
 }
 function killEnemy(e){
-  e.dead=true; G.kills++;
+  e.dead=true; G.kills++; leaveShadow(e); questEvent('kill',e);
   {const x=e.x, y=e.y; later(0,()=>{firePowers('kill',x,y,null); if(e.elite||e.boss) firePowers('elite',x,y,null);
     if(G.stats.u.ratcrown) critter(x,y,1,{color:'#8a6a4a',mult:.6*G.stats.u.ratcrown,spd:200,r:3,life:4});});}
   const g=G.dctx;
@@ -1659,6 +1678,10 @@ function killEnemy(e){
     const pl=G.player; if(dist(pl,e)<72+pl.r) damagePlayer(e.dmg,null,'a bursting Bloat');
     for(const o of G.enemies) if(o!==e&&!o.dead&&dist(o,e)<72+o.r) hitEnemy(o,e.dmg*1.5,{proc:false,angle:Math.atan2(o.y-e.y,o.x-e.x),kb:240,color:'#b6d24a'});
     for(let k=0;k<3;k++) addHazard(e.x+rand(-26,26),e.y+rand(-26,26),20,3,4+G.depth,'#9acd32');}
+  if(e.T.split) for(let k=0;k<2;k++){const a=rand(0,6.28), x=e.x+Math.cos(a)*12, y=e.y+Math.sin(a)*12; if(!collides(x,y,6)){const m=spawnEnemy(e.T.split,x,y,G.depth,false); m.state='chase'; m.kb={x:Math.cos(a)*200,y:Math.sin(a)*200}; G.enemies.push(m);}}
+  if(e.T.shards){for(let i=0;i<8;i++){const a=i*Math.PI/4; G.projectiles.push({x:e.x,y:e.y,vx:Math.cos(a)*190,vy:Math.sin(a)*190,r:4,dmg:e.dmg*.4,owner:'enemy',life:1.4,color:'#c9a0ff',src:e});} spark(e.x,e.y,'#c9a0ff',14); play('urn',e);}
+  if(e.type==='goblin'){dropGold(e.x,e.y,50+G.depth*14); for(let k=0;k<3;k++) dropItem(e.x+rand(-30,30),e.y+rand(-20,20),null,.65); if(Math.random()<.4) dropTome(e.x,e.y+20);
+    text(e.x,e.y-34,'JACKPOT','#ffd02a',20); G.flash=Math.max(G.flash||0,.3); play('legendary');}
   if(e.mod==='splitting') for(let k=0;k<2;k++){const a=rand(0,6.28), x=e.x+Math.cos(a)*16, y=e.y+Math.sin(a)*16;
     if(!collides(x,y,e.T.r)){const m=spawnEnemy(e.type,x,y,G.depth,false); m.maxHp=m.hp=Math.round(m.maxHp*.6); m.state='chase'; G.enemies.push(m);}}
   if(e.type==='mimic') dropItem(e.x,e.y,null,.5);
@@ -1689,7 +1712,7 @@ function killEnemy(e){
   }
   const su=G.stats.u;
   if(su.hollow) healP(G.stats.maxHp*.03*su.hollow,true);
-  else if(Math.random()<.1) G.drops.push({kind:'orb',x:e.x+rand(-6,6),y:e.y+rand(-6,6),t:0});
+  else if(Math.random()<.035) G.drops.push({kind:'orb',x:e.x+rand(-6,6),y:e.y+rand(-6,6),t:0});
   if(Math.random()<G.stats.explode) explosion(e.x,e.y,G.stats.dmg*1.5,75);
   if(su.ember&&e.burn) explosion(e.x,e.y,G.stats.dmg*1.2*su.ember,70);
   if(su.ossuary&&!e.boss&&Math.random()<.1*su.ossuary&&G.allies.length<maxMinions()){spawnMinion(e.x,e.y); const m=G.allies[G.allies.length-1]; if(G.cls!=='necro') m.ttl=20;}
@@ -1703,12 +1726,12 @@ function gibs(sp,x,feet,s,flip,ha,force=1){
 }
 // ----- props -----
 function breakUrn(o,a){
-  if(o.broken) return; o.broken=true; play('urn',o); gibs(SPRITES.urn,o.x,o.y+8,1,false,a,.8);
+  if(o.broken) return; o.broken=true; play('urn',o); questEvent('urn'); gibs(SPRITES.urn,o.x,o.y+8,1,false,a,.8);
   const r=Math.random();
-  if(r<.22) G.drops.push({kind:'orb',x:o.x,y:o.y,t:0});
-  else if(r<.27) dropItem(o.x,o.y,null,0);
+  if(r<.05) G.drops.push({kind:'orb',x:o.x,y:o.y,t:0}); // healing is rare: you earn it, you don't smash it out of pots
+  else if(r<.10) dropItem(o.x,o.y,null,0);
   else if(r>.6&&r<.85) dropGold(o.x,o.y,1+G.depth*.4);
-  else if(r<.33){const e=spawnEnemy('gnawer',o.x,o.y,G.depth,false); e.state='chase'; G.enemies.push(e);}
+  else if(r<.18){const e=spawnEnemy('gnawer',o.x,o.y,G.depth,false); e.state='chase'; G.enemies.push(e);}
 }
 function nextWave(o){
   o.wave++; const r=o.room, p=G.player, n=3+o.wave+Math.floor(G.depth/3);
@@ -1769,7 +1792,7 @@ function raiseDead(){
   }
   for(const c of near){G.corpses.splice(G.corpses.indexOf(c),1); spawnMinion(c.x,c.y);
     if(skillHas('raise','explode')) explosion(c.x,c.y,s.dmg*1.2*s.abilDmg,60);}
-  const skel=G.allies.filter(m=>!m.blade); while(skel.length>max) boneBurst(skel.shift()); // spectral swords don't count
+  const skel=G.allies.filter(m=>!m.blade&&!m.shadow); while(skel.length>max) boneBurst(skel.shift()); // spectral swords don't count
 }
 // how hard a minion hits: your damage, minion bonuses, and the level of the skill that made it
 function minionHit(m){const s=G.stats, id=m.skill||'raise'; return s.dmg*(.55+s.minionDmg)*(m.mult||s.abilDmg*(G.skills[id]?skillLvMul(id):1))*rand(.9,1.1);}
@@ -1780,7 +1803,8 @@ function spawnMinion(x,y){
     atkCd:skillHas('raise','fury')?.45:.75,spd:140});
   spark(x,y,'#7aff6a',10); smoke(x,y,6);
 }
-function boneBurst(m){m.hp=0; if(G.stats.u.plagueskel&&!m.blade) playerHazard(m.x,m.y,55,4,G.stats.dmg*.45*G.stats.u.plagueskel,'#9acd32',{skill:'plague',wither:true}); gibs(SPRITES.minion,m.x,m.y+6,1,false,rand(0,6.28),.7); play('urn',m);}
+function boneBurst(m){ if(m.shadow){m.hp=0; smoke(m.x,m.y,14); text(m.x,m.y-20,'Your shadow fades','#8a6ab0',11); return;}
+  m.hp=0; if(G.stats.u.plagueskel&&!m.blade) playerHazard(m.x,m.y,55,4,G.stats.dmg*.45*G.stats.u.plagueskel,'#9acd32',{skill:'plague',wither:true}); gibs(SPRITES.minion,m.x,m.y+6,1,false,rand(0,6.28),.7); play('urn',m);}
 function nearAlly(e,r){let best=null; for(const m of G.allies){if(m.hp<=0||m.rise>0) continue; const d=dist(e,m); if(d<r+m.r){r=d-m.r; best=m;}} return best;}
 function damageAlly(m,amt){
   m.hp-=amt*.8; m.flash=.1; m.hurt=2; spark(m.x,m.y,'#ddd5c0',5);
@@ -1800,7 +1824,7 @@ function updateAllies(dt){
       const e=m.tgt, a=Math.atan2(e.y-m.y,e.x-m.x), d=dist(m,e); m.face=a;
       if(m.wind>0){m.wind-=dt;
         if(m.wind<=0){m.cd=m.atkCd||.75;
-          G.effects.push({type:'slash',x:m.x,y:m.y,a,arc:1.4,reach:22,t:0,max:.12,color:m.blade?'#8fd8ff':'#9aff7a'});
+          G.effects.push({type:'slash',x:m.x,y:m.y,a,arc:1.4,reach:22,t:0,max:.12,color:m.shadow?'#b06aff':m.blade?'#8fd8ff':'#9aff7a'});
           if(dist(m,e)<e.r+m.r+22) hitEnemy(e,minionHit(m),{angle:a,proc:false,kb:90,color:m.blade?'#bfe8ff':'#b6ff9a',quiet:true,skill:m.skill});}}
       else if(d<e.r+m.r+14&&m.cd<=0) m.wind=m.blade?.1:.22;
       else if(d>e.r+m.r+8){const sp=m.spd||140; if(m.blade){m.x+=Math.cos(a)*sp*dt; m.y+=Math.sin(a)*sp*dt;} else move(m,Math.cos(a)*sp*dt,Math.sin(a)*sp*dt);}
@@ -1819,7 +1843,7 @@ function explosion(x,y,dmg,r){
 function damagePlayer(amt,src,label){
   const p=G.player, s=G.stats; if(p.inv>0||state!=='play'||G.dying) return;
   if(p.ward>0){p.ward--; p.inv=.3; spark(p.x,p.y,'#e8dcc0',10); text(p.x,p.y-24,'WARDED','#e8dcc0',12); play('urn',p); return;} // a bone ward takes the hit
-  const wasHigh=p.hp>=s.maxHp*.35;
+  const wasHigh=p.hp>=s.maxHp*.35; questEvent('hurt');
   later(0,()=>{firePowers('hurt',p.x,p.y,src&&src.hp!==undefined&&!src.dead?src:null); if(wasHigh&&p.hp>0&&p.hp<s.maxHp*.35) firePowers('low');});
   amt=Math.max(1,Math.round(amt*(1-s.armor)*(1+s.dmgTaken)));
   G.dmgTaken=(G.dmgTaken||0)+amt; G.lastHitBy=label||(src&&src.name?(src.boss?src.name:'a '+src.name):'something in the dark');
@@ -2177,7 +2201,7 @@ function updateSkills(dt){
       for(const e of near(bx,by,10)){ if((o.hits.get(e)||0)>G.time) continue; o.hits.set(e,G.time+.25);
         strike(e,o.mult,a+Math.PI/2,{skill:'blades',noKb:true,critBonus:G.stats.skillCrit}); if(o.fire&&!e.dead) e.burn={t:3,dps:G.stats.dmg*.25};}}}
   if(G.orbits) G.orbits=G.orbits.filter(o=>o.t<o.ttl);
-  updatePowers(dt);
+  updatePowers(dt); updateSouls(dt); updateQuest(dt);
   // legendaries that tick on their own
   const u=G.stats.u;
   if(u.spikewalk&&p.moving){p.spikeT=(p.spikeT||0)-dt; if(p.spikeT<=0){p.spikeT=1; SKILLS.spikes.cast(Object.assign(skillCtx('spikes'),{tp:{x:p.x,y:p.y}}));}}
@@ -2366,6 +2390,109 @@ function drawPeel(g,b){const x=Math.round(b.x/2)*2, y=Math.round(b.y/2)*2; g.fil
 function drawTurret(g,t){const x=Math.round(t.x/2)*2, y=Math.round(t.y/2)*2, k=t.ttl-t.t<1?(t.ttl-t.t):1; g.globalAlpha=k;
   g.fillStyle='rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(x,y+6,10,4,0,0,7); g.fill();
   g.fillStyle='#8a8070'; g.fillRect(x-6,y-4,12,10); g.fillStyle='#e8dcc0'; g.fillRect(x-4,y-12,8,8); g.fillStyle='#1a0e0a'; g.fillRect(x-2,y-10,2,2); g.fillRect(x+1,y-10,2,2); g.globalAlpha=1;}
+// ================= ARISE: shadow extraction =================
+// Elites and bosses leave their shadow behind for a few seconds after they die. Stand on it and command it to rise:
+// three tries, and if it answers it fights for you for the rest of the run, following you down. (After Solo Leveling.)
+const maxShadows=()=>2+Math.floor(G.level/8)+(G.cls==='necro'?2:0);
+const shadowCount=()=>G.allies.filter(m=>m.shadow&&m.hp>0).length;
+function leaveShadow(e){ if(!(e.elite||e.boss)||e.type==='mimic'||e.type==='stalker') return;
+  (G.souls=G.souls||[]).push({x:e.x,y:e.y,shape:e.shape||e.T.shape,name:e.boss?e.name:e.T.name,boss:!!e.boss,r:e.r,tries:3,t:12});
+  hint('arise',`That one left its shadow behind. Stand on it and ${TOUCH.active?'tap USE':PAD.active?'press X':'press E'}: ARISE.`);}
+function arise(sl){
+  const p=G.player, ch=(sl.boss?.35:.6)+(G.cls==='necro'?.2:0); sl.tries--;
+  G.effects.push({type:'ring',x:sl.x,y:sl.y,r0:40,r1:6,t:0,max:.4,color:'#b06aff',w:4,light:true}); play('raise');
+  if(Math.random()<ch){
+    G.souls.splice(G.souls.indexOf(sl),1);
+    if(shadowCount()>=maxShadows()){const old=G.allies.find(m=>m.shadow); old.hp=0; smoke(old.x,old.y,14); text(old.x,old.y-20,'released','#8a6ab0',11);}
+    const s=G.stats, hp=Math.round(((40+G.depth*10)*(sl.boss?4:1.5)+s.maxHp*.3));
+    G.allies.push({ally:true,shadow:true,shape:sl.shape,name:sl.name,x:sl.x,y:sl.y,r:Math.min(sl.r,16),sc:sl.boss?.8:1,hp,maxHp:hp,T:{phase:false},face:0,rise:.8,cd:.4,wind:0,flash:0,
+      tgt:null,ph:rand(0,6.28),hurt:0,skill:null,atkCd:sl.boss?.85:.65,spd:sl.boss?125:155,mult:sl.boss?2.4:1.3});
+    text(sl.x,sl.y-40,'ARISE','#c9a0ff',26); G.flash=Math.max(G.flash||0,.35); G.shake=Math.min(14,G.shake+8); play('legendary');
+    for(let i=0;i<30;i++) addP({x:sl.x+rand(-14,14),y:sl.y+rand(-6,6),vx:rand(-30,30),vy:rand(-160,-60),life:rand(.6,1.2),max:1.2,size:rand(2,4),color:pick(['#6a2aaa','#b06aff','#2a0a3a']),drag:1.5,emissive:true});
+    G.banner={t:0,lines:['ARISE',`${sl.name} serves you now`,`Shadows ${shadowCount()} / ${maxShadows()}`]};
+  } else {
+    text(sl.x,sl.y-30,sl.tries?`It resists (${sl.tries} ${sl.tries>1?'tries':'try'} left)`:'The shadow slips away','#8a6ab0',13); smoke(sl.x,sl.y,8);
+    if(!sl.tries) G.souls.splice(G.souls.indexOf(sl),1);}
+}
+function updateSouls(dt){
+  G.nearShadow=null; if(!G.souls) return; const p=G.player; let nd=44;
+  for(const sl of G.souls){sl.t-=dt; const d=Math.hypot(sl.x-p.x,sl.y-p.y); if(d<nd){nd=d; G.nearShadow=sl;}
+    if(Math.random()<dt*14) addP({x:sl.x+rand(-10,10),y:sl.y+rand(-4,4),vx:rand(-8,8),vy:rand(-70,-30),life:rand(.5,1),max:1,size:rand(2,3),color:pick(['#6a2aaa','#b06aff','#1a0626']),drag:.5,emissive:true});}
+  G.souls=G.souls.filter(sl=>sl.t>0);
+}
+// ================= the System: a quest every floor =================
+// After Solo Leveling: a cold blue window appears with a task for this floor. Do it and the System pays out.
+// Timed quests that run out bring a penalty: something nasty is sent to collect.
+const QUESTS=[
+  {id:'slay',w:3,make:d=>({need:10+Math.floor(d*1.2)}),title:q=>'Cull',txt:q=>`Slay ${q.need} enemies on this floor.`},
+  {id:'elite',w:2,make:()=>({need:1}),title:q=>'Head Hunter',txt:q=>'Slay an elite.',ok:()=>G.enemies.some(e=>e.elite&&!e.dead)},
+  {id:'fast',w:2,make:d=>({need:1,t:70+Math.min(40,d*2),timed:true}),title:q=>'Hurry',txt:q=>`Reach the stairs within ${Math.round(q.t0)} seconds.`},
+  {id:'clean',w:2,make:()=>({need:1,hits:0,limit:3}),title:q=>'Untouchable',txt:q=>'Reach the stairs having been hit fewer than 3 times.'},
+  {id:'urns',w:1,make:()=>({need:6}),title:q=>'Vandal',txt:q=>'Smash 6 urns.',ok:()=>G.props.filter(o=>o.kind==='urn').length>=6},
+  {id:'skills',w:2,make:d=>({need:8+Math.floor(d*.5)}),title:q=>'Show Your Power',txt:q=>`Slay ${q.need} enemies with skills.`},
+  {id:'frenzy',w:2,make:()=>({need:5,win:[]}),title:q=>'Frenzy',txt:q=>'Slay 5 enemies within 4 seconds.'},
+  {id:'crit',w:1,make:d=>({need:15+d}),title:q=>'Precision',txt:q=>`Land ${q.need} critical hits.`},
+  {id:'gold',w:1,make:d=>({need:25+d*6}),title:q=>'Greed',txt:q=>`Pick up ${q.need} gold.`},
+];
+function newQuest(){
+  G.quest=null; if(G.isTavern) return;
+  const pool=QUESTS.filter(q=>!q.ok||q.ok()), tot=pool.reduce((s,q)=>s+q.w,0); let r=Math.random()*tot, Q=pool[0];
+  for(const q of pool){r-=q.w; if(r<=0){Q=q; break;}}
+  const q=Object.assign({id:Q.id,have:0,done:false,failed:false},Q.make(G.depth)); q.t0=q.t; q.title=Q.title(q); q.text=Q.txt(q);
+  q.reward=pick(G.isBoss?['item','item','tome']:['pt','pt','gold','item','orbs']);
+  G.quest=q; later(2.2,()=>{G.sysWin={t:0,head:'QUEST ARRIVED',title:q.title,lines:[q.text,`Reward: ${REWARD_TXT[q.reward]}`],col:'#5ab4ff'}; play('shrine');});
+}
+const REWARD_TXT={pt:'1 skill point',gold:'a purse of gold',item:'a rare item',orbs:'healing',tome:'a Skill Tome'};
+function questEvent(kind,o){
+  const q=G.quest; if(!q||q.done||q.failed) return;
+  const add=n=>{q.have=Math.min(q.need,q.have+n); if(q.have>=q.need) questDone();};
+  if(kind==='kill'){ if(q.id==='slay') add(1); if(q.id==='elite'&&(o.elite||o.boss)) add(1); if(q.id==='skills'&&o.lastSkill) add(1);
+    if(q.id==='frenzy'){q.win.push(G.time); q.win=q.win.filter(t=>G.time-t<4); q.have=Math.max(q.have,q.win.length); if(q.have>=q.need) questDone();}}
+  else if(kind==='urn'&&q.id==='urns') add(1);
+  else if(kind==='crit'&&q.id==='crit') add(1);
+  else if(kind==='gold'&&q.id==='gold') add(o);
+  else if(kind==='hurt'&&q.id==='clean'){q.hits++; if(q.hits>=q.limit) questFail('You were hit too many times.');}
+  else if(kind==='stairs'&&(q.id==='fast'||q.id==='clean')) questDone();
+}
+function questDone(){
+  const q=G.quest, p=G.player; q.done=true; q.have=q.need;
+  if(q.reward==='pt'){G.points++;} else if(q.reward==='gold') dropGold(p.x,p.y,30+G.depth*10);
+  else if(q.reward==='item') dropItem(p.x,p.y+20,null,.7,'rare'); else if(q.reward==='tome') dropTome(p.x,p.y+20);
+  else for(let k=0;k<3;k++) G.drops.push({kind:'orb',x:p.x+rand(-20,20),y:p.y+rand(-20,20),t:0});
+  G.sysWin={t:0,head:'QUEST COMPLETE',title:q.title,lines:[`You receive ${REWARD_TXT[q.reward]}.`],col:'#5ab4ff'}; play('level'); G.flash=Math.max(G.flash||0,.15);
+}
+function questFail(why){
+  const q=G.quest; q.failed=true; G.sysWin={t:0,head:'QUEST FAILED',title:q.title,lines:[why],col:'#ff5a4a'}; play('boss');
+  if(q.timed){ // the penalty: two hunters, sent to collect
+    const p=G.player; G.sysWin.lines.push('PENALTY: they have been sent for you.');
+    for(let k=0;k<2;k++) for(let tr=0;tr<20;tr++){const a=rand(0,6.28), x=p.x+Math.cos(a)*170, y=p.y+Math.sin(a)*170;
+      if(!collides(x,y,12)){const e=spawnEnemy(pick(['husk','gnawer','wraith'].filter(t=>ETYPES[t].minD<=G.depth+3)),x,y,G.depth+2,true); e.state='chase'; G.enemies.push(e); smoke(x,y,10); break;}}}
+}
+function updateQuest(dt){
+  const q=G.quest; if(G.sysWin){G.sysWin.t+=dt; if(G.sysWin.t>4.2) G.sysWin=null;}
+  if(!q||q.done||q.failed) return;
+  if(q.timed){q.t-=dt; if(q.t<=0) questFail('Time ran out.');}
+}
+// the System's window: navy glass, a thin glowing frame, square brackets
+function drawSysWin(){
+  const w=G.sysWin; if(!w) return; const a=Math.min(1,w.t/.25,(4.2-w.t)/.4), bw=Math.min(420,W-40), bh=74+w.lines.length*19, X=W/2-bw/2, Y=Math.min(H*.3+104,H-bh-120);
+  ctx.save(); ctx.globalAlpha=clamp(a,0,1);
+  ctx.fillStyle='rgba(6,14,30,.9)'; ctx.fillRect(X,Y,bw,bh);
+  ctx.strokeStyle=hexA(w.col,.85); ctx.lineWidth=1.5; ctx.strokeRect(X+.5,Y+.5,bw-1,bh-1); ctx.strokeStyle=hexA(w.col,.25); ctx.strokeRect(X+4.5,Y+4.5,bw-9,bh-9);
+  ctx.shadowColor=w.col; ctx.shadowBlur=12; ctx.textAlign='center'; ctx.font=`600 12px ${FB}`; ctx.fillStyle=w.col; ctx.fillText(`[ ${w.head} ]`,W/2,Y+20);
+  ctx.shadowBlur=0; ctx.font=`24px ${FD}`; ctx.fillStyle='#e8f2ff'; ctx.fillText(w.title,W/2,Y+44);
+  ctx.font=`14px ${FB}`; ctx.fillStyle='#b8d4f0'; w.lines.forEach((l,i)=>ctx.fillText(l,W/2,Y+68+i*19));
+  ctx.restore();
+}
+// the tracker under your level: what you're working on
+function drawQuestTracker(x,y){
+  const q=G.quest; if(!q) return; const col=q.done?'#5ab4ff':q.failed?'#ff5a4a':'#8fc8ff';
+  ctx.textAlign='left'; ctx.font=`600 11px ${FB}`; ctx.fillStyle=col;
+  const prog=q.done?'COMPLETE':q.failed?'FAILED':q.id==='fast'?`${Math.ceil(q.t)}s left`:q.id==='clean'?`hits ${q.hits} / ${q.limit-1}`:`${q.have} / ${q.need}`;
+  ctx.fillText(`[QUEST] ${q.title}: ${prog}`,x,y);
+}
+// one button for everything you can do with what's in front of you
+function interact(){ if(G.nearShadow&&!G.near) arise(G.nearShadow); else if(G.near) takeNear(); else if(G.nearProp) useProp(G.nearProp); }
 function dash(){
   const p=G.player, s=G.stats; if(!s.canDash) return;
   if(p.dashT>0||p.dashTime>0||p.leap){ if(p.dashT<.25) p.bufDash=.2; return; } p.bufDash=0; // pressed a touch early: dash the moment it's ready
@@ -2428,7 +2555,7 @@ function update(dt){
   p.moving=!!(mx||my); if(p.spinT>0) p.spinT-=dt;
   if(p.dashTime>0){p.dashTime-=dt; move(p,p.dvx*dt,p.dvy*dt);
     if(s.u.gravewalk){p.fireT=(p.fireT||0)-dt; if(p.fireT<=0){p.fireT=.035; addHazard(p.x,p.y+6,16,2.6,s.dmg*.45*s.u.gravewalk,'#ff7a2a',0,'player');}} addP({x:p.x,y:p.y,vx:0,vy:0,life:.25,max:.25,size:9,color:CLASSES[G.cls].color,drag:0,fade:true});}
-  else { const spd=s.speed*(p.hasteT>0?1.3:1)*(p.spinT>0?.6:1); move(p,mx*spd*dt,my*spd*dt);
+  else { const spd=s.speed*(p.hasteT>0?1.3:1)*(p.spinT>0?.6:1)*(p.mudT>0?.55:1); p.mudT=(p.mudT||0)-dt; move(p,mx*spd*dt,my*spd*dt);
     if(mx||my){p.stepT=(p.stepT||0)-dt; if(p.stepT<=0){p.stepT=48/s.speed; play('step');}} }
   for(const o of G.props){ if(o.kind==='urn') continue; const R=o.kind==='table'||o.kind==='hearth'?15:o.kind==='shrine'||o.kind==='altar'?13:11, dx=p.x-o.x, dy=p.y-o.y, d=Math.hypot(dx,dy);
     if(d<R+p.r&&d>.01) move(p,dx/d*(R+p.r-d),dy/d*(R+p.r-d)); }
@@ -2520,10 +2647,10 @@ function update(dt){
   for(let i=G.drops.length-1;i>=0;i--){const d=G.drops[i]; d.t+=dt; const dd=Math.hypot(d.x-p.x,d.y-p.y);
     if(d.kind==='tome'){ if(dd<p.r+16){G.drops.splice(i,1); learnSkill(d.skill);} continue; } // walk over a Skill Tome to read it
     if(d.kind==='gold'){ if(dd<90&&d.t>.4){const a=Math.atan2(p.y-d.y,p.x-d.x); d.x+=Math.cos(a)*300*dt; d.y+=Math.sin(a)*300*dt;}
-      if(dd<p.r+8&&d.t>.4){G.gold+=d.n; G.drops.splice(i,1); play('pick'); text(p.x+rand(-8,8),p.y-24,`+${d.n}`,'#e0b84a',11); firePowers('gold');
+      if(dd<p.r+8&&d.t>.4){G.gold+=d.n; G.drops.splice(i,1); play('pick'); text(p.x+rand(-8,8),p.y-24,`+${d.n}`,'#e0b84a',11); firePowers('gold'); questEvent('gold',d.n);
         if(s.u.gildedheart&&G.time-(G.gildT||-9)>.3){G.gildT=G.time; boomAt(p.x,p.y,60+Math.min(80,d.n*4),(.5+d.n*.08)*s.u.gildedheart,'#ffd27a');}} continue; }
     if(d.kind==='orb'){ if(dd<80){const a=Math.atan2(p.y-d.y,p.x-d.x);d.x+=Math.cos(a)*220*dt;d.y+=Math.sin(a)*220*dt;}
-      if(dd<p.r+10){ if(!s.u.plagueskel) healP(s.maxHp*.12); G.drops.splice(i,1); play('pick'); firePowers('heal');} }
+      if(dd<p.r+10){ if(!s.u.plagueskel) healP(s.maxHp*.1); G.drops.splice(i,1); play('pick'); firePowers('heal');} }
     else if(dd<nd){nd=dd; G.near=d;}}
   if(G.near&&!G.gear[G.near.item.slot]&&dist(G.near,p)<22) takeNear(); // nothing in that slot yet: just put it on
   for(const t of G.torches){ if(Math.abs(t.x-p.x)>520||Math.abs(t.y-p.y)>420||Math.random()>dt*3.5) continue;
@@ -2535,6 +2662,7 @@ function update(dt){
         for(const e of G.enemies) if(!e.dead&&Math.hypot(e.x-h.x,e.y-h.y)<h.r+e.r*.6){
           if(h.wither) mark(e,1,.25); if(h.spread){e.plagueT=1; e.plagueSpread=true;}
           hitEnemy(e,h.dmg,{proc:false,noKb:true,color:h.color==='#9acd32'?'#b8e05a':'#ff9a3c',quiet:true,skill:h.skill});}}}
+    else if(h.owner==='mud'){ if(Math.hypot(p.x-h.x,p.y-h.y)<h.r+p.r*.4) p.mudT=.3; }
     else if(p.hazT<=0&&Math.hypot(p.x-h.x,p.y-h.y)<h.r+p.r*.4){p.hazT=.5; damagePlayer(h.dmg,null,h.color==='#ff7a2a'?'fire':'bile');}
     if(Math.random()<dt*4) addP({x:h.x+rand(-h.r,h.r)*.7,y:h.y+rand(-h.r,h.r)*.5,vx:0,vy:-35,life:.6,max:.6,size:2,color:h.color,drag:.5,emissive:true}); }
   G.hazards=G.hazards.filter(h=>h.t>0);
@@ -2549,7 +2677,7 @@ function update(dt){
   G.exploreT-=dt; if(G.exploreT<=0){G.exploreT=.12; const R=Math.ceil(s.light/TILE)+1, cx=Math.floor(p.x/TILE), cy=Math.floor(p.y/TILE);
     for(let y=cy-R;y<=cy+R;y++) for(let x=cx-R;x<=cx+R;x++){if(x<0||y<0||x>=MW||y>=MH) continue; if((x-cx)**2+(y-cy)**2>R*R) continue; const i=y*MW+x; if(!G.explored[i]){G.explored[i]=1; G.miniDirty=true;}}}
   if(G.banner){G.banner.t+=dt; if(G.banner.t>4.5) G.banner=null;}
-  if(!G.sealed&&!G.dying&&Math.hypot(p.x-G.stairs.x,p.y-G.stairs.y)<18){G.transition={t:0,done:false}; play('stairs'); return;}
+  if(!G.sealed&&!G.dying&&Math.hypot(p.x-G.stairs.x,p.y-G.stairs.y)<18){questEvent('stairs'); G.transition={t:0,done:false}; play('stairs'); return;}
   const tx=p.x+(mw.x-p.x)*.12, ty=p.y+(mw.y-p.y)*.12, ck=Math.min(1,dt*8);
   G.cam.x+=(tx-G.cam.x)*ck; G.cam.y+=(ty-G.cam.y)*ck; G.shake=Math.max(0,G.shake-dt*30);
   if(G.draftQueue.length&&state==='play'&&!G.dying) openDraft(G.draftQueue.shift());
@@ -2773,6 +2901,10 @@ function drawTome(g,d){
   g.fillStyle='#e8dcc0'; g.fillRect(x+5,y-8,2,16); g.fillStyle='#1a0e0a'; g.fillRect(x-1,y-3,5,5); g.fillStyle=c; g.fillRect(x,y-2,3,3);
 }
 function drawAlly(g,m){
+  if(m.shadow){const sp=SPRITES[m.shape], s=m.sc||1, flip=Math.cos(m.face)<0, feet=m.y+m.r*.7, fr=sprFrame(sp,isMoving(m),m.ph);
+    g.fillStyle='rgba(120,60,220,.25)'; g.beginPath(); g.ellipse(m.x,feet,m.r*1.4,m.r*.5,0,0,7); g.fill();
+    if(m.rise>0){g.save(); g.beginPath(); g.rect(m.x-60,feet-120,120,120); g.clip(); drawSprite(g,sp,m.x,feet+sp.h*2*s*(m.rise/.8),flip,0,'shadow',s); g.restore(); return;}
+    drawSprite(g,sp,m.x+(m.wind>0?Math.round(Math.sin(G.time*60))*2:0),feet,flip,fr,m.flash>0?'white':'shadow',s); return;}
   if(m.blade){const bob=Math.sin(G.time*6+m.ph)*3; g.fillStyle='rgba(120,200,255,.12)'; g.beginPath(); g.ellipse(m.x,m.y+10,10,4,0,0,7); g.fill();
     drawBlade(g,m.x,m.y-6+bob,m.face+(m.wind>0?Math.PI*2*(1-m.wind/.1):0),m.ttl!==undefined&&m.ttl<1?m.ttl:1); return;}
   const sp=SPRITES.minion, flip=Math.cos(m.face)<0, feet=m.y+7, fr=sprFrame(sp,isMoving(m),m.ph);
@@ -2886,6 +3018,7 @@ function drawHUD(){
   ctx.font=`18px ${FD}`; ctx.fillStyle='#d3c7ae'; ctx.fillText(`Level ${G.level} ${CLASSES[G.cls].name}`,x,y+40);
   ctx.font=`600 12px ${FB}`; ctx.fillStyle='#e0b84a'; ctx.fillText(`${G.gold} gold · bags ${G.bag.length}/${BAG_MAX}`,x,y+58);
   if(G.points>0){ctx.font=`600 12px ${FB}`; ctx.fillStyle='#e07a2c'; ctx.fillText(`${G.points} skill point${G.points>1?'s':''} to spend. Press K`,x,y+76);}
+  drawQuestTracker(x,y+(G.points>0?94:76));
   // depth + minimap
   const mm=Math.min(150,W*.3), mx=W-20-mm, my=60;
   ctx.textAlign='right'; ctx.font=`34px ${FD}`; ctx.fillStyle='#d3c7ae'; ctx.fillText(`Depth ${G.depth}`,W-20,30);
@@ -2901,7 +3034,7 @@ function drawHUD(){
   const slots=[{k:pa?'RT':'LMB',n:G.cls==='necro'?'Spear':c.ranged?'Bolt':'Strike',cd:Math.max(0,p.atkT)/s.atkCd}];
   G.slots.forEach((id,i)=>{ if(!id){slots.push({k:pa?PADK[i]:String(i+1),n:'—',cd:0,empty:true}); return;}
     const sk=G.skills[id], full=skillCd(id);
-    slots.push({k:(pa?PADK[i]:i===0?'1 / Q':String(i+1))+(id==='raise'?` · ${G.allies.filter(m=>!m.blade).length}/${maxMinions()}`:''),n:SKILL_INFO[id].n,col:SKILL_INFO[id].c,lv:sk.lvl,cd:Math.max(0,sk.cdT)/full,sec:sk.cdT,xp:sk.xp/skillNeed(sk.lvl)});});
+    slots.push({k:(pa?PADK[i]:i===0?'1 / Q':String(i+1))+(id==='raise'?` · ${G.allies.filter(m=>!m.blade&&!m.shadow).length}/${maxMinions()}`:''),n:SKILL_INFO[id].n,col:SKILL_INFO[id].c,lv:sk.lvl,cd:Math.max(0,sk.cdT)/full,sec:sk.cdT,xp:sk.xp/skillNeed(sk.lvl)});});
   slots.push({k:pa?'A':'SPACE',n:s.canDash?'Dash':'No dash',cd:s.canDash?Math.max(0,p.dashT):1});
   // on touch the buttons are the ability bar, so cards and prompts sit above them instead
   const bw=W<900?60:72, gap=6, tot=bw*slots.length+gap*(slots.length-1), bx=Math.max(W/2-tot/2,W>760?240:8), by=TOUCH.active?H-250:H-20-56;
@@ -2933,8 +3066,14 @@ function drawHUD(){
       ctx.font=`11px ${FB}`; ctx.fillStyle='#857a72'; ctx.fillText(`${RAR[ci.rarity].n} ${SLOT_N[ci.slot].toLowerCase()} · lv ${ci.level} · found at depth ${ci.ilvl||1}`,X+10,Y+45);
       ctx.font=`13px ${FB}`; lines.forEach((l,j)=>{ctx.fillStyle=lineCol(l); ctx.fillText(fit(l.t,cw-20),X+10,Y+62+j*17);});
       X+=cw+10;}}
+  // a shadow waiting to be commanded
+  if(!G.near&&G.nearShadow){const sl=G.nearShadow, bw3=Math.min(380,W-40), X=W/2-bw3/2, Y=by-14-62, key=TOUCH.active?'TAP USE':PAD.active?'X':'E', pu=.6+.4*Math.sin(G.time*6);
+    ctx.fillStyle='rgba(8,4,14,.94)'; ctx.fillRect(X,Y,bw3,58); ctx.strokeStyle=`rgba(176,106,255,${pu})`; ctx.strokeRect(X+.5,Y+.5,bw3-1,57);
+    ctx.textAlign='left'; ctx.font=`19px ${FD}`; ctx.fillStyle='#c9a0ff'; ctx.fillText(`The shadow of ${sl.name}`,X+12,Y+17);
+    ctx.textAlign='right'; ctx.font=`10px ${FB}`; ctx.fillStyle='#857a72'; ctx.fillText(`${key} TO COMMAND: ARISE`,X+bw3-12,Y+17);
+    ctx.textAlign='left'; ctx.font=`13px ${FB}`; ctx.fillStyle='#d3c7ae'; ctx.fillText(`${sl.tries} ${sl.tries>1?'tries':'try'} · ${Math.ceil(sl.t)}s before it fades · shadows ${shadowCount()} / ${maxShadows()}`,X+12,Y+40);}
   // prompt for a chest or shrine within reach
-  if(!G.near&&G.nearProp){const o=G.nearProp, sh=o.kind==='shrine', al=o.kind==='altar', kp=o.kind==='keeper', hr=o.kind==='hearth';
+  else if(!G.near&&G.nearProp){const o=G.nearProp, sh=o.kind==='shrine', al=o.kind==='altar', kp=o.kind==='keeper', hr=o.kind==='hearth';
     const title=sh?o.type.n:al?'Blood Arena':kp?'The Keeper':hr?'The Hearth':'An old chest',
       line=sh?o.type.d:al?'Seal yourself in. Survive three waves for a rare reward.':kp?'Sells what the dead left behind. Buys what you don\'t need.':hr?'Rest by the fire: full life, and its warmth goes down with you.':'Open it. Probably.', bw3=Math.min(380,W-40), X=W/2-bw3/2, Y=by-14-62;
     const col=sh?o.type.c:al?'#e0301a':kp||hr?'#ffb04a':'#e0b84a', key=TOUCH.active?'TAP USE':PAD.active?'X':'E';
@@ -2972,6 +3111,7 @@ function drawHUD(){
   } else if(G.bossBar){const b=G.bossBar, bw2=Math.min(520,W*.6), X=W/2-bw2/2, Y=26;
     ctx.textAlign='center'; ctx.font=`22px ${FD}`; ctx.fillStyle='#e04a30'; ctx.fillText(b.name,W/2,Y-2);
     ctx.fillStyle='rgba(0,0,0,.7)'; ctx.fillRect(X,Y+12,bw2,8); ctx.fillStyle='#9a1a10'; ctx.fillRect(X,Y+12,bw2*b.hp/b.maxHp,8); ctx.strokeStyle='#3a1414'; ctx.strokeRect(X+.5,Y+12.5,bw2-1,7);}
+  drawSysWin();
   // banner
   if(G.banner){const t=G.banner.t, a=t<.6?t/.6:t>3.4?Math.max(0,1-(t-3.4)/1.1):1, [l1,l2,l3]=G.banner.lines;
     ctx.globalAlpha=a; ctx.textAlign='center'; ctx.font=`${Math.min(84,W*.12)}px ${FD}`; ctx.fillStyle='#000'; ctx.fillText(l1,W/2+2,H*.3+3); ctx.fillStyle='#d3c7ae'; ctx.fillText(l1,W/2,H*.3);
@@ -3205,7 +3345,7 @@ function refreshChar(){
   if(s.thorns) def.push([AFX.thorns.n,pct(s.thorns)]); if(s.drain) def.push(['Life lost',s.drain.toFixed(1)+'/s']); if(s.dmgTaken) def.push(['Extra damage taken',pct(s.dmgTaken)]);
   const ut=[['Move speed',Math.round(s.speed)],['Light radius',Math.round(s.light)],['Skill cooldowns',Math.round(s.cdMul*100)+'%'],['Skill area','+'+pct(s.area)],['Skill duration','+'+pct(s.dur)]];
   if(s.proj) ut.push(['Extra projectiles','+'+s.proj]); if(s.chainX) ut.push(['Extra chains','+'+s.chainX]); if(s.skillCrit) ut.push(['Skill critical chance','+'+pct(s.skillCrit)]);
-  if(G.cls==='necro'||s.minionMax) ut.push(['Skeletons',`${G.allies.filter(m=>!m.blade).length} / ${maxMinions()}`]);
+  if(G.cls==='necro'||s.minionMax) ut.push(['Skeletons',`${G.allies.filter(m=>!m.blade&&!m.shadow).length} / ${maxMinions()}`]);
   let h=`<div><div class="sp-h">Skills</div>`;
   for(const id of Object.keys(G.skills)){const sk=G.skills[id], I=SKILL_INFO[id], need=skillNeed(sk.lvl);
     h+=`<div class="sk"><div class="sk-top"><span class="sk-n" style="color:${I.c}">${I.n}</span><span class="sk-l">Lv ${sk.lvl}${effLv(id)>sk.lvl?` (+${effLv(id)-sk.lvl})`:''} · ${skillCd(id).toFixed(1)}s${I.item?(s.grants.includes(id)?' · item':' · item not worn'):''}</span></div>
@@ -3355,7 +3495,7 @@ function pollPad(dt){
   else if(state==='play'&&G&&!G.paused){
     PAD.fire=b[7];
     if(!G.transition&&!G.dying){ if(hit(0)) dash(); if(hit(4)) castSlot(0); if(hit(6)) castSlot(1); if(hit(5)) castSlot(2); if(hit(1)) castSlot(3);
-      if(hit(2)){ if(G.near) takeNear(); else if(G.nearProp) useProp(G.nearProp); } }
+      if(hit(2)) interact(); }
     if(hit(3)) toggleChar(); else if(hit(9)) showOnly('ovPause'); else if(hit(8)) openBag(false);
   }
   PAD.prev=b;
@@ -3407,7 +3547,7 @@ function syncTouchUI(){
   const show=TOUCH.active&&state==='play'&&G&&!G.paused&&!G.dying;
   $('touchUI').hidden=!show;
   if(!show){TOUCH.fire=false; endStick({pointerId:TOUCH.id}); return;}
-  $('tUse').hidden=!(G.near||G.nearProp);
+  $('tUse').hidden=!(G.near||G.nearProp||G.nearShadow);
   const p=G.player, s=G.stats, cd=(el,k)=>{el.style.background=k>0?`conic-gradient(rgba(0,0,0,.65) ${k*360}deg, rgba(20,8,9,.6) 0)`:'';};
   G.slots.forEach((id,i)=>{const el=$('tSk'+i); el.hidden=!id; if(!id) return;
     const nm=SKILL_INFO[id].n.toUpperCase(); if(el.textContent!==nm){el.textContent=nm; el.style.borderColor=hexA(SKILL_INFO[id].c,.8);}
@@ -3431,7 +3571,7 @@ function endStick(e){ if(e.pointerId!==TOUCH.id||TOUCH.id===null) return; TOUCH.
 addEventListener('pointerup',endStick); addEventListener('pointercancel',endStick);
 const tap=(id,fn)=>$(id).addEventListener('pointerdown',e=>{e.preventDefault(); e.stopPropagation(); if(state==='play'&&G&&!G.paused&&!G.dying&&!G.transition) fn();});
 for(let i=0;i<4;i++) tap('tSk'+i,()=>castSlot(i)); tap('tDash',()=>dash());
-tap('tUse',()=>{ if(G.near) takeNear(); else if(G.nearProp) useProp(G.nearProp); });
+tap('tUse',()=>interact());
 tap('tPause',()=>showOnly('ovPause')); tap('tTree',()=>toggleChar('tree')); tap('tBag',()=>openBag(false)); tap('tChar',()=>toggleChar('char'));
 $('tAttack').addEventListener('pointerdown',e=>{e.preventDefault(); TOUCH.fire=true;});
 for(const ev of ['pointerup','pointercancel','pointerleave']) $('tAttack').addEventListener(ev,()=>{TOUCH.fire=false;});
@@ -3454,7 +3594,7 @@ addEventListener('keydown',e=>{
   if(e.code==='Space'||e.code==='ShiftLeft'||e.code==='ShiftRight') dash();
   if(e.code==='KeyQ') useAbility();
   if(/^Digit[1-4]$/.test(e.code)&&!e.repeat) castSlot(+e.code.slice(5)-1);
-  if(e.code==='KeyE'){ if(G.near) takeNear(); else if(G.nearProp) useProp(G.nearProp); }
+  if(e.code==='KeyE') interact();
   if(e.code==='KeyF') stashNear();
 });
 addEventListener('keyup',e=>{keys[e.code]=false;});
@@ -3474,7 +3614,7 @@ $('btnCopyRun').onclick=()=>{ const b=$('btnCopyRun'), t=$('runSummary'), shown=
   try{ navigator.clipboard.writeText(G.summary).then(()=>{b.textContent='Copied. Paste it to the dev';},()=>{b.textContent='Select the text below and copy it'; shown();}); }
   catch(e){ b.textContent='Select the text below and copy it'; shown(); } };
 // one place for the build number: the title screen and run summaries both read it
-const BUILD='0.25';
+const BUILD='0.26';
 // ----- first-time tips: each shows once ever, worded for whatever you're playing with -----
 const HINTS=(()=>{try{return new Set(JSON.parse(localStorage.getItem('deepening.hints')||'[]'))}catch(e){return new Set()}})();
 const keyFor=a=>({dash:TOUCH.active?'Tap DASH':PAD.active?'Press A':'Press Space', use:TOUCH.active?'Tap USE':PAD.active?'Press X':'Press E',
