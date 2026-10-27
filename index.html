@@ -38,6 +38,7 @@ html,body{height:100%;margin:0;background:var(--void);color:var(--bone);overflow
 #tSk3{right:calc(7px + env(safe-area-inset-right,0px));bottom:calc(149px + env(safe-area-inset-bottom,0px))}
 #tDash{right:calc(177px + env(safe-area-inset-right,0px));bottom:calc(143px + env(safe-area-inset-bottom,0px))}
 #tUse{right:calc(222px + env(safe-area-inset-right,0px));bottom:calc(30px + env(safe-area-inset-bottom,0px));border-color:rgba(224,184,74,.85)}
+#tStash{right:calc(232px + env(safe-area-inset-right,0px));bottom:calc(108px + env(safe-area-inset-bottom,0px));font-size:10px;border-color:rgba(224,184,74,.6)}
 #tPause{left:calc(18px + env(safe-area-inset-left,0px));top:calc(96px + env(safe-area-inset-top,0px))}
 #tTree{left:calc(74px + env(safe-area-inset-left,0px));top:calc(96px + env(safe-area-inset-top,0px));font-size:11px}
 #tBag{left:calc(130px + env(safe-area-inset-left,0px));top:calc(96px + env(safe-area-inset-top,0px));font-size:11px}
@@ -221,6 +222,7 @@ h2{font-family:var(--display);font-weight:400;font-size:clamp(34px,5vw,58px);lin
   <button class="tbtn tsk" id="tSk3" aria-label="Skill 4">4</button>
   <button class="tbtn mid" id="tDash" aria-label="Dash">DASH</button>
   <button class="tbtn mid" id="tUse" aria-label="Use" hidden>USE</button>
+  <button class="tbtn small" id="tStash" aria-label="Put in bag" hidden>BAG IT</button>
   <button class="tbtn small" id="tPause" aria-label="Pause">II</button>
   <button class="tbtn small" id="tTree" aria-label="Skill tree">TREE</button>
   <button class="tbtn small" id="tBag" aria-label="Bags">BAG</button>
@@ -3305,7 +3307,7 @@ function drawHUD(){
     else {ctx.textAlign='center'; ctx.font=`9px ${FB}`; ctx.fillStyle='#3a302c'; ctx.fillText(SLOT_N[k].toUpperCase(),X+sz/2,Y+sz/2);}});
     ctx.imageSmoothingEnabled=true;}
   // ground item
-  if(G.near){const it=G.near.item, eq=G.gear[it.slot]; const cards=[[it,`On the floor · ${TOUCH.active?'tap USE':PAD.active?'X':'E'} to wear${TOUCH.active||PAD.active?'':' · F to bag'}`]]; if(eq) cards.push([eq,'You carry']);
+  if(G.near){const it=G.near.item, eq=G.gear[it.slot]; const cards=[[it,`On the floor · ${TOUCH.active?'USE wears · BAG IT keeps':PAD.active?'X wears · D-pad up bags':'E wears · F bags'}`]]; if(eq) cards.push([eq,'You carry']);
     const cw=230, tot=cards.length*cw+(cards.length-1)*10; let X=W/2-tot/2;
     for(const [ci,lab] of cards){ctx.font=`13px ${FB}`; const lines=itemLines(ci).flatMap(l=>wrapText(l.t,cw-20).map(t=>Object.assign({},l,{t}))), ch=54+lines.length*17, Y=by-14-ch;
       ctx.fillStyle='rgba(8,5,6,.92)'; ctx.fillRect(X,Y,cw,ch); ctx.strokeStyle=hexA(RAR[ci.rarity].c,.6); ctx.strokeRect(X+.5,Y+.5,cw-1,ch-1);
@@ -3739,7 +3741,8 @@ $('btnTitleSet').onclick=()=>{initAudio(); openSettings('ovTitle');};
 $('btnPauseSet').onclick=()=>openSettings('ovPause');
 
 // ================= gamepad =================
-// Standard layout: left stick moves, right stick aims, RT attacks, A dash, skills on LB / LT / RB / B, X interact, Y skill tree, Start pause.
+// Standard layout: left stick moves, right stick aims, RT attacks, A dash, skills on LB / LT / RB / B, X interact (wear loot),
+// d-pad up puts loot in your bag, d-pad down eats, Y skill tree, Back bags, Start pause.
 // In menus the d-pad or stick moves between buttons and A presses.
 const PAD={active:false,m:{x:0,y:0},a:{x:0,y:0},fire:false,prev:[],navT:0};
 function pollPad(dt){
@@ -3752,7 +3755,7 @@ function pollPad(dt){
   if(overlay){PAD.fire=false; padMenu(overlay,b,hit,dt);}
   else if(state==='play'&&G&&!G.paused){
     PAD.fire=b[7];
-    if(!G.transition&&!G.dying){ if(hit(13)) eatFood(); if(hit(0)) dash(); if(hit(4)) castSlot(0); if(hit(6)) castSlot(1); if(hit(5)) castSlot(2); if(hit(1)) castSlot(3);
+    if(!G.transition&&!G.dying){ if(hit(13)) eatFood(); if(hit(12)) stashNear(); if(hit(0)) dash(); if(hit(4)) castSlot(0); if(hit(6)) castSlot(1); if(hit(5)) castSlot(2); if(hit(1)) castSlot(3);
       if(hit(2)) interact(); }
     if(hit(3)) toggleChar(); else if(hit(9)) showOnly('ovPause'); else if(hit(8)) openBag(false);
   }
@@ -3805,7 +3808,7 @@ function syncTouchUI(){
   const show=TOUCH.active&&state==='play'&&G&&!G.paused&&!G.dying;
   $('touchUI').hidden=!show;
   if(!show){TOUCH.fire=false; endStick({pointerId:TOUCH.id}); return;}
-  $('tUse').hidden=!(G.near||G.nearProp||G.nearShadow);
+  $('tUse').hidden=!(G.near||G.nearProp||G.nearShadow); $('tStash').hidden=!G.near;
   const p=G.player, s=G.stats, cd=(el,k)=>{el.style.background=k>0?`conic-gradient(rgba(0,0,0,.65) ${k*360}deg, rgba(20,8,9,.6) 0)`:'';};
   G.slots.forEach((id,i)=>{const el=$('tSk'+i); el.hidden=!id; if(!id) return;
     const nm=SKILL_INFO[id].n.toUpperCase(); if(el.textContent!==nm){el.textContent=nm; el.style.borderColor=hexA(SKILL_INFO[id].c,.8);}
@@ -3829,7 +3832,7 @@ function endStick(e){ if(e.pointerId!==TOUCH.id||TOUCH.id===null) return; TOUCH.
 addEventListener('pointerup',endStick); addEventListener('pointercancel',endStick);
 const tap=(id,fn)=>$(id).addEventListener('pointerdown',e=>{e.preventDefault(); e.stopPropagation(); if(state==='play'&&G&&!G.paused&&!G.dying&&!G.transition) fn();});
 for(let i=0;i<4;i++) tap('tSk'+i,()=>castSlot(i)); tap('tDash',()=>dash());
-tap('tUse',()=>interact());
+tap('tUse',()=>interact()); tap('tStash',()=>stashNear());
 tap('tPause',()=>showOnly('ovPause')); tap('tTree',()=>toggleChar('tree')); tap('tBag',()=>openBag(false)); tap('tChar',()=>toggleChar('char')); tap('tFood',()=>eatFood());
 $('tAttack').addEventListener('pointerdown',e=>{e.preventDefault(); TOUCH.fire=true;});
 for(const ev of ['pointerup','pointercancel','pointerleave']) $('tAttack').addEventListener(ev,()=>{TOUCH.fire=false;});
@@ -3873,7 +3876,7 @@ $('btnCopyRun').onclick=()=>{ const b=$('btnCopyRun'), t=$('runSummary'), shown=
   try{ navigator.clipboard.writeText(G.summary).then(()=>{b.textContent='Copied. Paste it to the dev';},()=>{b.textContent='Select the text below and copy it'; shown();}); }
   catch(e){ b.textContent='Select the text below and copy it'; shown(); } };
 // one place for the build number: the title screen and run summaries both read it
-const BUILD='0.32';
+const BUILD='0.33';
 // ----- first-time tips: each shows once ever, worded for whatever you're playing with -----
 const HINTS=(()=>{try{return new Set(JSON.parse(localStorage.getItem('deepening.hints')||'[]'))}catch(e){return new Set()}})();
 const keyFor=a=>({dash:TOUCH.active?'Tap DASH':PAD.active?'Press A':'Press Space', use:TOUCH.active?'Tap USE':PAD.active?'Press X':'Press E',
