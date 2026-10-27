@@ -168,6 +168,7 @@ h2{font-family:var(--display);font-weight:400;font-size:clamp(34px,5vw,58px);lin
 .sp-row b.hi{font-family:var(--display);font-size:20px;font-weight:400}
 .fx{display:flex;gap:8px;align-items:flex-start;padding:4px 0;border-bottom:1px solid rgba(46,28,30,.6);font-size:13px;line-height:1.4}
 .fx img{width:24px;height:24px;image-rendering:pixelated;flex:none}
+#draftIcon{width:96px;height:96px;image-rendering:pixelated;border:2px solid #4a3a30;background:radial-gradient(circle at 50% 40%,#1c1214,#0a0607);padding:8px;box-sizing:content-box}
 #goldPill{font-family:var(--display);font-size:22px;color:#e0b84a}
 .bagBody{width:min(1240px,100%);flex:1;min-height:0;overflow-y:auto;text-align:left;display:flex;flex-direction:column;gap:18px;padding-bottom:12px}
 .bagSec h3{font-family:var(--display);font-weight:400;font-size:24px;margin:0 0 8px;color:var(--bone)}
@@ -183,7 +184,8 @@ h2{font-family:var(--display);font-weight:400;font-size:clamp(34px,5vw,58px);lin
 .setRow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .sk{padding:8px 0;border-bottom:1px solid rgba(46,28,30,.6)}
 .sk-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
-.sk-n{font-family:var(--display);font-size:20px;line-height:1.1}
+.sk-n{font-family:var(--display);font-size:20px;line-height:1.1;display:flex;align-items:center;gap:8px}
+.sk-ic{width:26px;height:26px;flex:none}
 .sk-l{font-size:12px;color:var(--ash)}
 .sk-bar{height:3px;background:#1a1012;margin:4px 0}
 .sk-bar i{display:block;height:100%;background:var(--ember)}
@@ -251,11 +253,12 @@ h2{font-family:var(--display);font-weight:400;font-size:clamp(34px,5vw,58px);lin
 </div>
 
 <div id="ovDraft" class="ov" hidden>
+  <img id="draftIcon" alt="">
   <p class="eyebrow" id="draftEyebrow">Your gear has grown</p>
   <h2 id="draftTitle"></h2>
   <p class="tag" id="draftSub"></p>
   <div class="cards" id="draftCards"></div>
-  <p class="small">Click a gift, or press 1, 2 or 3</p>
+  <p class="small">Click one, or press 1, 2 or 3</p>
 </div>
 
 <div id="ovChar" class="ov char" data-tab="tree" hidden>
@@ -763,15 +766,15 @@ const BOSSES=[
 const ELITE_P=['Bloated','Flayed','Starving','Hollow-Eyed','Weeping'];
 const THEMES=[
   // each zone has its own shape, its own danger and its own crowd (roster weights multiply each monster's base weight)
-  {name:'The Ossuary',floor:[44,38,35],wall:[20,16,16],face:[58,50,46],torch:[255,140,60],style:'rooms',
+  {name:'The Ossuary',floor:[44,38,35],wall:[20,16,16],face:[58,50,46],torch:[255,140,60],style:'rooms',warnTxt:'Bone and stone. The dead here only want to be left alone, and they will not be.',
     roster:{gnawer:1.5,husk:1.5,archer:1.3,knight:1.4,brute:1,bloat:.5,ant:.6,caller:1.2}},
-  {name:'The Rotting Warrens',floor:[34,38,28],wall:[14,17,12],face:[44,50,36],torch:[200,220,90],style:'caves',spores:true,
+  {name:'The Rotting Warrens',floor:[34,38,28],wall:[14,17,12],face:[44,50,36],torch:[200,220,90],style:'caves',spores:true,warnTxt:'Dug, not built. Mind the spore puffs, the mud, and anything that splits.',
     roster:{slime:2.5,mud:2,bloat:2,priest:1.3,gnawer:1,ant:1.2,husk:.5,spitter:2.2}},
-  {name:'The Drowned Chapel',floor:[30,34,40],wall:[13,15,19],face:[40,46,56],torch:[120,180,255],style:'halls',pools:true,
+  {name:'The Drowned Chapel',floor:[30,34,40],wall:[13,15,19],face:[40,46,56],torch:[120,180,255],style:'halls',pools:true,warnTxt:'Flooded halls. The water slows you, and not everything in it is drowned enough.',
     roster:{wraith:2,archer:1.5,priest:1.5,slime:1.2,knight:1.3,husk:.6}},
-  {name:'The Furnace of Teeth',floor:[46,30,26],wall:[22,12,10],face:[66,38,30],torch:[255,90,40],style:'rooms',vents:true,
+  {name:'The Furnace of Teeth',floor:[46,30,26],wall:[22,12,10],face:[66,38,30],torch:[255,90,40],style:'rooms',vents:true,warnTxt:'The floor breathes fire. Watch the vents, and the ground beneath your feet.',
     roster:{brute:2,husk:1.4,geode:2,ant:1.6,bloat:1,shade:.8,burrower:2.2}},
-  {name:'The Hollow',floor:[26,24,30],wall:[10,9,12],face:[36,32,42],torch:[190,150,255],style:'maze',dark:true,
+  {name:'The Hollow',floor:[26,24,30],wall:[10,9,12],face:[36,32,42],torch:[190,150,255],style:'maze',dark:true,warnTxt:'Your light is smaller here, and things in the dark want what is left of it.',
     roster:{shade:2.5,wraith:2,geode:1.3,knight:1.2,priest:1,gnawer:.6,leech:2.2}},
 ];
 const FLAVOR=['The air tastes of old teeth.','Something below is breathing.','Your torch is afraid.','The walls are warm here.',
@@ -1296,6 +1299,8 @@ function descend(){
     if(opts.length){const i=pick(opts); dropTome((i%MW)*TILE+16,((i/MW)|0)*TILE+16);}}
   const lines=[`Depth ${G.depth}`,G.theme.name,pick(FLAVOR)];
   if(G.isBoss){const B=BOSSES[Math.floor(G.depth/10)%BOSSES.length]; lines[1]=`The lair of ${B.name}`; lines[2]='It guards the way down. The stairs will not open while it lives.';}
+  if(!G.isBoss&&!G.isTavern&&(G.depth===1||G.theme!==(G.prevTheme||null))){lines[0]=G.theme.name; lines[1]=`Depth ${G.depth}`; lines[2]=G.theme.warnTxt;}
+  G.prevTheme=G.theme;
   if(G.isTavern){lines[1]=G.tavernName; lines[2]='A fire, a keeper, and nothing that wants you dead. Rest, trade, then go down.';}
   G.banner={t:0,lines};
   if(G.depth>loadBest()) saveBest(G.depth);
@@ -1973,7 +1978,8 @@ function gainXp(x){
 }
 function itemXp(x){
   for(const k of SLOTS){const it=G.gear[k]; if(!it) continue; it.xp+=x*(MAIN_SLOTS.includes(k)?1:.3); // the small pieces grow slower, or drafts would never stop
-    while(it.xp>=itemNeed(it.level)){it.xp-=itemNeed(it.level); it.level++; growBase(it); G.draftQueue.push(it);}}
+    while(it.xp>=itemNeed(it.level)){it.xp-=itemNeed(it.level); it.level++; growBase(it); G.draftQueue.push(it);
+      text(G.player.x,G.player.y-50,`${SLOT_N[it.slot]} level ${it.level}`,RAR[it.rarity].c,13);}}
   recalc();
 }
 
@@ -2660,6 +2666,8 @@ function skillGlyph(g,id,cx,cy,S,col,dim){
   }
   g.restore();
 }
+const SKILL_URL={};
+function skillIconUrl(id){ if(!SKILL_URL[id]){const c=document.createElement('canvas'); c.width=c.height=56; const g=c.getContext('2d'); skillGlyph(g,id,28,28,40,SKILL_INFO[id].c); SKILL_URL[id]=c.toDataURL();} return SKILL_URL[id];}
 // ================= zone features =================
 const inPool=(o,q)=>((o.x-q.x)/q.rx)**2+((o.y-q.y)/q.ry)**2<1;
 function updateZone(dt){
@@ -3413,14 +3421,16 @@ function openDraft(item){
     if(goods.length&&Math.random()<.3&&!opts.some(o=>o.deepen)){const a=pick(goods); opts.push({deepen:a}); used.add(a.id); continue;}
     const id=pick(goodFor()); if(used.has(id)) continue; used.add(id); opts.push({affix:rollAffix(id,G.depth)});
   }
-  G.curDraft={item,opts}; $('draftEyebrow').textContent='Your gear has grown';
-  $('draftTitle').textContent=`${item.name} hungers`;
-  $('draftSub').textContent=`It has fed enough to reach level ${item.level}. Give it one gift.`;
+  // make it unmistakable that this is an item levelling up, not you: its picture, its slot, its name
+  G.curDraft={item,opts}; $('draftEyebrow').textContent=`Gear level up: ${SLOT_N[item.slot]}`;
+  $('draftIcon').src=iconUrl(item); $('draftIcon').style.borderColor=RAR[item.rarity].c; $('draftIcon').style.boxShadow=`0 0 24px ${hexA(RAR[item.rarity].c,.45)}`;
+  $('draftTitle').textContent=item.name;
+  $('draftSub').textContent=`Your ${SLOT_N[item.slot].toLowerCase()} reached level ${item.level} from your kills. Pick one upgrade for this item.`;
   $('draftCards').innerHTML=opts.map((o,i)=>{
     if(o.deepen){const d=AFX[o.deepen.id], nv=Math.min(d.cap||1e9,o.deepen.v*1.6);
-      return `<button class="card" data-i="${i}" id="draft_${i}"><span class="key">${i+1} · Deepen</span><span class="nm">${d.n}</span><span class="ds">${d.f(o.deepen.v)}</span><span class="st">becomes <b>${d.f(nv)}</b></span></button>`;}
+      return `<button class="card" data-i="${i}" id="draft_${i}"><span class="key">${i+1} · Strengthen a stat</span><span class="nm">${d.n}</span><span class="ds">${d.f(o.deepen.v)}</span><span class="st">becomes <b>${d.f(nv)}</b></span></button>`;}
     const d=AFX[o.affix.id]; const has=item.affixes.find(a=>a.id===o.affix.id);
-    return `<button class="card" data-i="${i}" id="draft_${i}"><span class="key">${i+1} · ${has?'Stack':'New gift'}</span><span class="nm">${d.n}</span><span class="ds">${d.f(o.affix.v)}</span></button>`;
+    return `<button class="card" data-i="${i}" id="draft_${i}"><span class="key">${i+1} · ${has?'Add to a stat':'New stat'}</span><span class="nm">${d.n}</span><span class="ds">${d.f(o.affix.v)}</span></button>`;
   }).join('');
   $('draftCards').querySelectorAll('.card').forEach(b=>b.onclick=()=>chooseDraft(+b.dataset.i));
   showOnly('ovDraft'); play('draft');
@@ -3429,7 +3439,8 @@ function openDraft(item){
 function openSkillDraft(id){
   const sk=G.skills[id], muts=SKILLS[id].muts, free=Object.keys(muts).filter(k=>!sk.muts.includes(k));
   if(!free.length) return; const opts=[]; while(opts.length<Math.min(3,free.length)){const k=pick(free); if(!opts.includes(k)) opts.push(k);}
-  G.curDraft={skill:id,opts}; $('draftEyebrow').textContent='Your skill has grown';
+  G.curDraft={skill:id,opts}; $('draftEyebrow').textContent='Skill mutation';
+  $('draftIcon').src=skillIconUrl(id); $('draftIcon').style.borderColor=SKILL_INFO[id].c; $('draftIcon').style.boxShadow=`0 0 24px ${hexA(SKILL_INFO[id].c,.45)}`;
   $('draftTitle').textContent=`${SKILL_INFO[id].n} mutates`;
   $('draftSub').textContent=`Level ${sk.lvl}. Choose what it becomes.`;
   $('draftCards').innerHTML=opts.map((k,i)=>`<button class="card" data-i="${i}" id="draft_${i}"><span class="key">${i+1} · Mutation</span><span class="nm" style="color:${SKILL_INFO[id].c}">${k[0].toUpperCase()+k.slice(1)}</span><span class="ds">${muts[k]}</span></button>`).join('');
@@ -3575,7 +3586,7 @@ function refreshChar(){
   if(G.cls==='necro'||s.minionMax) ut.push(['Skeletons',`${G.allies.filter(m=>!m.blade&&!m.shadow).length} / ${maxMinions()}`]);
   let h=`<div><div class="sp-h">Skills</div>`;
   for(const id of Object.keys(G.skills)){const sk=G.skills[id], I=SKILL_INFO[id], need=skillNeed(sk.lvl);
-    h+=`<div class="sk"><div class="sk-top"><span class="sk-n" style="color:${I.c}">${I.n}</span><span class="sk-l">Lv ${sk.lvl}${effLv(id)>sk.lvl?` (+${effLv(id)-sk.lvl})`:''} · ${skillCd(id).toFixed(1)}s${I.item?(s.grants.includes(id)?' · item':' · item not worn'):''}</span></div>
+    h+=`<div class="sk"><div class="sk-top"><span class="sk-n" style="color:${I.c}"><img class="sk-ic" src="${skillIconUrl(id)}" alt="">${I.n}</span><span class="sk-l">Lv ${sk.lvl}${effLv(id)>sk.lvl?` (+${effLv(id)-sk.lvl})`:''} · ${skillCd(id).toFixed(1)}s${I.item?(s.grants.includes(id)?' · item':' · item not worn'):''}</span></div>
       <div class="sk-bar"><i style="width:${Math.min(100,sk.xp/need*100)}%"></i></div>
       <div class="sk-m">${SKILLS[id].d}</div>${sk.muts.concat((s.mutG[id]||[]).filter(m=>!sk.muts.includes(m))).map(k=>`<div class="sk-m">◆ <b>${cap1(k)}</b>: ${SKILLS[id].muts[k]}${sk.muts.includes(k)?'':' <i>(gear)</i>'}</div>`).join('')}
       <div class="sk-slots">${[0,1,2,3].map(k=>`<button data-sk="${id}" data-k="${k}" class="${G.slots[k]===id?'on':''}" title="Put on key ${k+1}">${k+1}</button>`).join('')}</div></div>`;}
@@ -3842,7 +3853,7 @@ $('btnCopyRun').onclick=()=>{ const b=$('btnCopyRun'), t=$('runSummary'), shown=
   try{ navigator.clipboard.writeText(G.summary).then(()=>{b.textContent='Copied. Paste it to the dev';},()=>{b.textContent='Select the text below and copy it'; shown();}); }
   catch(e){ b.textContent='Select the text below and copy it'; shown(); } };
 // one place for the build number: the title screen and run summaries both read it
-const BUILD='0.30';
+const BUILD='0.31';
 // ----- first-time tips: each shows once ever, worded for whatever you're playing with -----
 const HINTS=(()=>{try{return new Set(JSON.parse(localStorage.getItem('deepening.hints')||'[]'))}catch(e){return new Set()}})();
 const keyFor=a=>({dash:TOUCH.active?'Tap DASH':PAD.active?'Press A':'Press Space', use:TOUCH.active?'Tap USE':PAD.active?'Press X':'Press E',
