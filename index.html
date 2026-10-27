@@ -722,8 +722,13 @@ const ETYPES={
   slime:{name:'Slime',hp:34,dmg:8,speed:72,r:11,xp:8,minD:2,w:3,atk:'melee',reach:14,windup:.45,cd:1.2,body:'#3a7a3a',eye:'#d4ff5a',shape:'slime',split:'slimelet'},
   slimelet:{name:'Slimelet',hp:10,dmg:4,speed:125,r:6,xp:2,minD:999,w:0,atk:'melee',reach:10,windup:.25,cd:.8,body:'#3a7a3a',eye:'#d4ff5a',shape:'slimelet'},
   mud:{name:'Mud Monster',hp:58,dmg:11,speed:56,r:11,xp:11,minD:4,w:2,atk:'melee',reach:16,windup:.6,cd:1.4,body:'#4a3a22',eye:'#ffb02a',shape:'mud',mud:true},
-  ant:{name:'Crystal Ant',hp:9,dmg:5,speed:168,r:6,xp:2,minD:3,w:3,atk:'melee',reach:10,windup:.2,cd:.7,body:'#5ab4d8',eye:'#cfefff',shape:'ant',swarm:4},
+  ant:{name:'Crystal Ant',hp:9,dmg:5,speed:168,r:6,xp:2,minD:3,w:1.5,atk:'melee',reach:10,windup:.2,cd:.7,body:'#5ab4d8',eye:'#cfefff',shape:'ant',swarm:4},
   geode:{name:'Geode Warrior',hp:85,dmg:18,speed:62,r:12,xp:22,minD:7,w:2,atk:'melee',reach:22,windup:.6,cd:1.5,body:'#6a4a9a',eye:'#e0b0ff',shape:'geode',shards:true},
+  spitter:{name:'Spitter',hp:30,dmg:9,speed:0,r:10,xp:9,minD:6,w:1,atk:'ranged',range:290,windup:.6,cd:2.6,body:'#5a7a2a',eye:'#e0ff5a',shape:'spitter',lob:true},
+  burrower:{name:'Burrower',hp:46,dmg:16,speed:150,r:10,xp:14,minD:12,w:1,atk:'burrow',reach:18,windup:.55,cd:1.2,body:'#7a4a22',eye:'#ffb02a',shape:'burrower'},
+  leech:{name:'Light Leech',hp:18,dmg:6,speed:125,r:7,xp:10,minD:15,w:1,atk:'ranged',range:200,windup:.5,cd:2.2,pspeed:230,pcolor:'#b8a8ff',body:'#2a2240',eye:'#d8d0ff',shape:'leech',phase:true,leech:true},
+  drowned:{name:'The Drowned',hp:52,dmg:14,speed:84,r:10,xp:12,minD:999,w:0,atk:'melee',reach:16,windup:.5,cd:1.2,body:'#2a4a5a',eye:'#9fe0ff',shape:'drowned',drowned:true},
+  caller:{name:'Grave Caller',hp:40,dmg:8,speed:70,r:10,xp:16,minD:4,w:1,atk:'ranged',range:230,windup:.9,cd:5,body:'#4a1a1a',eye:'#ff4a3a',shape:'caller',summon:'gnawer'},
   goblin:{name:'Treasure Goblin',hp:70,dmg:0,speed:150,r:9,xp:40,minD:999,w:0,atk:'flee',body:'#5a7a2a',eye:'#ffd02a',shape:'goblin'},
   mimic:{name:'Mimic',hp:70,dmg:16,speed:100,r:12,xp:30,minD:999,w:0,atk:'melee',reach:20,windup:.3,cd:.9,body:'#5a3a22',eye:'#ff3a1c',shape:'mimic'},
   warden:{name:'Warden',hp:380,dmg:22,speed:72,r:24,xp:120,minD:999,w:0,atk:'boss',body:'#2a1012',eye:'#ff2a10',shape:'boss'},
@@ -741,11 +746,17 @@ const BOSSES=[
 ];
 const ELITE_P=['Bloated','Flayed','Starving','Hollow-Eyed','Weeping'];
 const THEMES=[
-  {name:'The Ossuary',floor:[44,38,35],wall:[20,16,16],face:[58,50,46],torch:[255,140,60]},
-  {name:'The Rotting Warrens',floor:[34,38,28],wall:[14,17,12],face:[44,50,36],torch:[200,220,90]},
-  {name:'The Drowned Chapel',floor:[30,34,40],wall:[13,15,19],face:[40,46,56],torch:[120,180,255]},
-  {name:'The Furnace of Teeth',floor:[46,30,26],wall:[22,12,10],face:[66,38,30],torch:[255,90,40]},
-  {name:'The Hollow',floor:[26,24,30],wall:[10,9,12],face:[36,32,42],torch:[190,150,255]},
+  // each zone has its own shape, its own danger and its own crowd (roster weights multiply each monster's base weight)
+  {name:'The Ossuary',floor:[44,38,35],wall:[20,16,16],face:[58,50,46],torch:[255,140,60],style:'rooms',
+    roster:{gnawer:1.5,husk:1.5,archer:1.3,knight:1.4,brute:1,bloat:.5,ant:.6,caller:1.2}},
+  {name:'The Rotting Warrens',floor:[34,38,28],wall:[14,17,12],face:[44,50,36],torch:[200,220,90],style:'caves',spores:true,
+    roster:{slime:2.5,mud:2,bloat:2,priest:1.3,gnawer:1,ant:1.2,husk:.5,spitter:2.2}},
+  {name:'The Drowned Chapel',floor:[30,34,40],wall:[13,15,19],face:[40,46,56],torch:[120,180,255],style:'halls',pools:true,
+    roster:{wraith:2,archer:1.5,priest:1.5,slime:1.2,knight:1.3,husk:.6}},
+  {name:'The Furnace of Teeth',floor:[46,30,26],wall:[22,12,10],face:[66,38,30],torch:[255,90,40],style:'rooms',vents:true,
+    roster:{brute:2,husk:1.4,geode:2,ant:1.6,bloat:1,shade:.8,burrower:2.2}},
+  {name:'The Hollow',floor:[26,24,30],wall:[10,9,12],face:[36,32,42],torch:[190,150,255],style:'maze',dark:true,
+    roster:{shade:2.5,wraith:2,geode:1.3,knight:1.2,priest:1,gnawer:.6,leech:2.2}},
 ];
 const FLAVOR=['The air tastes of old teeth.','Something below is breathing.','Your torch is afraid.','The walls are warm here.',
   'Nobody who came this far came back up.','You hear your own name, whispered wrong.','The dead here were not buried. They were stored.',
@@ -892,7 +903,7 @@ const SPRITES={}, WEAPONS={}, ICONS={};
 for(const k in SPRITE_DEFS) SPRITES[k]=buildSprite(SPRITE_DEFS[k]);
 BOSSES.forEach((b,i)=>SPRITES['boss'+i]=buildSprite(Object.assign({},SPRITE_DEFS.boss,{pal:Object.assign({},SPRITE_DEFS.boss.pal,b.pal)})));
 for(const k in WEAPON_DEFS) WEAPONS[k]=buildSprite(WEAPON_DEFS[k]);
-for(const [k,f] of [['goblin','gnawer'],['slime','bloat'],['slimelet','gnawer'],['mud','husk'],['ant','gnawer'],['geode','knight']]) if(!SPRITES[k]) SPRITES[k]=SPRITES[f];
+for(const [k,f] of [['goblin','gnawer'],['slime','bloat'],['slimelet','gnawer'],['mud','husk'],['ant','gnawer'],['geode','knight'],['spitter','bloat'],['burrower','gnawer'],['drowned','husk'],['caller','priest'],['leech','wraith']]) if(!SPRITES[k]) SPRITES[k]=SPRITES[f];
 for(const k in ICON_DEFS) ICONS[k]=buildSprite(ICON_DEFS[k]);
 function drawSprite(g,sp,x,feet,flip,fr,variant,s=1,alpha){
   if(variant==='shadow'&&!sp.shadow) sp.shadow=sp.frames.map(f=>artMap(f,(r,g,b)=>{const l=.3*r+.59*g+.11*b; return [l*.35+18,l*.18+6,l*.6+40];})); // a shadow soldier: the same body in violet-black
@@ -921,7 +932,7 @@ const A72={ // [x,y,w,h,frames] in the 0x72 atlas; frames sit side by side
   orcShaman:{idle:[368,201,16,23,4],run:[432,201,16,23,4]}, swampy:{idle:[432,112,16,16,4]},
   chort:{idle:[368,273,16,23,4],run:[432,273,16,23,4]}, maskedOrc:{idle:[368,153,16,23,4],run:[432,153,16,23,4]},
   mimic:{idle:[304,432,16,16,3]}, goblin:{idle:[368,40,16,16,4],run:[432,40,16,16,4]}, slug:{idle:[368,369,16,23,4]}, tinySlug:{idle:[432,376,16,16,4]},
-  muddy:{idle:[368,112,16,16,4]}, imp:{idle:[368,64,16,16,4],run:[432,64,16,16,4]}, chest:{idle:[304,416,16,16,1]}, chestOpen:{idle:[336,416,16,16,1]},
+  muddy:{idle:[368,112,16,16,4]}, iceZombie:{idle:[432,136,16,16,4]}, imp:{idle:[368,64,16,16,4],run:[432,64,16,16,4]}, chest:{idle:[304,416,16,16,1]}, chestOpen:{idle:[336,416,16,16,1]},
 };
 const A72_ONE={flask:[288,352,16,16], stairs:[80,192,16,16], spikes:[16,192,16,16,4]};
 const A72_WEAPON={warrior:[339,98,10,29], rogue:[293,10,6,13], mage:[324,129,8,30], necro:[340,129,8,30]};
@@ -929,7 +940,8 @@ const A72_WEAPON={warrior:[339,98,10,29], rogue:[293,10,6,13], mage:[324,129,8,3
 const ART_USE={warrior:['knight'],rogue:['elf'],mage:['wizard'],necro:['necromancer'],husk:['orcWarrior'],brute:['ogre'],
   wraith:['wogol'],priest:['orcShaman'],bloat:['swampy'],shade:['chort'],knight:['maskedOrc'],stalker:['bigDemon',null,.45],
   minion:['skelet',[120,255,110,.25]], goblin:['goblin',[255,210,80,.15]], slime:['slug',[110,230,110,.4]], slimelet:['tinySlug',[110,230,110,.4]], mud:['muddy'],
-  ant:['imp',[120,210,255,.6]], geode:['maskedOrc',[170,120,240,.5]],mimic:['mimic'],chest:['chest'],chestOpen:['chestOpen'],
+  ant:['imp',[120,210,255,.6]], geode:['maskedOrc',[170,120,240,.5]], spitter:['swampy',[210,240,60,.55]], burrower:['imp',[255,140,50,.5]],
+  drowned:['iceZombie',[80,170,200,.45]], caller:['necromancer',[230,60,50,.45]], leech:['tinySlug',[180,160,255,.7]],mimic:['mimic'],chest:['chest'],chestOpen:['chestOpen'],
   boss0:['ogre',[200,40,30,.25]],boss1:['bigZombie',[150,210,60,.3]],boss2:['bigDemon',[80,160,230,.45]],boss3:['bigDemon',[255,120,30,.3]],boss4:['bigZombie',[120,90,200,.5],.6]};
 const ARTX={ready:false}; // extra art: flask, stairs, spikes, torch frames, weapon art, map textures
 
@@ -972,7 +984,7 @@ function loadArt(){
     const side=img=>artStrip(img,[0,0,16,16,Math.max(1,img.width/16|0)]);
     SPRITES.archer=artSprite(side(skM),side(skI)); SPRITES.gnawer=artSprite(side(baM),side(baI));
     // monsters whose eyes weren't found get two set on the face, a little toward the front, about a quarter of the way down
-    for(const k of ['husk','brute','wraith','priest','bloat','shade','knight','stalker','minion','mimic','gnawer','archer','goblin','slime','slimelet','mud','ant','geode','boss0','boss1','boss2','boss3','boss4']){
+    for(const k of ['husk','brute','wraith','priest','bloat','shade','knight','stalker','minion','mimic','gnawer','archer','goblin','slime','slimelet','mud','ant','geode','spitter','burrower','drowned','caller','leech','boss0','boss1','boss2','boss3','boss4']){
       const sp=SPRITES[k]; if(sp.eyes.length) continue; let top=sp.h; for(const [,y] of sp.pixels) top=Math.min(top,y);
       const ey=Math.round(top+(sp.h-top)*.28), ex=Math.round(sp.cx); sp.eyes=[[ex-1,ey],[ex+1+(sp.w>16?1:0),ey]];}
     for(const [cls,r] of Object.entries(A72_WEAPON)){ // stored blade-up in the atlas; turn them to point right
@@ -1019,6 +1031,7 @@ function recalc(){
   if(s.u.storm) s.chain=Math.max(s.chain,s.u.storm);
   if(s.u.night){s.lightMul*=.5; s.dmgPct+=.5*s.u.night;}
   if(s.u.saint) s.lightMul*=1+.6*s.u.saint;
+  if(G.theme&&G.theme.dark) s.lightMul*=.72; // the Hollow swallows your light
   if(G.restedFor&&G.depth<=G.restedFor){s.dmgPct+=.15; s.regen+=1+G.depth*.1;} // rested at a tavern hearth
   s.dmgPct+=G.bonus.dmgPct+.05*rank('cru'); s.light+=G.bonus.light+12*rank('oil'); s.hpPct+=.08*rank('vit');
   s.dmg*=Math.max(.1,1+s.dmgPct); s.maxHp=Math.max(10,Math.round(s.maxHp*Math.max(.2,1+s.hpPct)));
@@ -1213,7 +1226,7 @@ function genTavern(depth){
   const dctx=decalCv.getContext('2d'); dctx.setTransform(.5,0,0,.5,0,0); dctx.imageSmoothingEnabled=false;
   const miniCv=document.createElement('canvas'); miniCv.width=MW; miniCv.height=MH;
   return {theme,isBoss:false,isTavern:true,tavernName:pick(TAVERN_NAMES),shop:{stock,tome:{skill:tomeSkill(),price:Math.round(60+depth*9)}},
-    map,rooms:[room],spawn,stairs,torches,enemies:[],props,traps:[],nearProp:null,mapCv,decalCv,dctx,miniCv,miniCtx:miniCv.getContext('2d'),
+    pools:[],vents:[],map,rooms:[room],spawn,stairs,torches,enemies:[],props,traps:[],nearProp:null,mapCv,decalCv,dctx,miniCv,miniCtx:miniCv.getContext('2d'),
     miniDirty:true,explored:new Uint8Array(MW*MH),flow:new Int16Array(MW*MH).fill(-1),flowT:0,exploreT:0,sealed:false,bossBar:null};
 }
 
@@ -1237,7 +1250,7 @@ function newRun(cls){
 }
 function descend(){
   G.depth++; if(G.stats) recalc(); // legendary power depends on depth
-  const f=genFloor(G.depth); Object.assign(G,f);
+  const f=genFloor(G.depth); Object.assign(G,f); recalc(); // and the zone (the Hollow dims your light)
   const p=G.player; p.x=f.spawn.x; p.y=f.spawn.y; G.cam.x=p.x; G.cam.y=p.y;
   G.corpses=[]; G.floorT=0; G.stalkWarned=false; G.stalker=null; G.stalkDone=false; // your skeletons follow you down; the Stalker does not
   for(const m of G.allies){m.x=p.x; m.y=p.y; m.tgt=null; for(let tr=0;tr<12;tr++){const a=rand(0,6.28), x=p.x+Math.cos(a)*30, y=p.y+Math.sin(a)*30; if(!collides(x,y,8)){m.x=x; m.y=y; break;}}}
@@ -1293,9 +1306,10 @@ function bfs(map,start,limit=9999){
 function genFloor(depth){
   if(isTavernDepth(depth)) return genTavern(depth);
   const theme=THEMES[Math.floor((depth-1)/5)%THEMES.length], isBoss=isBigBossDepth(depth);
-  const map=new Uint8Array(MW*MH).fill(1), rooms=[], target=8+Math.min(7,Math.floor(depth/3));
+  const map=new Uint8Array(MW*MH).fill(1), rooms=[], st=theme.style, target=8+Math.min(7,Math.floor(depth/3))+(st==='maze'?5:st==='halls'?-3:0);
   for(let a=0;a<600&&rooms.length<target;a++){
-    const big=isBoss&&rooms.length===0, w=big?15:ri(5,10), h=big?12:ri(5,8);
+    // room sizes by zone: great halls in the Chapel, cramped cells in the Hollow
+    const big=isBoss&&rooms.length===0, w=big?15:st==='halls'?ri(9,15):st==='maze'?ri(4,7):ri(5,10), h=big?12:st==='halls'?ri(7,11):st==='maze'?ri(4,6):ri(5,8);
     const x=ri(2,MW-w-3), y=ri(2,MH-h-3);
     if(rooms.some(r=>x<r.x+r.w+2&&x+w+2>r.x&&y<r.y+r.h+2&&y+h+2>r.y)) continue;
     rooms.push({x,y,w,h,cx:Math.floor(x+w/2),cy:Math.floor(y+h/2)});
@@ -1308,7 +1322,9 @@ function genFloor(depth){
     const sx=()=>{while(x!==b.cx){carve(x,y);x+=Math.sign(b.cx-x);}}, sy=()=>{while(y!==b.cy){carve(x,y);y+=Math.sign(b.cy-y);}};
     if(Math.random()<.5){sx();sy();}else{sy();sx();} carve(x,y);};
   for(let i=1;i<rooms.length;i++){let bj=0,bd=1e9;for(let j=0;j<i;j++){const d=Math.hypot(rooms[i].cx-rooms[j].cx,rooms[i].cy-rooms[j].cy);if(d<bd){bd=d;bj=j;}}corridor(rooms[i],rooms[bj]);}
-  for(let k=0;k<2;k++){const a=pick(rooms),b=pick(rooms);if(a!==b)corridor(a,b);}
+  for(let k=0;k<(st==='maze'?6:2);k++){const a=pick(rooms),b=pick(rooms);if(a!==b)corridor(a,b);}
+  // the Warrens are dug, not built: eat away at every wall that touches open ground, twice, so rooms and tunnels go organic
+  if(st==='caves') for(let pass=0;pass<2;pass++){const open=[]; for(let y=2;y<MH-2;y++) for(let x=2;x<MW-2;x++){const i=y*MW+x; if(map[i]&&(!map[i-1]||!map[i+1]||!map[i-MW]||!map[i+MW])&&Math.random()<.38) open.push(i);} for(const i of open) map[i]=0;}
   let spawnRoom,stairRoom;
   const far=(from)=>{const d=bfs(map,from.cy*MW+from.cx);return rooms.reduce((b,r)=>d[r.cy*MW+r.cx]>d[b.cy*MW+b.cx]?r:b,rooms[0]);};
   if(isBoss){stairRoom=rooms[0];spawnRoom=far(stairRoom);} else {spawnRoom=rooms[0];stairRoom=far(spawnRoom);}
@@ -1319,12 +1335,15 @@ function genFloor(depth){
     for(let k=0;k<n;k++) for(let tr=0;tr<12;tr++){const tx=ri(r.x,r.x+r.w-1), ty=r.y-1;
       if(map[ty*MW+tx]===1&&map[(ty+1)*MW+tx]===0&&!torches.some(t=>Math.abs(t.tx-tx)<3&&t.ty===ty)){torches.push({tx,ty,x:tx*TILE+16,y:ty*TILE+22,ph:rand(0,6.28)});break;}}}
   const enemies=[], avail=Object.entries(ETYPES).filter(([,t])=>t.minD<=depth&&t.w>0);
-  const pickType=()=>{let r=Math.random()*avail.reduce((s,[,t])=>s+t.w,0);for(const [k,t] of avail){r-=t.w;if(r<=0)return k;}return avail[0][0];};
+  const wt=(k,t)=>t.w*(theme.roster?(theme.roster[k]??.25):1); // the zone's own crowd, with a few strays from elsewhere
+  const pickType=()=>{let r=Math.random()*avail.reduce((s,[k,t])=>s+wt(k,t),0);for(const [k,t] of avail){r-=wt(k,t);if(r<=0)return k;}return avail[0][0];};
   for(const r of rooms){ if(r===spawnRoom||(isBoss&&r===stairRoom)) continue;
-    const n=Math.min(10,ri(2,3)+Math.floor(depth/2.5));
+    // more rooms means fewer per room, and a floor never holds more than its cap
+    const n=Math.min(st==='maze'?6:10,ri(2,3)+Math.floor(depth/(st==='maze'?4:2.5)));
     for(let k=0;k<n;k++){const tx=ri(r.x,r.x+r.w-1), ty=ri(r.y,r.y+r.h-1), x=cw(tx), y=cw(ty);
-      if(map[ty*MW+tx]||Math.hypot(x-spawn.x,y-spawn.y)<260) continue;
-      const kind=pickType(); enemies.push(spawnEnemy(kind,x,y,depth,Math.random()<.09+depth*.005));
+      if(map[ty*MW+tx]||Math.hypot(x-spawn.x,y-spawn.y)<260||enemies.length>=40+depth*1.5) continue;
+      // (a swarm uses up three places in the room)
+      const kind=pickType(); if(ETYPES[kind].swarm) k+=2; enemies.push(spawnEnemy(kind,x,y,depth,Math.random()<.09+depth*.005));
       for(let s=0;s<(ETYPES[kind].swarm||0);s++){const sx=x+rand(-30,30), sy=y+rand(-30,30), stx=Math.floor(sx/TILE), sty=Math.floor(sy/TILE); if(!map[sty*MW+stx]) enemies.push(spawnEnemy(kind,sx,sy,depth,false));}}}
   if(!isBoss&&depth>=2&&Math.random()<.18){const r=pick(rooms.filter(q=>q!==spawnRoom)); if(r) enemies.push(spawnEnemy('goblin',cw(r.cx),cw(r.cy),depth,false));}
   if(isBoss){enemies.push(spawnBoss(depth,stairs.x,stairs.y-TILE*3));
@@ -1347,12 +1366,19 @@ function genFloor(depth){
     if(free(r.cx,r.cy)) props.push({kind:'altar',x:cw(r.cx),y:cw(r.cy),room:r,openings,state:'idle',wave:0,pause:0});}
   if(depth>=2) for(let k=0;k<Math.min(10,ri(2,4)+Math.floor(depth/3));k++){const r=pick(rooms); if(r===spawnRoom) continue;
     const tx=ri(r.x+1,r.x+r.w-2), ty=ri(r.y+1,r.y+r.h-2); if(free(tx,ty)&&!traps.some(t=>t.tx===tx&&t.ty===ty)) traps.push({tx,ty,x:cw(tx),y:cw(ty),ph:rand(0,2.6),state:'down',hitP:false,hitE:new Set()});}
+  // zone features: flooded pools in the Chapel, lava vents in the Furnace, spore puffs in the Warrens
+  const pools=[], vents=[];
+  const spot=r=>{for(let tr=0;tr<20;tr++){const tx=ri(r.x+1,r.x+r.w-2), ty=ri(r.y+1,r.y+r.h-2); if(map[ty*MW+tx]===0&&Math.hypot(cw(tx)-spawn.x,cw(ty)-spawn.y)>120&&Math.hypot(cw(tx)-stairs.x,cw(ty)-stairs.y)>60) return [cw(tx),cw(ty)];} return null;};
+  if(theme.pools) for(const r of others) if(Math.random()<.6){const s=spot(r); if(s){pools.push({x:s[0],y:s[1],rx:Math.min(r.w*TILE*.35,110),ry:Math.min(r.h*TILE*.25,70),ph:rand(0,6)});
+    for(let k=0;k<1+(depth>14?1:0);k++) enemies.push(spawnEnemy('drowned',s[0]+rand(-20,20),s[1]+rand(-10,10),depth,Math.random()<.1));}}
+  if(theme.vents) for(let k=0;k<6+Math.min(8,depth>>2);k++){const s=spot(pick(rooms)); if(s) vents.push({x:s[0],y:s[1],t:rand(0,4),every:rand(3.2,4.6)});}
+  if(theme.spores) for(let k=0;k<5+Math.min(6,depth>>2);k++){const s=spot(pick(others.length?others:rooms)); if(s&&free(Math.floor(s[0]/TILE),Math.floor(s[1]/TILE))) props.push({kind:'puff',x:s[0],y:s[1]});}
   const mapCv=renderMap(map,theme,torches);
   // decals live at half resolution too, so blood and corpses stay pixel-crisp
   const decalCv=document.createElement('canvas'); decalCv.width=MW*TILE/2; decalCv.height=MH*TILE/2;
   const dctx=decalCv.getContext('2d'); dctx.setTransform(.5,0,0,.5,0,0); dctx.imageSmoothingEnabled=false;
   const miniCv=document.createElement('canvas'); miniCv.width=MW; miniCv.height=MH;
-  return {theme,isBoss,isTavern:false,shop:null,map,rooms,spawn,stairs,torches,enemies,props,traps,nearProp:null,mapCv,decalCv,dctx,miniCv,miniCtx:miniCv.getContext('2d'),
+  return {theme,isBoss,isTavern:false,shop:null,pools,vents,map,rooms,spawn,stairs,torches,enemies,props,traps,nearProp:null,mapCv,decalCv,dctx,miniCv,miniCtx:miniCv.getContext('2d'),
     miniDirty:true,explored:new Uint8Array(MW*MH),flow:new Int16Array(MW*MH).fill(-1),flowT:0,exploreT:0,sealed:isBoss,bossBar:null};
 }
 // Painted at 16px per tile, then drawn at 2x with no smoothing so it reads as pixel art.
@@ -1514,6 +1540,19 @@ function updateEnemy(e,dt){
     if(Math.random()<dt*4) addP({x:e.x+rand(-6,6),y:e.y-6,vx:rand(-20,20),vy:rand(-50,-20),life:.6,max:.6,size:2,color:'#ffd02a',drag:1,emissive:true});
     if(e.t<=0){e.dead=true; smoke(e.x,e.y,20); G.effects.push({type:'ring',x:e.x,y:e.y,r0:30,r1:2,t:0,max:.5,color:'#ffd02a',w:6,light:true}); text(e.x,e.y-24,'It got away!','#ffd02a',15); play('blink',e);}
     return;}
+  // the Drowned wait under the water until you wade close
+  if(T.drowned&&(e.state==='idle'||e.state==='rising')){
+    if(e.state==='idle'){e.hidden=true; if(d<120||e.hurt>0){e.state='rising'; e.t=.7; for(let i=0;i<12;i++) addP({x:e.x+rand(-10,10),y:e.y,vx:rand(-40,40),vy:rand(-90,-30),life:.6,max:.6,size:2,color:'#6a8ab0',drag:2,fade:true}); play('splat',e);} return;}
+    e.t-=dt; if(e.t<=0){e.hidden=false; e.state='chase';} return;}
+  // Burrowers tunnel at you unseen, erupt underneath you, fight a while, then dig back down
+  if(T.atk==='burrow'){
+    if(e.state==='idle'){ if(d<260||e.hurt>0) e.state='under'; return; }
+    if(e.state==='under'){e.hidden=true; chaseMove(e,sp*1.1,dt); if(Math.random()<dt*14) dust(e.x+rand(-6,6),e.y+4);
+      if(d<30){e.state='surface'; e.t=.6; warn(e.x,e.y,44,.6,'#ffb02a'); play('trap',e);} return;}
+    if(e.state==='surface'){e.t-=dt; if(e.t<=0){e.hidden=false; e.state='recover'; e.t=.5; e.upT=4; G.shake=Math.min(14,G.shake+5);
+        G.effects.push({type:'ring',x:e.x,y:e.y,r0:8,r1:44,t:0,max:.3,color:'#c89060',w:8}); for(let i=0;i<14;i++) dust(e.x+rand(-30,30),e.y+rand(-16,16));
+        if(dist(e,p)<44+p.r*.5) damagePlayer(e.dmg*1.3,e,'a Burrower');} return;}
+    e.upT=(e.upT||4)-dt; if(e.upT<=0&&e.state==='chase'){e.state='under'; smoke(e.x,e.y,10); return;}}
   if(T.mud&&e.state!=='idle'){e.mudT=(e.mudT||0)-dt; if(e.mudT<=0){e.mudT=.55; addHazard(e.x,e.y+e.r*.5,18,4,0,'#5a4428',0,'mud');}}
   switch(e.state){
     case 'idle': if(d<230*G.stats.aggro||e.hurt>0) e.state='chase'; break;
@@ -1553,7 +1592,7 @@ function enemyAttack(e){
     smoke(e.x,e.y,10); if(!collides(tx,ty,e.r)){e.x=tx; e.y=ty;} smoke(e.x,e.y,10); play('blink',e);
     e.blinked=true; e.state='windup'; e.t=.3; e.aim=Math.atan2(p.y-e.y,p.x-e.x); return;
   }
-  if(T.atk==='melee'||T.atk==='blink'){
+  if(T.atk==='melee'||T.atk==='blink'||T.atk==='burrow'){
     e.blinked=false;
     move(e,Math.cos(e.aim)*10,Math.sin(e.aim)*10);
     const d=dist(e,p), a=Math.atan2(p.y-e.y,p.x-e.x);
@@ -1563,6 +1602,13 @@ function enemyAttack(e){
     else {const R=T.reach+e.r+2, hr=p.r*.7; if(d-hr<=R&&angDiff(a,e.aim)<=.9+Math.asin(Math.min(1,hr/Math.max(d,1)))) damagePlayer(e.dmg,e);}
     G.effects.push({type:'slash',x:e.x,y:e.y,a:e.aim,arc:1.6,reach:T.reach+e.r,t:0,max:.14,color:'#ff3a22'});
     e.state='recover'; e.t=.25; e.cd=T.cd;
+  } else if(T.lob){ // a glob of acid arcs to where you're standing: a warning, then a burning pool
+    const tx=p.x+rand(-14,14), ty=p.y+rand(-14,14); warn(tx,ty,30,.75,'#c8e04a'); play('arrow',e);
+    G.projectiles.push({x:e.x,y:e.y,vx:(tx-e.x)/.75,vy:(ty-e.y)/.75,r:4,dmg:0,owner:'enemy',life:.75,color:'#c8e04a',src:e,lobbed:true});
+    later(.75,()=>{addHazard(tx,ty,30,3,e.dmg*.55,'#9acd32'); spark(tx,ty,'#c8e04a',10);}); e.state='recover'; e.t=.4; e.cd=T.cd;
+  } else if(T.summon){ // the Grave Caller: bones rise around it
+    for(let k=0;k<2;k++){const a=rand(0,6.28), x=e.x+Math.cos(a)*30, y=e.y+Math.sin(a)*30; if(!collides(x,y,8)&&G.enemies.length<120){const m=spawnEnemy(T.summon,x,y,G.depth,false); m.state='chase'; G.enemies.push(m); smoke(x,y,8); spark(x,y,'#ff4a3a',6);}}
+    G.effects.push({type:'ring',x:e.x,y:e.y,r0:40,r1:6,t:0,max:.4,color:'#ff4a3a',w:3}); play('raise',e); e.state='recover'; e.t=.6; e.cd=T.cd;
   } else if(T.atk==='ranged'){
     const n=T.shots||1;
     for(let i=0;i<n;i++){const a=e.aim+(i-(n-1)/2)*(T.spread||0);
@@ -1754,7 +1800,8 @@ function updateArenas(dt){
     G.banner={t:0,lines:['The arena is satisfied','A rare gift, and 30 souls.','The doors open.']};
   }
 }
-function hitUrns(test,a){for(const o of G.props) if(o.kind==='urn'&&!o.broken&&test(o)) breakUrn(o,a!==undefined?a:Math.atan2(o.y-G.player.y,o.x-G.player.x));}
+function hitUrns(test,a){for(const o of G.props){ if(o.kind==='puff'&&!o.broken&&test(o)) o.hitT=1; // hitting a spore puff sets it off
+  else if(o.kind==='urn'&&!o.broken&&test(o)) breakUrn(o,a!==undefined?a:Math.atan2(o.y-G.player.y,o.x-G.player.x));}}
 function useProp(o){
   const p=G.player;
   if(o.kind==='chest'&&!o.open){
@@ -1887,7 +1934,7 @@ function itemXp(x){
 // Auto-attack: is there an enemy you'd actually hit right now? With mouse aim it must also be roughly where you're facing.
 function autoTarget(){
   const p=G.player, c=CLASSES[G.cls], range=c.ranged?260:c.reach+6, free=TOUCH.active||PAD.active;
-  for(const e of G.enemies){ if(e.dead||dist(e,p)-e.r>range) continue;
+  for(const e of G.enemies){ if(e.dead||e.hidden||dist(e,p)-e.r>range) continue;
     if(c.ranged){ if(!free&&angDiff(aimAt(bodyOf(e)),p.facing)>.35) continue; if(!los(p.x,p.y,e.x,e.y)) continue; return e; }
     if(free||swingHits(e,p.facing,c.reach,c.arc)) return e; }
   return null;
@@ -1902,12 +1949,12 @@ const handY=()=>G.player.y-LIFT;
 const aimAt=b=>Math.atan2(b.y-handY(),b.x-G.player.x);
 // a swing hits a body if any part of it is inside the drawn crescent
 function swingHits(e,a,reach,arc){
-  const p=G.player, b=bodyOf(e), dx=b.x-p.x, dy=b.y-handY(), d=Math.hypot(dx,dy);
+  if(e.hidden) return false; const p=G.player, b=bodyOf(e), dx=b.x-p.x, dy=b.y-handY(), d=Math.hypot(dx,dy);
   if(d-b.r>reach) return false; if(d<b.r+6) return true;
   return angDiff(Math.atan2(dy,dx),a)<=arc/2+Math.asin(Math.min(1,b.r/d));
 }
 // a shot (flying LIFT above the ground) against a body
-const shotHits=(e,pr)=>{const b=bodyOf(e); return Math.hypot(b.x-pr.x,b.y-(pr.y-LIFT))<b.r+pr.r;};
+const shotHits=(e,pr)=>{ if(e.hidden) return false; const b=bodyOf(e); return Math.hypot(b.x-pr.x,b.y-(pr.y-LIFT))<b.r+pr.r;};
 // Arrow keys aim and attack in their direction, so laptops whose touchpad ignores clicks while you type still work.
 function arrowAim(){const x=(keys.ArrowRight?1:0)-(keys.ArrowLeft?1:0), y=(keys.ArrowDown?1:0)-(keys.ArrowUp?1:0); return x||y?Math.atan2(y,x):null;}
 function moveInput(){
@@ -1923,7 +1970,7 @@ function attack(echo){
   // a gentle assist: if an enemy's body is within ~17° of where you're aiming, the blow goes to it. The weapon on screen never jumps.
   let a=p.facing;
   if(!PAD.active&&!TOUCH.active){let bd=.3; const range=c.ranged?300:c.reach+30;
-    for(const e of G.enemies){ if(e.dead||dist(e,p)-e.r>range) continue; const ea=aimAt(bodyOf(e)), ad=angDiff(ea,p.facing); if(ad<bd&&los(p.x,p.y,e.x,e.y)){bd=ad; a=ea;}}}
+    for(const e of G.enemies){ if(e.dead||e.hidden||dist(e,p)-e.r>range) continue; const ea=aimAt(bodyOf(e)), ad=angDiff(ea,p.facing); if(ad<bd&&los(p.x,p.y,e.x,e.y)){bd=ad; a=ea;}}}
   const big=!echo&&s.u.butcher&&(G.atkN=(G.atkN||0)+1)%5===0; // Butcher's Hook: every fifth blow
   // Twin Fangs: two blows at 60% each at full power; as it fades the first blow takes back the difference
   const tw=s.u.twin||0, o={forceCrit:big}; let mult=(big?1+2*s.u.butcher:1)*(tw?(echo?.6*tw:1-.4*tw):1);
@@ -1980,7 +2027,7 @@ const MUT_LV=[3,6,10,15];
 const SKILL_SFX={whirlwind:'whirlwind',shadowstep:'shadowstep',nova:'nova',raise:'raise',fireball:'bolt',iceshards:'arrow',lightning:'blink',slam:'whirlwind',
   blades:'dash',spikes:'urn',bloodnova:'hurt',meteor:'boss',spectral:'raise',leap:'dash',plague:'splat',voidorb:'shadowstep',deathmark:'shrine'};
 const later=(t,fn)=>G.pending.push({t,fn:()=>{if(state==='play'&&!G.dying) fn();}});
-const near=(x,y,R)=>G.enemies.filter(e=>!e.dead&&Math.hypot(e.x-x,e.y-y)<R+e.r);
+const near=(x,y,R)=>G.enemies.filter(e=>!e.dead&&!e.hidden&&Math.hypot(e.x-x,e.y-y)<R+e.r);
 function pullIn(x,y,R,str){for(const e of near(x,y,R)){ if(e.boss) continue; const a=Math.atan2(y-e.y,x-e.x); e.kb.x+=Math.cos(a)*str; e.kb.y+=Math.sin(a)*str; }}
 function stun(e,t){ if(!e.boss&&e.type!=='stalker'){e.state='recover'; e.t=Math.max(e.t||0,t);} }
 function mark(e,t,amp,o={}){ e.markT=Math.max(e.markT||0,t); e.markAmp=Math.max(e.markAmp||0,amp); Object.assign(e,o); }
@@ -2201,7 +2248,8 @@ function updateSkills(dt){
       for(const e of near(bx,by,10)){ if((o.hits.get(e)||0)>G.time) continue; o.hits.set(e,G.time+.25);
         strike(e,o.mult,a+Math.PI/2,{skill:'blades',noKb:true,critBonus:G.stats.skillCrit}); if(o.fire&&!e.dead) e.burn={t:3,dps:G.stats.dmg*.25};}}}
   if(G.orbits) G.orbits=G.orbits.filter(o=>o.t<o.ttl);
-  updatePowers(dt); updateSouls(dt); updateQuest(dt);
+  updatePowers(dt); updateSouls(dt); updateQuest(dt); updateZone(dt);
+  {let n=0; for(const e of G.enemies) if(!e.dead&&e.T.leech&&dist(e,p)<180) n++; const want=1-.2*Math.min(3,n); p.lightK=(p.lightK||1)+(want-(p.lightK||1))*Math.min(1,dt*3);}
   // legendaries that tick on their own
   const u=G.stats.u;
   if(u.spikewalk&&p.moving){p.spikeT=(p.spikeT||0)-dt; if(p.spikeT<=0){p.spikeT=1; SKILLS.spikes.cast(Object.assign(skillCtx('spikes'),{tp:{x:p.x,y:p.y}}));}}
@@ -2222,8 +2270,8 @@ const TRIG={
   floor:{d:()=>'When you arrive on a floor',ch:1,icd:0}, move:{d:()=>'While you keep moving, every 2 seconds',ch:1,icd:2},
   heal:{d:()=>'When you pick up a healing orb',ch:1,icd:.5},
 };
-const nearestE=(x,y,R=320)=>{let b=null,bd=R; for(const e of G.enemies){ if(e.dead) continue; const d=Math.hypot(e.x-x,e.y-y); if(d<bd){bd=d; b=e;}} return b;};
-const randE=(x,y,R=300)=>{const c=G.enemies.filter(e=>!e.dead&&Math.hypot(e.x-x,e.y-y)<R); return c.length?pick(c):null;};
+const nearestE=(x,y,R=320)=>{let b=null,bd=R; for(const e of G.enemies){ if(e.dead||e.hidden) continue; const d=Math.hypot(e.x-x,e.y-y); if(d<bd){bd=d; b=e;}} return b;};
+const randE=(x,y,R=300)=>{const c=G.enemies.filter(e=>!e.dead&&!e.hidden&&Math.hypot(e.x-x,e.y-y)<R); return c.length?pick(c):null;};
 // a power's own hit: never triggers other powers (that way lies an infinite rat cascade)
 const pHit=(e,mult,a,o={})=>strike(e,mult,a===undefined?Math.atan2(e.y-G.player.y,e.x-G.player.x):a,Object.assign({proc:false},o));
 function boomAt(x,y,r,mult,color,o={}){
@@ -2491,6 +2539,66 @@ function drawQuestTracker(x,y){
   const prog=q.done?'COMPLETE':q.failed?'FAILED':q.id==='fast'?`${Math.ceil(q.t)}s left`:q.id==='clean'?`hits ${q.hits} / ${q.limit-1}`:`${q.have} / ${q.need}`;
   ctx.fillText(`[QUEST] ${q.title}: ${prog}`,x,y);
 }
+// ================= skill icons =================
+// a small glowing symbol for every skill, drawn with paths so it stays crisp at any size
+function skillGlyph(g,id,cx,cy,S,col,dim){
+  g.save(); g.translate(cx,cy); g.strokeStyle=col; g.fillStyle=col; g.lineWidth=Math.max(1.5,S*.09); g.lineCap='round'; g.lineJoin='round';
+  if(!dim){g.shadowColor=col; g.shadowBlur=S*.35;}
+  const r=S/2, L=(pts,close)=>{g.beginPath(); pts.forEach(([x,y],i)=>i?g.lineTo(x*r,y*r):g.moveTo(x*r,y*r)); if(close) g.closePath(); g.stroke();};
+  const C=(x,y,rr,fill)=>{g.beginPath(); g.arc(x*r,y*r,rr*r,0,7); fill?g.fill():g.stroke();};
+  const key=id.startsWith('it_')?'item':id;
+  switch(key){
+    case 'whirlwind': for(let i=0;i<3;i++){g.beginPath(); g.arc(0,0,r*(.35+i*.2),i*2.1,i*2.1+3.6); g.stroke();} break;
+    case 'shadowstep': L([[-.9,.3],[.5,.3]]); L([[-.7,-.1],[.7,-.1]]); L([[-.5,-.5],[.9,-.5]]); C(.75,.3,.15,1); break;
+    case 'nova': for(let i=0;i<8;i++){const a=i*Math.PI/4; L([[Math.cos(a)*.3,Math.sin(a)*.3],[Math.cos(a)*.85,Math.sin(a)*.85]]);} C(0,0,.18,1); break;
+    case 'raise': C(0,-.2,.42); L([[-.2,-.25],[-.08,-.25]]); L([[.08,-.25],[.2,-.25]]); L([[-.25,.25],[-.25,.6],[.25,.6],[.25,.25]]); break;
+    case 'fireball': C(.25,-.25,.32,1); L([[-.1,.1],[-.75,.75]]); L([[.05,.3],[-.45,.85]]); L([[-.3,-.05],[-.85,.4]]); break;
+    case 'iceshards': for(const a of [-.5,0,.5]){g.save(); g.rotate(a-Math.PI/2); L([[0,0],[.85,0]]); L([[.6,-.15],[.85,0],[.6,.15]]); g.restore();} break;
+    case 'lightning': L([[.3,-.9],[-.25,-.05],[.2,.05],[-.3,.9]]); break;
+    case 'slam': L([[-.8,.5],[.8,.5]]); L([[0,.5],[-.3,-.1]]); L([[0,.5],[.35,0]]); L([[-.3,-.1],[-.5,-.6]]); L([[.35,0],[.6,-.5]]); break;
+    case 'blades': C(0,0,.55); for(let i=0;i<3;i++){const a=i*2.1; g.save(); g.rotate(a); L([[.4,-.15],[.85,0],[.4,.15]],true); g.restore();} break;
+    case 'spikes': L([[-.8,.7],[-.5,-.3],[-.25,.7],[0,-.8],[.25,.7],[.5,-.3],[.8,.7]]); break;
+    case 'bloodnova': g.beginPath(); g.moveTo(0,-.8*r); g.bezierCurveTo(.6*r,0,.5*r,.75*r,0,.75*r); g.bezierCurveTo(-.5*r,.75*r,-.6*r,0,0,-.8*r); g.fill(); break;
+    case 'meteor': C(.3,.3,.35,1); L([[0,0],[-.7,-.7]]); L([[.2,-.1],[-.4,-.8]]); L([[-.1,.2],[-.8,-.4]]); break;
+    case 'spectral': L([[0,-.9],[0,.5]]); L([[-.35,.5],[.35,.5]]); L([[0,.5],[0,.85]]); L([[-.12,-.6],[0,-.9],[.12,-.6]]); break;
+    case 'leap': g.beginPath(); g.arc(0,.3*r,.7*r,Math.PI,0); g.stroke(); L([[.5,.05],[.7,.3],[.9,.05]]); break;
+    case 'plague': C(-.3,.1,.3); C(.25,0,.35); C(0,-.35,.28); L([[-.6,.6],[.6,.6]]); break;
+    case 'voidorb': C(0,0,.6); g.fillStyle='#000'; C(0,0,.35,1); g.fillStyle=col; C(0,0,.12,1); break;
+    case 'deathmark': L([[-.6,-.6],[.6,.6]]); L([[.6,-.6],[-.6,.6]]); C(0,0,.75); break;
+    default: L([[0,-.85],[.25,-.25],[.85,0],[.25,.25],[0,.85],[-.25,.25],[-.85,0],[-.25,-.25]],true); // item skills: a star
+  }
+  g.restore();
+}
+// ================= zone features =================
+const inPool=(o,q)=>((o.x-q.x)/q.rx)**2+((o.y-q.y)/q.ry)**2<1;
+function updateZone(dt){
+  const p=G.player;
+  // flooded floors in the Chapel: wading slows you and anything not floating
+  p.wetT=(p.wetT||0)-dt; for(const q of G.pools||[]){ if(inPool(p,q)){p.wetT=.15; if(p.moving&&Math.random()<dt*6) addP({x:p.x+rand(-6,6),y:p.y+8,vx:rand(-20,20),vy:rand(-30,-10),life:.4,max:.4,size:2,color:'#6a8ab0',drag:2,fade:true});}
+    for(const e of G.enemies) if(!e.dead&&!e.T.phase&&inPool(e,q)) e.slow=Math.max(e.slow,.1);}
+  // lava vents in the Furnace: a glow, a warning, then they spew fire that burns everything
+  for(const v of G.vents||[]){v.t+=dt;
+    if(!v.warned&&v.t>v.every-.8){v.warned=true; if(Math.abs(v.x-p.x)<560&&Math.abs(v.y-p.y)<420) warn(v.x,v.y,38,.8,'#ff5a1a');}
+    if(v.t>=v.every){v.t=0; v.warned=false; addHazard(v.x,v.y,38,1.6,6+G.depth*2.2,'#ff7a2a');
+      for(const e of near(v.x,v.y,38)) hitEnemy(e,10+G.depth*3,{proc:false,noKb:true,color:'#ff9a3c',quiet:true});
+      if(Math.abs(v.x-p.x)<400&&Math.abs(v.y-p.y)<300){spark(v.x,v.y,'#ffb04a',18); G.shake=Math.min(14,G.shake+2); play('splat',v);}}}
+  // spore puffs in the Warrens: get close, or hit one, and it bursts into a choking cloud
+  for(const o of G.props){ if(o.kind!=='puff'||o.broken) continue;
+    if(!o.fuse&&(Math.hypot(o.x-p.x,o.y-p.y)<34||o.hitT)){o.fuse=.55; text(o.x,o.y-16,'pff','#9acd32',11);}
+    if(o.fuse){o.fuse-=dt; if(o.fuse<=0){o.broken=true; addHazard(o.x,o.y,52,3.5,5+G.depth*1.6,'#9acd32'); smoke(o.x,o.y,14); play('splat',o);
+      for(let i=0;i<16;i++) addP({x:o.x,y:o.y,vx:rand(-90,90),vy:rand(-90,60),life:rand(.6,1.2),max:1.2,size:rand(3,6),color:'#5a6a2a',drag:2,fade:true});}}}
+}
+function drawZone(g){
+  for(const q of G.pools||[]){ // dark water with a lighter rim and a slow ripple
+    g.fillStyle='rgba(8,20,38,.85)'; g.beginPath(); g.ellipse(q.x,q.y,q.rx,q.ry,0,0,7); g.fill();
+    const wg=g.createRadialGradient(q.x-q.rx*.3,q.y-q.ry*.4,0,q.x,q.y,q.rx); wg.addColorStop(0,'rgba(70,120,180,.35)'); wg.addColorStop(1,'rgba(30,60,110,.1)');
+    g.fillStyle=wg; g.beginPath(); g.ellipse(q.x,q.y,q.rx,q.ry,0,0,7); g.fill();
+    g.strokeStyle='rgba(120,170,230,.45)'; g.lineWidth=2; g.beginPath(); g.ellipse(q.x,q.y,q.rx,q.ry,0,0,7); g.stroke();
+    const k=(G.time*.35+q.ph)%1; g.strokeStyle=`rgba(140,190,240,${.18*(1-k)})`; g.lineWidth=1.5; g.beginPath(); g.ellipse(q.x,q.y,q.rx*k,q.ry*k,0,0,7); g.stroke();}
+  for(const v of G.vents||[]){ // a cracked, glowing grate
+    const heat=clamp(v.t/v.every,0,1); g.fillStyle='#120806'; g.beginPath(); g.ellipse(v.x,v.y,16,10,0,0,7); g.fill();
+    g.strokeStyle=`rgba(255,${90+heat*80|0},30,${.3+heat*.6})`; g.lineWidth=2; for(let i=-1;i<=1;i++){g.beginPath(); g.moveTo(v.x-10,v.y+i*4); g.lineTo(v.x+10,v.y+i*4); g.stroke();}}
+}
 // one button for everything you can do with what's in front of you
 function interact(){ if(G.nearShadow&&!G.near) arise(G.nearShadow); else if(G.near) takeNear(); else if(G.nearProp) useProp(G.nearProp); }
 function dash(){
@@ -2555,9 +2663,9 @@ function update(dt){
   p.moving=!!(mx||my); if(p.spinT>0) p.spinT-=dt;
   if(p.dashTime>0){p.dashTime-=dt; move(p,p.dvx*dt,p.dvy*dt);
     if(s.u.gravewalk){p.fireT=(p.fireT||0)-dt; if(p.fireT<=0){p.fireT=.035; addHazard(p.x,p.y+6,16,2.6,s.dmg*.45*s.u.gravewalk,'#ff7a2a',0,'player');}} addP({x:p.x,y:p.y,vx:0,vy:0,life:.25,max:.25,size:9,color:CLASSES[G.cls].color,drag:0,fade:true});}
-  else { const spd=s.speed*(p.hasteT>0?1.3:1)*(p.spinT>0?.6:1)*(p.mudT>0?.55:1); p.mudT=(p.mudT||0)-dt; move(p,mx*spd*dt,my*spd*dt);
+  else { const spd=s.speed*(p.hasteT>0?1.3:1)*(p.spinT>0?.6:1)*(p.mudT>0?.55:1)*(p.wetT>0?.7:1); p.mudT=(p.mudT||0)-dt; move(p,mx*spd*dt,my*spd*dt);
     if(mx||my){p.stepT=(p.stepT||0)-dt; if(p.stepT<=0){p.stepT=48/s.speed; play('step');}} }
-  for(const o of G.props){ if(o.kind==='urn') continue; const R=o.kind==='table'||o.kind==='hearth'?15:o.kind==='shrine'||o.kind==='altar'?13:11, dx=p.x-o.x, dy=p.y-o.y, d=Math.hypot(dx,dy);
+  for(const o of G.props){ if(o.kind==='urn'||o.kind==='puff') continue; const R=o.kind==='table'||o.kind==='hearth'?15:o.kind==='shrine'||o.kind==='altar'?13:11, dx=p.x-o.x, dy=p.y-o.y, d=Math.hypot(dx,dy);
     if(d<R+p.r&&d>.01) move(p,dx/d*(R+p.r-d),dy/d*(R+p.r-d)); }
   // spike traps: rest, rattle, then strike anything standing on them
   for(const t of G.traps){ const ph=(G.time+t.ph)%2.6, prev=t.state; t.state=ph<1.85?'down':ph<2.2?'warn':'up';
@@ -2565,7 +2673,7 @@ function update(dt){
       if(!t.hitP&&Math.abs(p.x-t.x)<15&&Math.abs(p.y-t.y)<15){t.hitP=true; damagePlayer(6+G.depth*2.5,null,'a spike trap');}
       for(const e of G.enemies) if(!e.boss&&!e.T.phase&&!t.hitE.has(e)&&Math.abs(e.x-t.x)<15&&Math.abs(e.y-t.y)<15){t.hitE.add(e); hitEnemy(e,10+G.depth*4,{proc:false,noKb:true,color:'#d8cbb0'});}
     } else {t.hitP=false; t.hitE.clear();} }
-  G.nearProp=null; {let nd=38; for(const o of G.props){ if(o.kind==='urn'||o.kind==='table'||(o.kind==='hearth'&&o.used)||(o.kind==='chest'&&o.open)||(o.kind==='shrine'&&o.used)||(o.kind==='altar'&&o.state!=='idle')) continue; const d=dist(o,p); if(d<nd){nd=d; G.nearProp=o;}}}
+  G.nearProp=null; {let nd=38; for(const o of G.props){ if(o.kind==='urn'||o.kind==='puff'||o.kind==='table'||(o.kind==='hearth'&&o.used)||(o.kind==='chest'&&o.open)||(o.kind==='shrine'&&o.used)||(o.kind==='altar'&&o.state!=='idle')) continue; const d=dist(o,p); if(d<nd){nd=d; G.nearProp=o;}}}
   let mw=mouseWorld(); const arrow=arrowAim();
   if(arrow!==null){ // arrow keys win over the mouse, with a little pull toward an enemy in that direction
     p.facing=arrow; const c=CLASSES[G.cls], range=c.ranged?300:c.reach+40; let best=null, bd=.4;
@@ -2635,6 +2743,7 @@ function update(dt){
         if(pr.coin&&Math.random()<.4) dropGold(e.x,e.y,1);
         if(pr.pierce>0){pr.pierce--; (pr.hit||(pr.hit=new Set())).add(e);} else {pr.life=0; break;}}}}
     else if(pr.owner==='player'){} // void orbs never touch-hit (and never hit you)
+    else if(pr.lobbed){} // a lobbed glob flies over everything; its pool does the damage
     else if(Math.hypot(p.x-pr.x,p.y-pr.y)<p.r+pr.r){
       if(s.u.mirror&&Math.random()<.3*s.u.mirror){pr.owner='player'; pr.vx*=-1.2; pr.vy*=-1.2; pr.mult=1.2; pr.life=1.5; pr.color='#ffe0a0'; spark(pr.x,pr.y,'#ffe0a0',8); play('crit',pr);}
       else {damagePlayer(pr.dmg,pr.src); pr.life=0;}}
@@ -2695,7 +2804,7 @@ function render(){
   const inView=(x,y,r=0)=>x+r>view.x0&&x-r<view.x1&&y+r>view.y0&&y-r<view.y1;
   ctx.setTransform(sc,0,0,sc,ox,oy);
   ctx.imageSmoothingEnabled=false;
-  ctx.drawImage(G.mapCv,0,0,MW*TILE,MH*TILE); ctx.drawImage(G.decalCv,0,0,MW*TILE,MH*TILE);
+  ctx.drawImage(G.mapCv,0,0,MW*TILE,MH*TILE); ctx.drawImage(G.decalCv,0,0,MW*TILE,MH*TILE); drawZone(ctx);
   drawStairs(ctx);
   for(const d of G.drops) if(inView(d.x,d.y)) drawDrop(ctx,d);
   ctx.fillStyle='rgba(0,0,0,.35)'; for(const pr of G.projectiles) if(inView(pr.x,pr.y)){ctx.beginPath(); ctx.ellipse(pr.x,pr.y+2,pr.r*1.1,pr.r*.45,0,0,7); ctx.fill();} // shadows under shots, so their height reads
@@ -2719,7 +2828,8 @@ function render(){
   const L=(x,y,r,i)=>{ if(!inView(x,y,r)) return; const g=lctx.createRadialGradient(x,y,0,x,y,r);
     g.addColorStop(0,`rgba(0,0,0,${i})`); g.addColorStop(.45,`rgba(0,0,0,${i*.72})`); g.addColorStop(1,'rgba(0,0,0,0)'); lctx.fillStyle=g; lctx.fillRect(x-r,y-r,r*2,r*2); };
   const p=G.player, fl=1+Math.sin(G.time*13)*.02+Math.sin(G.time*7.3)*.03;
-  const dk=G.dying?clamp(G.dying/2.2,0,1):1, pr0=G.stats.light*fl*(.12+.88*dk*dk)*(G.darkT>0?.45+.55*Math.max(0,1-G.darkT):1);
+  const dk=G.dying?clamp(G.dying/2.2,0,1):1, pr0=G.stats.light*fl*(.12+.88*dk*dk)*(G.darkT>0?.45+.55*Math.max(0,1-G.darkT):1)*(G.player.lightK||1);
+  for(const v of G.vents||[]) L(v.x,v.y,50+40*clamp(v.t/v.every,0,1),.6);
   for(const h of G.hazards) if(!h.delay&&h.color==='#ff7a2a') L(h.x,h.y,h.r*2.6,.55*Math.min(1,h.t));
   lctx.save(); clipPoly(lctx,visPoly(p.x,p.y,pr0)); L(p.x,p.y,pr0,1); lctx.restore();
   L(p.x,p.y,26,.85);
@@ -2748,7 +2858,7 @@ function render(){
     ctx.beginPath(); ctx.arc(G.stairs.x,G.stairs.y,20,0,7); ctx.stroke();
     for(let i=0;i<5;i++){const an=G.time*.5+i*Math.PI*2/5, an2=an+Math.PI*4/5; ctx.beginPath(); ctx.moveTo(G.stairs.x+Math.cos(an)*18,G.stairs.y+Math.sin(an)*18); ctx.lineTo(G.stairs.x+Math.cos(an2)*18,G.stairs.y+Math.sin(an2)*18); ctx.stroke();}}
   else {const a=.25+.12*Math.sin(G.time*2); const g=ctx.createRadialGradient(G.stairs.x,G.stairs.y,0,G.stairs.x,G.stairs.y,30); g.addColorStop(0,`rgba(120,150,200,${a})`); g.addColorStop(1,'rgba(120,150,200,0)'); ctx.fillStyle=g; ctx.fillRect(G.stairs.x-30,G.stairs.y-30,60,60);}
-  for(const e of G.enemies){ if(!inView(e.x,e.y,e.r)) continue;
+  for(const e of G.enemies){ if(!inView(e.x,e.y,e.r)||e.hidden) continue;
     const s=e.elite?1.25:1, ec=e.boss?e.bossDef.pc:e.elite?MODS[e.mod].c:e.T.eye, er=e.boss?2.6:1.8*s, blink=e.chickenT>0||Math.sin(G.time*1.3+e.ph*5)>.97;
     if(!blink) for(const q of eyeSpots(SPRITES[e.shape||e.T.shape],e.x,e.y+e.r*.7,Math.cos(e.face)<0,s)){
       // eyes glow hard in the dark but stay subtle inside your light, where the sprite itself is visible
@@ -2775,6 +2885,8 @@ function render(){
     if(big){ for(let i=-2;i<=2;i++){const h=Math.round((5-Math.abs(i))*f+rand(0,2))*2; ctx.fillStyle=i%2?'rgba(255,120,40,.9)':'rgba(255,200,90,.95)'; ctx.fillRect(o.x+i*4-2,o.y-2-h,4,h);}
       if(Math.random()<.4) addP({x:o.x+rand(-8,8),y:o.y-8,vx:rand(-10,10),vy:rand(-60,-30),life:rand(.6,1.2),max:1.2,size:2,color:'#ffb04a',drag:.5,emissive:true});}
     else {ctx.fillStyle='rgba(255,210,120,.95)'; ctx.fillRect(o.x+5,o.y-15-(f>.95?2:0),2,3);}}
+  for(const v of G.vents||[]){ if(!inView(v.x,v.y,60)) continue; const heat=clamp(v.t/v.every,0,1), R=30+heat*40, vg=ctx.createRadialGradient(v.x,v.y,0,v.x,v.y,R);
+    vg.addColorStop(0,`rgba(255,110,30,${.12+heat*.3})`); vg.addColorStop(1,'rgba(255,110,30,0)'); ctx.fillStyle=vg; ctx.fillRect(v.x-R,v.y-R,R*2,R*2);}
   for(const o of G.props) if(o.kind==='keeper'){const f=.9+.1*Math.sin(G.time*5); ctx.fillStyle=`rgba(255,200,100,${.25*f})`; ctx.beginPath(); ctx.arc(o.x+14,o.y-14,9,0,7); ctx.fill(); ctx.fillStyle='rgba(255,226,150,.95)'; ctx.fillRect(o.x+13,o.y-15,3,3);}
   for(const d of G.drops){const c=d.kind==='orb'?'#ff2a2a':d.kind==='gold'?'#e0b84a':d.kind==='tome'?SKILL_INFO[d.skill].c:RAR[d.item.rarity].c, pu=.6+.4*Math.sin(G.time*4+d.x);
     ctx.fillStyle=hexA(c,.18*pu); ctx.beginPath(); ctx.arc(d.x,d.y,d.kind==='orb'?10:16,0,7); ctx.fill();
@@ -2866,6 +2978,11 @@ function drawDrop(g,d){
   g.drawImage(itemIcon(d.item),Math.round(d.x)-12,Math.round(d.y)-14+bob,24,24);
 }
 function drawProp(g,o){
+  if(o.kind==='puff'){ // a spore puffball: swells and shakes when it's about to go
+    const x=Math.round(o.x/2)*2, y=Math.round(o.y/2)*2, sw=o.fuse?1+(.55-o.fuse)*.8:1+.05*Math.sin(G.time*2+o.x), j=o.fuse?Math.round(Math.sin(G.time*50))*2:0;
+    g.fillStyle='rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(x,y+6,10*sw,4,0,0,7); g.fill();
+    g.fillStyle='#4a5a2a'; g.beginPath(); g.ellipse(x+j,y-2,10*sw,8*sw,0,0,7); g.fill(); g.fillStyle='#6a7a3a'; g.beginPath(); g.ellipse(x+j-2,y-5,6*sw,4*sw,0,0,7); g.fill();
+    g.fillStyle='#b8c86a'; for(const [dx,dy] of [[-5,-1],[3,-4],[5,2],[-1,3]]) g.fillRect(x+j+dx*sw,y+dy*sw-2,2,2); return;}
   if(o.kind==='keeper'||o.kind==='hearth'||o.kind==='table'){drawTavernProp(g,o); return;}
   const sp=o.kind==='urn'?SPRITES.urn:o.kind==='shrine'?SPRITES.shrine:o.kind==='altar'?SPRITES.altar:o.open?SPRITES.chestOpen:SPRITES.chest, feet=o.y+(o.kind==='shrine'?12:o.kind==='urn'?8:10);
   g.fillStyle='rgba(0,0,0,.45)'; g.beginPath(); g.ellipse(o.x,feet,sp.w*.9,4,0,0,7); g.fill();
@@ -2955,6 +3072,11 @@ function drawPlayer(g){
 }
 function drawEnemy(g,e){
   if(e.chickenT>0){drawChicken(g,e); return;}
+  if(e.hidden){ // under water: a slow ring; underground: a moving mound of dirt
+    if(e.T.drowned){const k=(G.time*.8+e.ph)%1; g.strokeStyle=`rgba(140,190,240,${.25*(1-k)})`; g.lineWidth=1.5; g.beginPath(); g.ellipse(e.x,e.y,4+14*k,2+6*k,0,0,7); g.stroke();}
+    else {g.fillStyle='#2a1a10'; g.beginPath(); g.ellipse(e.x,e.y+4,10,5,0,0,7); g.fill(); g.fillStyle='#4a3020'; g.fillRect(e.x-4,e.y,3,2); g.fillRect(e.x+2,e.y+2,3,2);}
+    return;}
+  if(e.state==='rising'){const sp=SPRITES[e.shape||e.T.shape], feet=e.y+e.r*.7; g.save(); g.beginPath(); g.rect(e.x-30,feet-60,60,60); g.clip(); drawSprite(g,sp,e.x,feet+sp.h*2*(e.t/.7),Math.cos(e.face)<0,0); g.restore(); return;}
   const sp=SPRITES[e.shape||e.T.shape], s=e.elite?1.25:1, flip=Math.cos(e.face)<0, feet=e.y+e.r*.7;
   const fr=sprFrame(sp,isMoving(e)||e.T.shape==='wraith',e.ph);
   g.save(); if(e.T.phase) g.globalAlpha=.55+.25*Math.sin(G.time*6+e.ph);
@@ -3031,18 +3153,20 @@ function drawHUD(){
   ctx.fillStyle='#e8dccb'; ctx.beginPath(); ctx.arc(mx+p.x*ms,my+p.y*ms,2.5,0,7); ctx.fill();
   // abilities
   const c=CLASSES[G.cls], pa=PAD.active, PADK=['LB','LT','RB','B'];
-  const slots=[{k:pa?'RT':'LMB',n:G.cls==='necro'?'Spear':c.ranged?'Bolt':'Strike',cd:Math.max(0,p.atkT)/s.atkCd}];
+  const slots=[{id:c.ranged?'fireball':'spectral',col:'#d3c7ae',k:pa?'RT':'LMB',n:G.cls==='necro'?'Spear':c.ranged?'Bolt':'Strike',cd:Math.max(0,p.atkT)/s.atkCd}];
   G.slots.forEach((id,i)=>{ if(!id){slots.push({k:pa?PADK[i]:String(i+1),n:'—',cd:0,empty:true}); return;}
     const sk=G.skills[id], full=skillCd(id);
-    slots.push({k:(pa?PADK[i]:i===0?'1 / Q':String(i+1))+(id==='raise'?` · ${G.allies.filter(m=>!m.blade&&!m.shadow).length}/${maxMinions()}`:''),n:SKILL_INFO[id].n,col:SKILL_INFO[id].c,lv:sk.lvl,cd:Math.max(0,sk.cdT)/full,sec:sk.cdT,xp:sk.xp/skillNeed(sk.lvl)});});
-  slots.push({k:pa?'A':'SPACE',n:s.canDash?'Dash':'No dash',cd:s.canDash?Math.max(0,p.dashT):1});
+    slots.push({id,k:(pa?PADK[i]:i===0?'1 / Q':String(i+1))+(id==='raise'?` · ${G.allies.filter(m=>!m.blade&&!m.shadow).length}/${maxMinions()}`:''),n:SKILL_INFO[id].n,col:SKILL_INFO[id].c,lv:sk.lvl,cd:Math.max(0,sk.cdT)/full,sec:sk.cdT,xp:sk.xp/skillNeed(sk.lvl)});});
+  slots.push({id:'shadowstep',col:'#d3c7ae',k:pa?'A':'SPACE',n:s.canDash?'Dash':'No dash',cd:s.canDash?Math.max(0,p.dashT):1});
   // on touch the buttons are the ability bar, so cards and prompts sit above them instead
   const bw=W<900?60:72, gap=6, tot=bw*slots.length+gap*(slots.length-1), bx=Math.max(W/2-tot/2,W>760?240:8), by=TOUCH.active?H-250:H-20-56;
   if(!TOUCH.active) slots.forEach((sl,i)=>{const X=bx+i*(bw+gap); ctx.fillStyle='rgba(10,6,7,.8)'; ctx.fillRect(X,by,bw,56);
     if(sl.cd>0){ctx.fillStyle='rgba(0,0,0,.6)'; ctx.fillRect(X,by,bw,56*clamp(sl.cd,0,1));}
     ctx.strokeStyle=sl.empty||sl.cd>0?'#2e1c1e':sl.col?hexA(sl.col,.8):'#7d0f0f'; ctx.strokeRect(X+.5,by+.5,bw-1,55);
-    ctx.textAlign='center'; ctx.font=`${sl.n.length>9?13:16}px ${FD}`; ctx.fillStyle=sl.empty?'#3a302c':sl.cd>0?'#857a72':(sl.col||'#d3c7ae'); ctx.fillText(fit(sl.n,bw-6),X+bw/2,by+24);
-    ctx.font=`10px ${FB}`; ctx.fillStyle='#857a72'; ctx.fillText(fit(sl.k,bw-4),X+bw/2,by+44);
+    // an icon, the name small beneath it, the key at the bottom
+    if(sl.id&&!sl.empty) skillGlyph(ctx,sl.id,X+bw/2,by+18,22,sl.cd>0?'#5a504a':(sl.col||'#d3c7ae'),sl.cd>0);
+    ctx.textAlign='center'; ctx.font=`600 9px ${FB}`; ctx.fillStyle=sl.empty?'#3a302c':sl.cd>0?'#6a5e58':'#d3c7ae'; ctx.fillText(fit(sl.empty?'—':sl.n.toUpperCase(),bw-6),X+bw/2,by+39);
+    ctx.font=`9px ${FB}`; ctx.fillStyle='#6a5e58'; ctx.fillText(fit(sl.k,bw-4),X+bw/2,by+50);
     if(sl.lv){ctx.textAlign='left'; ctx.font=`600 10px ${FB}`; ctx.fillStyle='#857a72'; ctx.fillText(sl.lv,X+4,by+9);
       ctx.fillStyle='rgba(0,0,0,.6)'; ctx.fillRect(X+1,by+53,bw-2,2); ctx.fillStyle='#8a7a5a'; ctx.fillRect(X+1,by+53,(bw-2)*clamp(sl.xp,0,1),2);}
     if(sl.sec>0){ctx.textAlign='center'; ctx.font=`600 11px ${FB}`; ctx.fillStyle='#d3c7ae'; ctx.fillText(sl.sec.toFixed(1),X+bw-14,by+9);}});
@@ -3420,7 +3544,7 @@ function drawTree(){
     else g.arc(x,y,r,0,7);
     g.fill(); g.stroke();
     if(n.kind==='notable'||n.kind==='start'){g.beginPath(); g.arc(x,y,r+3*k,0,7); g.lineWidth=1; g.strokeStyle=has?'#ffb08a':'#4a3a3a'; g.stroke();}
-    if(n.kind==='skill'){g.font=`${Math.round(11*k)}px ${FD}`; g.fillStyle=has?'#140a0a':col; g.fillText(SKILL_INFO[n.skill].n[0],x,y+1);}
+    if(n.kind==='skill') skillGlyph(g,n.skill,x,y,r*1.15,has?'#140a0a':col,has);
     if(names&&n.kind!=='small'){g.font=`${Math.round(11*Math.min(1.3,z))}px ${FB}`; g.fillStyle=has?'#d3c7ae':n.kind==='notable'?'#6a5e58':col; g.fillText(n.name,x,y+r+11*Math.min(1.3,z));}}
   if(TS.hover>=0){const n=TREE.nodes[TS.hover], [x,y]=P(n);
     const lines=nodeLines(n), cost=TS.path?TS.path.length:0;
@@ -3614,7 +3738,7 @@ $('btnCopyRun').onclick=()=>{ const b=$('btnCopyRun'), t=$('runSummary'), shown=
   try{ navigator.clipboard.writeText(G.summary).then(()=>{b.textContent='Copied. Paste it to the dev';},()=>{b.textContent='Select the text below and copy it'; shown();}); }
   catch(e){ b.textContent='Select the text below and copy it'; shown(); } };
 // one place for the build number: the title screen and run summaries both read it
-const BUILD='0.26';
+const BUILD='0.27';
 // ----- first-time tips: each shows once ever, worded for whatever you're playing with -----
 const HINTS=(()=>{try{return new Set(JSON.parse(localStorage.getItem('deepening.hints')||'[]'))}catch(e){return new Set()}})();
 const keyFor=a=>({dash:TOUCH.active?'Tap DASH':PAD.active?'Press A':'Press Space', use:TOUCH.active?'Tap USE':PAD.active?'Press X':'Press E',
