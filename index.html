@@ -1539,7 +1539,9 @@ function enemyAttack(e){
     move(e,Math.cos(e.aim)*10,Math.sin(e.aim)*10);
     const d=dist(e,p), a=Math.atan2(p.y-e.y,p.x-e.x);
     if(e.atkAlly){const m=e.atkAlly; e.atkAlly=null; if(m.hp>0&&dist(e,m)<T.reach+e.r+m.r+12) damageAlly(m,e.dmg);}
-    else if(d<T.reach+e.r+p.r+8&&angDiff(a,e.aim)<1.2) damagePlayer(e.dmg,e);
+    // the blow lands exactly where the red warning cone was (it was drawn before this little lunge, 10 further back),
+    // and you count as hit only if a fair bit of you is inside it
+    else {const R=T.reach+e.r+2, hr=p.r*.7; if(d-hr<=R&&angDiff(a,e.aim)<=.9+Math.asin(Math.min(1,hr/Math.max(d,1)))) damagePlayer(e.dmg,e);}
     G.effects.push({type:'slash',x:e.x,y:e.y,a:e.aim,arc:1.6,reach:T.reach+e.r,t:0,max:.14,color:'#ff3a22'});
     e.state='recover'; e.t=.25; e.cd=T.cd;
   } else if(T.atk==='ranged'){
@@ -1862,10 +1864,26 @@ function itemXp(x){
 function autoTarget(){
   const p=G.player, c=CLASSES[G.cls], range=c.ranged?260:c.reach+6, free=TOUCH.active||PAD.active;
   for(const e of G.enemies){ if(e.dead||dist(e,p)-e.r>range) continue;
-    if(!free&&angDiff(Math.atan2(e.y-p.y,e.x-p.x),p.facing)>(c.ranged?.35:c.arc/2)) continue;
-    if(c.ranged&&!los(p.x,p.y,e.x,e.y)) continue; return e; }
+    if(c.ranged){ if(!free&&angDiff(aimAt(bodyOf(e)),p.facing)>.35) continue; if(!los(p.x,p.y,e.x,e.y)) continue; return e; }
+    if(free||swingHits(e,p.facing,c.reach,c.arc)) return e; }
   return null;
 }
+// ----- hitboxes that match what you see -----
+// Characters are drawn standing up from their feet, so hits are judged against their bodies on screen, not the floor under them.
+// Your swings and aim come from your hands (LIFT above your feet); shots fly at that height too.
+const LIFT=10;
+function bodyOf(e){const sp=SPRITES[e.shape||e.T.shape], s=e.elite?1.25:1, h=Math.min(((sp&&sp.h)||16)*2*s,90), feet=e.y+e.r*.7;
+  return {x:e.x,y:feet-h*.45,r:Math.max(e.r,h*.32)};}
+const handY=()=>G.player.y-LIFT;
+const aimAt=b=>Math.atan2(b.y-handY(),b.x-G.player.x);
+// a swing hits a body if any part of it is inside the drawn crescent
+function swingHits(e,a,reach,arc){
+  const p=G.player, b=bodyOf(e), dx=b.x-p.x, dy=b.y-handY(), d=Math.hypot(dx,dy);
+  if(d-b.r>reach) return false; if(d<b.r+6) return true;
+  return angDiff(Math.atan2(dy,dx),a)<=arc/2+Math.asin(Math.min(1,b.r/d));
+}
+// a shot (flying LIFT above the ground) against a body
+const shotHits=(e,pr)=>{const b=bodyOf(e); return Math.hypot(b.x-pr.x,b.y-(pr.y-LIFT))<b.r+pr.r;};
 // Arrow keys aim and attack in their direction, so laptops whose touchpad ignores clicks while you type still work.
 function arrowAim(){const x=(keys.ArrowRight?1:0)-(keys.ArrowLeft?1:0), y=(keys.ArrowDown?1:0)-(keys.ArrowUp?1:0); return x||y?Math.atan2(y,x):null;}
 function moveInput(){
@@ -1877,7 +1895,11 @@ function moveInput(){
 // An attack plays out over time: a quick wind-up, the strike (where the damage lands), then recovery.
 // Swings sweep an arc, the rogue thrusts, casters kick their staff and fire from its tip.
 function attack(echo){
-  const p=G.player, s=G.stats, c=CLASSES[G.cls], a=p.facing;
+  const p=G.player, s=G.stats, c=CLASSES[G.cls];
+  // a gentle assist: if an enemy's body is within ~17° of where you're aiming, the blow goes to it. The weapon on screen never jumps.
+  let a=p.facing;
+  if(!PAD.active&&!TOUCH.active){let bd=.3; const range=c.ranged?300:c.reach+30;
+    for(const e of G.enemies){ if(e.dead||dist(e,p)-e.r>range) continue; const ea=aimAt(bodyOf(e)), ad=angDiff(ea,p.facing); if(ad<bd&&los(p.x,p.y,e.x,e.y)){bd=ad; a=ea;}}}
   const big=!echo&&s.u.butcher&&(G.atkN=(G.atkN||0)+1)%5===0; // Butcher's Hook: every fifth blow
   // Twin Fangs: two blows at 60% each at full power; as it fades the first blow takes back the difference
   const tw=s.u.twin||0, o={forceCrit:big}; let mult=(big?1+2*s.u.butcher:1)*(tw?(echo?.6*tw:1-.4*tw):1);
@@ -1887,8 +1909,9 @@ function attack(echo){
   p.combo=(G.time-(p.lastAtk??-9)<.75)?(p.combo||0)+1:1; p.lastAtk=G.time;
   const heavy=!c.ranged&&p.combo>=3; if(heavy){p.combo=0; mult*=1.6;}
   p.swingDir*=-1;
-  const dur=(c.ranged?.2:Math.min(.26,Math.max(.14,s.atkCd*.7)))*(heavy?1.25:1); // the blow lands ~80ms after the click: snappy, but still a swing
-  p.atk={t:0,dur,hitAt:dur*(c.ranged?.25:.32),done:false,a,mult,o,heavy,big,dir:p.swingDir,kind:c.ranged?'cast':G.cls==='rogue'?'thrust':'swing'};
+  const dur=(c.ranged?.2:Math.min(.3,Math.max(.18,s.atkCd*.75)))*(heavy?1.25:1); // the blow lands ~70-95ms after the click: snappy, but you see the swing
+  // the swing starts from wherever the weapon is right now, so blow after blow flows back and forth instead of resetting
+  p.atk={t:0,dur,hitAt:dur*(c.ranged?.25:.32),done:false,a,mult,o,heavy,big,dir:p.swingDir,kind:c.ranged?'cast':G.cls==='rogue'?'thrust':'swing',from:p.wAng??p.facing+.7};
 }
 function releaseAttack(k){
   const p=G.player, c=CLASSES[G.cls], a=k.a;
@@ -1905,24 +1928,25 @@ function releaseAttack(k){
   play(k.heavy?'whirlwind':'swing');
   G.effects.push({type:'smear',a,arc,reach,dir:k.dir,t:0,max:k.heavy?.22:.15,color:k.big?'#ff8c1a':c.slash,thrust:k.kind==='thrust',heavy:k.heavy});
   let hits=0;
-  for(const e of G.enemies){if(e.dead) continue; const d=dist(p,e); if(d>reach+e.r+6) continue; // a little forgiving at the edges
-    const ea=Math.atan2(e.y-p.y,e.x-p.x); if(angDiff(ea,a)>arc/2+.15&&d>e.r+p.r+6) continue;
-    strike(e,k.mult,a,Object.assign({kb:k.heavy?320:undefined},k.o)); hits++;
-    spark(e.x-Math.cos(ea)*e.r*.7,e.y-Math.sin(ea)*e.r*.7,'#f2e6d8',k.heavy?10:5);}
-  if(hits) G.shake=Math.min(14,G.shake+(k.heavy?6:2));
+  for(const e of G.enemies){if(e.dead||!swingHits(e,a,reach,arc)) continue; // exactly what the crescent covers
+    const b=bodyOf(e), ea=Math.atan2(b.y-handY(),b.x-p.x);
+    strike(e,k.mult,ea,Object.assign({kb:k.heavy?320:undefined},k.o)); hits++;
+    spark(b.x-Math.cos(ea)*b.r*.6,b.y-Math.sin(ea)*b.r*.6,'#f2e6d8',k.heavy?10:6);}
+  if(hits){G.shake=Math.min(14,G.shake+(k.heavy?6:2)); hitStop(k.heavy?.07:.035);} // a beat of impact on every hit, not just crits
   if(hits&&G.stats.spellblade) for(const id in G.skills) G.skills[id].cdT-=.3; // Spellblade: landing a blow speeds every skill
   hitUrns(o=>{const d=dist(p,o); return d<reach+8&&(d<20||angDiff(Math.atan2(o.y-p.y,o.x-p.x),a)<=arc/2);},a);
 }
 // Where the weapon is right now: its angle and how far it's pushed out from the hand.
 function weaponPose(){
-  const p=G.player, k=p.atk; if(!k) return {ang:p.facing+.7,ext:0};
+  const p=G.player, k=p.atk; if(!k) return {ang:p.restA??p.facing+.7,ext:0};
   const c=CLASSES[G.cls], t=k.t/k.dur, h=k.hitAt/k.dur, out=x=>1-Math.pow(1-clamp(x,0,1),3), lerpA=(x,y,u)=>x+Math.atan2(Math.sin(y-x),Math.cos(y-x))*u;
-  if(k.kind==='cast') return {ang:lerpA(k.a+.7,k.a,out(t/h*1.5)), ext:t<h?-4*out(t/h):6*(1-out((t-h)/(1-h)))};
-  if(k.kind==='thrust') return {ang:k.a, ext:t<h?-6*out(t/h):t<h+.25?-6+22*out((t-h)/.25):16*(1-out((t-h-.25)/(.75-h)))};
-  const s0=k.a-k.dir*(c.arc/2+.35), s1=k.a+k.dir*(c.arc/2+.25), rest=k.a+.7, w=h*.75;
-  if(t<w) return {ang:lerpA(rest,s0,out(t/w)),ext:-2*out(t/w)};      // wind-up: pull back
-  if(t<h*1.5) return {ang:lerpA(s0,s1,out((t-w)/(h*1.5-w))),ext:2};    // the strike: fast, easing out
-  return {ang:lerpA(s1,rest,out((t-h*1.5)/(1-h*1.5))),ext:0};          // recovery
+  if(k.kind==='cast') return {ang:lerpA(k.from,k.a,out(t/h*1.5)), ext:t<h?-4*out(t/h):6*(1-out((t-h)/(1-h)))};
+  if(k.kind==='thrust') return {ang:lerpA(k.from,k.a,out(t/h*2)), ext:t<h?-6*out(t/h):t<h+.25?-6+22*out((t-h)/.25):16*(1-out((t-h-.25)/(.75-h)))};
+  // the arc drawn and the arc that hits are the same: from one edge of the crescent to the other, through the moment of impact
+  const s0=k.a-k.dir*(c.arc/2+.2), s1=k.a+k.dir*(c.arc/2+.2), w=h*.8, smooth=x=>{x=clamp(x,0,1); return x*x*(3-2*x);}, quad=x=>1-Math.pow(1-clamp(x,0,1),2);
+  if(t<w) return {ang:lerpA(k.from,s0,smooth(t/w)),ext:-2*smooth(t/w)};   // wind-up, from wherever the blade was
+  if(t<h*1.6) return {ang:lerpA(s0,s1,quad((t-w)/(h*1.6-w))),ext:3};     // the strike: fast, easing out, centred on the hit
+  return {ang:s1,ext:3*(1-out((t-h*1.6)/(1-h*1.6)))};                 // follow-through: hold, then the rest pose eases it back
 }
 // ================= skills =================
 // Four slots on 1-4. Your class skill starts in slot 1; others come from skill nodes in the tree and from Skill Tomes.
@@ -2396,7 +2420,7 @@ function update(dt){
     // step into the blow, but not while backing away from it (kiting shouldn't drag you into the enemy)
     const [ix,iy]=moveInput(), away=(ix||iy)&&ix*Math.cos(k.a)+iy*Math.sin(k.a)<-.2;
     if(k.kind!=='cast'&&!away&&k.t>k.hitAt-.05&&k.t<k.hitAt+.07){const sp=k.heavy?140:k.kind==='thrust'?100:80; move(p,Math.cos(k.a)*sp*dt,Math.sin(k.a)*sp*dt);}
-    if(k.t>=k.dur) p.atk=null;}
+    if(k.t>=k.dur){p.restA=weaponPose().ang; p.atk=null;}} // hand the blade over to the rest pose where the swing left it
   if(!G.dying){p.hp=Math.min(s.maxHp,p.hp+(s.regen-s.drain)*dt); if(p.hp<=0){p.hp=0; G.lastHitBy='your own bleeding'; startDying();}}
   p.ghost+= (p.hp-p.ghost)*Math.min(1,dt*(p.ghost>p.hp?2.5:10));
   if(p.hp<s.maxHp*.3){p.beatT-=dt; if(p.beatT<=0){p.beatT=.95; play('beat');}}
@@ -2426,11 +2450,12 @@ function update(dt){
     else {let best=null, bd=260; for(const e of G.enemies){if(e.dead) continue; const d=dist(e,p); if(d<bd&&los(p.x,p.y,e.x,e.y)){bd=d; best=e;}}
       if(best) p.facing=Math.atan2(best.y-p.y,best.x-p.x); else if(mx||my) p.facing=Math.atan2(my,mx);}
     mw={x:p.x+Math.cos(p.facing)*120,y:p.y+Math.sin(p.facing)*120};
-  } else { p.facing=Math.atan2(mw.y-p.y,mw.x-p.x);
-    // mouse aim magnetism: an enemy within ~20° of the cursor and in range pulls the aim onto it
-    const c=CLASSES[G.cls], range=c.ranged?300:c.reach+40; let best=null, bd=.35;
-    for(const e of G.enemies){ if(e.dead||dist(e,p)-e.r>range) continue; const ad=angDiff(Math.atan2(e.y-p.y,e.x-p.x),p.facing); if(ad<bd&&los(p.x,p.y,e.x,e.y)){bd=ad; best=e;} }
-    if(best) p.facing=Math.atan2(best.y-p.y,best.x-p.x); }
+  } else p.facing=Math.atan2(mw.y-handY(),mw.x-p.x); // the mouse aims from your hands; any assist happens in attack(), so the blade never twitches
+  // the resting weapon drifts after your aim instead of snapping to it
+  // (while you keep attacking it stays where the last blow ended, so the next one swings straight back the other way)
+  {const want=p.facing+.7*(Math.cos(p.facing)<0?-1:1), cur=p.restA??want, chaining=G.time-(p.lastAtk??-9)<s.atkCd+.12;
+    if(!chaining||p.atk) p.restA=cur+Math.atan2(Math.sin(want-cur),Math.cos(want-cur))*Math.min(1,dt*7);}
+  p.wAng=weaponPose().ang;
   if(p.bufDash>0){p.bufDash-=dt; if(p.dashT<=0&&p.dashTime<=0&&!G.dying) dash();}
   if((mouse.down||arrow!==null||PAD.fire||TOUCH.fire||((TOUCH.active||SET.auto)&&autoTarget()))&&p.atkT<=0&&!G.dying) attack();
 
@@ -2476,7 +2501,7 @@ function update(dt){
     if(pr.pulse){const q=pr.pulse; q.acc+=dt; if(q.pull) pullIn(pr.x,pr.y,q.r*1.8,220*dt*8); // the void orb gnaws at everything near it
       if(q.acc>=q.every){q.acc-=q.every; for(const e of near(pr.x,pr.y,q.r)) strike(e,q.m,Math.atan2(e.y-pr.y,e.x-pr.x),{skill:pr.skill,noKb:true,quiet:true,critBonus:G.stats.skillCrit,color:'#c79aff'});}}
     if(pr.owner==='player'&&!pr.noHit){for(const e of G.enemies){if(e.dead) continue; if(pr.hit&&pr.hit.has(e)) continue;
-      if(Math.hypot(e.x-pr.x,e.y-pr.y)<e.r+pr.r){strike(e,pr.mult||1,Math.atan2(pr.vy,pr.vx),{forceCrit:pr.forceCrit,skill:pr.skill,critBonus:pr.critBonus,proc:pr.proc,quiet:pr.home&&!pr.honk}); spark(pr.x,pr.y,pr.color,6);
+      if(shotHits(e,pr)){strike(e,pr.mult||1,Math.atan2(pr.vy,pr.vx),{forceCrit:pr.forceCrit,skill:pr.skill,critBonus:pr.critBonus,proc:pr.proc,quiet:pr.home&&!pr.honk}); spark(pr.x,pr.y,pr.color,6);
         if(pr.chill&&!e.dead){ if(s.u.iceprison&&!e.boss) e.frozenT=1.5; else e.slow=Math.max(e.slow,pr.chill);}
         if(pr.healHit) healP(s.maxHp*pr.healHit,true);
         if(pr.honk&&Math.random()<.5){text(pr.x,pr.y-14,'HONK','#f2f2e8',13); play('hit',pr);}
@@ -2487,7 +2512,7 @@ function update(dt){
       if(s.u.mirror&&Math.random()<.3*s.u.mirror){pr.owner='player'; pr.vx*=-1.2; pr.vy*=-1.2; pr.mult=1.2; pr.life=1.5; pr.color='#ffe0a0'; spark(pr.x,pr.y,'#ffe0a0',8); play('crit',pr);}
       else {damagePlayer(pr.dmg,pr.src); pr.life=0;}}
     else for(const m of G.allies) if(m.rise<=0&&Math.hypot(m.x-pr.x,m.y-pr.y)<m.r+pr.r){damageAlly(m,pr.dmg); pr.life=0; break;}
-    if(Math.random()<.5) addP({x:pr.x,y:pr.y,vx:0,vy:0,life:.2,max:.2,size:pr.r*.7,color:pr.color,drag:0,emissive:true});
+    if(Math.random()<.5) addP({x:pr.x,y:pr.y-LIFT,vx:0,vy:0,life:.2,max:.2,size:pr.r*.7,color:pr.color,drag:0,emissive:true});
   }
   for(const pr of G.projectiles) if(pr.life<=0&&pr.owner==='player'&&!pr.ended){pr.ended=true; projEnd(pr);}
   G.projectiles=G.projectiles.filter(pr=>{ if(pr.life<=0&&pr.fire&&Math.random()<.45&&!solidAt(pr.x,pr.y)) addHazard(pr.x,pr.y,16,2.5,pr.dmg*.6,'#ff7a2a'); return pr.life>0; });
@@ -2545,6 +2570,7 @@ function render(){
   ctx.drawImage(G.mapCv,0,0,MW*TILE,MH*TILE); ctx.drawImage(G.decalCv,0,0,MW*TILE,MH*TILE);
   drawStairs(ctx);
   for(const d of G.drops) if(inView(d.x,d.y)) drawDrop(ctx,d);
+  ctx.fillStyle='rgba(0,0,0,.35)'; for(const pr of G.projectiles) if(inView(pr.x,pr.y)){ctx.beginPath(); ctx.ellipse(pr.x,pr.y+2,pr.r*1.1,pr.r*.45,0,0,7); ctx.fill();} // shadows under shots, so their height reads
   for(const q of G.particles) if(!q.emissive){ctx.globalAlpha=q.fade?clamp(q.life/q.max,0,1)*.8:1; ctx.fillStyle=q.color;
     if(q.fade){ctx.beginPath();ctx.arc(q.x,q.y,q.size,0,7);ctx.fill();} else ctx.fillRect(q.x,q.y,q.size,q.size);}
   ctx.globalAlpha=1;
@@ -2571,7 +2597,7 @@ function render(){
   L(p.x,p.y,26,.85);
   for(const t of G.torches){ if(!inView(t.x,t.y,150)) continue; if(!t.poly) t.poly=visPoly(t.x,t.y+14,150,120);
     lctx.save(); clipPoly(lctx,t.poly); L(t.x,t.y+8,130*(.92+.08*Math.sin(G.time*9+t.ph))+rand(-3,3),.9); lctx.restore();}
-  for(const pr of G.projectiles) L(pr.x,pr.y,pr.owner==='player'?70:42,.7);
+  for(const pr of G.projectiles) L(pr.x,pr.y-LIFT,pr.owner==='player'?70:42,.7);
   for(const f of G.effects) if(f.type==='ring'&&f.t>=0) L(f.x,f.y,f.r1*1.3,(f.light?.95:.6)*(1-f.t/f.max));
   for(const d of G.drops) L(d.x,d.y,d.kind==='orb'?34:d.kind==='gold'?22:d.kind==='tome'?60:d.item.rarity==='legendary'?70:30,d.kind==='tome'||(d.kind==='item'&&d.item.rarity==='legendary')?.8:.45);
   for(const o of G.props) if(o.kind==='hearth') L(o.x,o.y,190*(.95+.05*Math.sin(G.time*7)),1); else if(o.kind==='keeper') L(o.x,o.y+4,110,.9); else if(o.kind==='table') L(o.x,o.y-4,50,.6);
@@ -2614,8 +2640,8 @@ function render(){
     ctx.fillStyle=nc?'rgba(120,255,100,.25)':'rgba(170,140,255,.3)'; ctx.beginPath(); ctx.arc(x,y,9,0,7); ctx.fill(); ctx.fillStyle=nc?'#d8ffd0':'#e8dcff'; ctx.fillRect(x-1.5,y-1.5,3,3);}
   for(const m of G.allies){ if(m.rise>0||!inView(m.x,m.y,20)) continue;
     for(const q of eyeSpots(SPRITES.minion,m.x,m.y+7,Math.cos(m.face)<0)){ctx.fillStyle='rgba(122,255,106,.22)'; ctx.beginPath(); ctx.arc(q.x,q.y,5,0,7); ctx.fill(); ctx.fillStyle='#7aff6a'; ctx.fillRect(q.x-1,q.y-1,2,2);}}
-  for(const pr of G.projectiles){ctx.fillStyle=hexA(pr.color,.25); ctx.beginPath(); ctx.arc(pr.x,pr.y,pr.r*3,0,7); ctx.fill();
-    ctx.fillStyle=hexA(pr.color,1); ctx.beginPath(); ctx.arc(pr.x,pr.y,pr.r,0,7); ctx.fill();}
+  for(const pr of G.projectiles){const y=pr.y-LIFT; ctx.fillStyle=hexA(pr.color,.25); ctx.beginPath(); ctx.arc(pr.x,y,pr.r*3,0,7); ctx.fill(); // shots fly at hand height
+    ctx.fillStyle=hexA(pr.color,1); ctx.beginPath(); ctx.arc(pr.x,y,pr.r,0,7); ctx.fill();}
   for(const o of G.props) if(o.kind==='hearth'||o.kind==='table'){const big=o.kind==='hearth', f=.85+.15*Math.sin(G.time*13+o.x)+rand(-.05,.05), R=big?150:40, y0=o.y-(big?4:8);
     const g=ctx.createRadialGradient(o.x,y0,0,o.x,y0,R); g.addColorStop(0,`rgba(255,150,60,${(big?.22:.12)*f})`); g.addColorStop(1,'rgba(255,150,60,0)'); ctx.fillStyle=g; ctx.fillRect(o.x-R,y0-R,R*2,R*2);
     if(big){ for(let i=-2;i<=2;i++){const h=Math.round((5-Math.abs(i))*f+rand(0,2))*2; ctx.fillStyle=i%2?'rgba(255,120,40,.9)':'rgba(255,200,90,.95)'; ctx.fillRect(o.x+i*4-2,o.y-2-h,4,h);}
@@ -2785,7 +2811,7 @@ function drawPlayer(g){
   const k=p.atk, q=k?Math.max(0,1-Math.abs(k.t-k.hitAt)/(k.dur*.45))*(k.heavy?1.4:1):0, la=k?k.a:0;
   g.save(); if(p.inv>0&&p.dashTime<=0&&p.hurtT<=0) g.globalAlpha=.7;
   g.fillStyle='rgba(0,0,0,.5)'; g.beginPath(); g.ellipse(p.x,feet,10+q*2,4,0,0,7); g.fill();
-  const weapon=()=>{g.save(); g.translate(Math.round(p.x+Math.cos(la)*q*3),Math.round(p.y+2+Math.sin(la)*q*2)); g.rotate(wa); if(Math.cos(wa)<0) g.scale(1,-1);
+  const weapon=()=>{g.save(); g.translate(Math.round(p.x+Math.cos(la)*q*3),Math.round(p.y-LIFT+4+Math.sin(la)*q*2)); g.rotate(wa); if(Math.cos(wa)<0) g.scale(1,-1);
     g.drawImage(ws.frames[0],4+pose.ext,-ws.h,ws.w*2,ws.h*2); g.restore();};
   const body=(variant,alpha)=>{g.save(); g.translate(p.x+Math.cos(la)*q*3,feet); g.scale(1+.12*q,1-.1*q); g.translate(-p.x,-feet);
     drawSprite(g,sp,p.x,feet,flip,fr,variant,1,alpha); g.restore();};
@@ -2814,8 +2840,8 @@ function drawEnemy(g,e){
 // Thrusts leave a narrow tapered streak instead.
 function drawSmear(g,f){
   // the crescent opens about as fast as the blade travels
-  const p=G.player, k=f.t/f.max, fade=1-k, open=Math.min(1,k*7), r0=f.reach*(f.thrust?.2:.35), r1=f.reach*.98;
-  g.save(); g.translate(p.x,p.y+2);
+  const p=G.player, k=f.t/f.max, fade=1-k, open=Math.min(1,k*7), r0=f.reach*(f.thrust?.2:.35), r1=f.reach;
+  g.save(); g.translate(p.x,p.y-LIFT); // the same point your swings are measured from
   if(f.thrust){g.rotate(f.a); const len=r1*(.5+.5*open), wdt=(f.heavy?9:6)*fade;
     g.fillStyle=hexA(f.color,.55*fade); g.beginPath(); g.moveTo(r0,-wdt); g.lineTo(len,0); g.lineTo(r0,wdt); g.closePath(); g.fill();
     g.fillStyle=hexA('#ffffff',.5*fade); g.fillRect(r0,-1,len-r0,2); g.restore(); return;}
@@ -3448,7 +3474,7 @@ $('btnCopyRun').onclick=()=>{ const b=$('btnCopyRun'), t=$('runSummary'), shown=
   try{ navigator.clipboard.writeText(G.summary).then(()=>{b.textContent='Copied. Paste it to the dev';},()=>{b.textContent='Select the text below and copy it'; shown();}); }
   catch(e){ b.textContent='Select the text below and copy it'; shown(); } };
 // one place for the build number: the title screen and run summaries both read it
-const BUILD='0.24';
+const BUILD='0.25';
 // ----- first-time tips: each shows once ever, worded for whatever you're playing with -----
 const HINTS=(()=>{try{return new Set(JSON.parse(localStorage.getItem('deepening.hints')||'[]'))}catch(e){return new Set()}})();
 const keyFor=a=>({dash:TOUCH.active?'Tap DASH':PAD.active?'Press A':'Press Space', use:TOUCH.active?'Tap USE':PAD.active?'Press X':'Press E',
