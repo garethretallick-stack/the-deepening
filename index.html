@@ -168,6 +168,8 @@ h2{font-family:var(--display);font-weight:400;font-size:clamp(34px,5vw,58px);lin
 .sp-row b.hi{font-family:var(--display);font-size:20px;font-weight:400}
 .fx{display:flex;gap:8px;align-items:flex-start;padding:4px 0;border-bottom:1px solid rgba(46,28,30,.6);font-size:13px;line-height:1.4}
 .fx img{width:24px;height:24px;image-rendering:pixelated;flex:none}
+#draftTitle{font-size:clamp(40px,7vw,80px);text-shadow:0 0 24px rgba(224,122,44,.35)}
+#draftSub{font-size:20px;color:var(--bone)}
 #draftIcon{width:96px;height:96px;image-rendering:pixelated;border:2px solid #4a3a30;background:radial-gradient(circle at 50% 40%,#1c1214,#0a0607);padding:8px;box-sizing:content-box}
 #goldPill{font-family:var(--display);font-size:22px;color:#e0b84a}
 .bagBody{width:min(1240px,100%);flex:1;min-height:0;overflow-y:auto;text-align:left;display:flex;flex-direction:column;gap:18px;padding-bottom:12px}
@@ -777,6 +779,15 @@ const THEMES=[
   {name:'The Hollow',floor:[26,24,30],wall:[10,9,12],face:[36,32,42],torch:[190,150,255],style:'maze',dark:true,warnTxt:'Your light is smaller here, and things in the dark want what is left of it.',
     roster:{shade:2.5,wraith:2,geode:1.3,knight:1.2,priest:1,gnawer:.6,leech:2.2}},
 ];
+// Floor curses: from depth 3, about one floor in four has a twist. Some hurt, some pay, most do both.
+const FLOOR_MODS={
+  bloodmoon:{n:'Blood Moon',c:'#e0301a',d:'Far more of them are elites. Their loot is better too.'},
+  swarming:{n:'Swarming',c:'#9acd32',d:'Half again as many of them. Half again as much to learn from.'},
+  lightless:{n:'Lightless',c:'#6a5e8a',d:'No torches burn here, and your own light shrinks.'},
+  frenzied:{n:'Frenzied',c:'#e0b84a',d:'Everything down here moves faster.'},
+  bountiful:{n:'Bountiful',c:'#ffd27a',d:'Gold spills from everything, and urns line the walls.'},
+  haunted:{n:'Haunted',c:'#b8a8ff',d:'Wraiths and shades have come from deeper down.'},
+};
 const FLAVOR=['The air tastes of old teeth.','Something below is breathing.','Your torch is afraid.','The walls are warm here.',
   'Nobody who came this far came back up.','You hear your own name, whispered wrong.','The dead here were not buried. They were stored.',
   'It is quieter than it should be.','Fingernail marks on the stairs. Going down.','The dark here has weight.','Somewhere, a door you never opened closes.',
@@ -1058,7 +1069,7 @@ function recalc(){
   if(s.u.storm) s.chain=Math.max(s.chain,s.u.storm);
   if(s.u.night){s.lightMul*=.5; s.dmgPct+=.5*s.u.night;}
   if(s.u.saint) s.lightMul*=1+.6*s.u.saint;
-  if(G.theme&&G.theme.dark) s.lightMul*=.72; // the Hollow swallows your light
+  if(G.theme&&G.theme.dark) s.lightMul*=.72; if(G.floorMod==='lightless') s.lightMul*=.8; // the Hollow swallows your light
   if(G.restedFor&&G.depth<=G.restedFor){s.dmgPct+=.15; s.regen+=1+G.depth*.1;} // rested at a tavern hearth
   s.dmgPct+=G.bonus.dmgPct+.05*rank('cru'); s.light+=G.bonus.light+12*rank('oil'); s.hpPct+=.08*rank('vit');
   s.dmg*=Math.max(.1,1+s.dmgPct); s.maxHp=Math.max(10,Math.round(s.maxHp*Math.max(.2,1+s.hpPct)));
@@ -1120,6 +1131,7 @@ function makeSetItem(depth,setId,slot){
 // roll a drop, and announce legendaries as they land: 6% from bosses, 0.6% from anything else
 const LEG_CHANCE=.006, LEG_CHANCE_BOSS=.06;
 function dropItem(x,y,slot,bias=0,force,legChance=LEG_CHANCE,depth=G.depth){
+  if(G.floorMod==='bloodmoon') bias+=.25;
   const item=Math.random()<legChance?makeLegendary(depth,slot):Math.random()<.015?makeSetItem(depth,null,slot):makeItem(slot||pick(SLOTS),depth,bias,force);
   G.drops.push({kind:'item',x,y,t:0,item});
   if(item.rarity==='set'){text(x,y-30,'SET ITEM','#3ad06a',15); play('legendary'); G.effects.push({type:'ring',x,y,r0:6,r1:60,t:0,max:.6,color:'#3ad06a',w:4,light:true});}
@@ -1230,7 +1242,7 @@ const BAG_MAX=30; // a 10 x 3 grid
 const isTavernDepth=d=>d%5===0, isBigBossDepth=d=>d%10===9;
 const sellPrice=it=>Math.round(({common:4,magic:10,rare:24,cursed:16,legendary:70,set:45}[it.rarity]||5)*(1+(it.ilvl||1)*.18)*(1+.1*(it.level-1)));
 const buyPrice=it=>sellPrice(it)*3;
-function dropGold(x,y,n){ n=Math.max(1,Math.round(n)); for(let k=0;k<Math.min(8,Math.ceil(n/6));k++)
+function dropGold(x,y,n){ n=Math.max(1,Math.round(n*(G.floorMod==='bountiful'?2:1))); for(let k=0;k<Math.min(8,Math.ceil(n/6));k++)
   G.drops.push({kind:'gold',x:x+rand(-14,14),y:y+rand(-10,10),t:0,n:Math.ceil(n/Math.min(8,Math.ceil(n/6)))}); }
 // put an item in your bags; returns false if they're full
 function bagAdd(it){ if(G.bag.length>=BAG_MAX) return false; G.bag.push(it); return true; }
@@ -1262,7 +1274,7 @@ function genTavern(depth){
   const dctx=decalCv.getContext('2d'); dctx.setTransform(.5,0,0,.5,0,0); dctx.imageSmoothingEnabled=false;
   const miniCv=document.createElement('canvas'); miniCv.width=MW; miniCv.height=MH;
   return {theme,isBoss:false,isTavern:true,tavernName:pick(TAVERN_NAMES),shop:{stock,tome:{skill:tomeSkill(),price:Math.round(60+depth*9)},food:[0,1,2,3].map(()=>({id:pickFood(),price:6+Math.round(depth*1.5)}))},
-    pools:[],vents:[],map,rooms:[room],spawn,stairs,torches,enemies:[],props,traps:[],nearProp:null,mapCv,decalCv,dctx,miniCv,miniCtx:miniCv.getContext('2d'),
+    floorMod:null,pools:[],vents:[],map,rooms:[room],spawn,stairs,torches,enemies:[],props,traps:[],nearProp:null,mapCv,decalCv,dctx,miniCv,miniCtx:miniCv.getContext('2d'),
     miniDirty:true,explored:new Uint8Array(MW*MH),flow:new Int16Array(MW*MH).fill(-1),flowT:0,exploreT:0,sealed:false,bossBar:null};
 }
 
@@ -1301,6 +1313,7 @@ function descend(){
   if(G.isBoss){const B=BOSSES[Math.floor(G.depth/10)%BOSSES.length]; lines[1]=`The lair of ${B.name}`; lines[2]='It guards the way down. The stairs will not open while it lives.';}
   if(!G.isBoss&&!G.isTavern&&(G.depth===1||G.theme!==(G.prevTheme||null))){lines[0]=G.theme.name; lines[1]=`Depth ${G.depth}`; lines[2]=G.theme.warnTxt;}
   G.prevTheme=G.theme;
+  if(G.floorMod){const M=FLOOR_MODS[G.floorMod]; lines[1]=`Cursed: ${M.n}`; lines[2]=M.d;}
   if(G.isTavern){lines[1]=G.tavernName; lines[2]='A fire, a keeper, and nothing that wants you dead. Rest, trade, then go down.';}
   G.banner={t:0,lines};
   if(G.depth>loadBest()) saveBest(G.depth);
@@ -1344,6 +1357,7 @@ function bfs(map,start,limit=9999){
 function genFloor(depth){
   if(isTavernDepth(depth)) return genTavern(depth);
   const theme=THEMES[Math.floor((depth-1)/5)%THEMES.length], isBoss=isBigBossDepth(depth);
+  const fmod=depth>=3&&!isBoss&&Math.random()<.25?pick(Object.keys(FLOOR_MODS)):null;
   const map=new Uint8Array(MW*MH).fill(1), rooms=[], st=theme.style, target=8+Math.min(7,Math.floor(depth/3))+(st==='maze'?5:st==='halls'?-3:0);
   for(let a=0;a<600&&rooms.length<target;a++){
     // room sizes by zone: great halls in the Chapel, cramped cells in the Hollow
@@ -1369,19 +1383,19 @@ function genFloor(depth){
   const cw=t=>t*TILE+TILE/2;
   const spawn={x:cw(spawnRoom.cx),y:cw(spawnRoom.cy)}, stairs={x:cw(stairRoom.cx),y:cw(stairRoom.cy)};
   const torches=[];
-  for(const r of rooms){const n=(isBoss&&r===stairRoom)?4:(Math.random()<.55?1:0);
+  for(const r of rooms){const n=fmod==='lightless'?0:(isBoss&&r===stairRoom)?4:(Math.random()<.55?1:0);
     for(let k=0;k<n;k++) for(let tr=0;tr<12;tr++){const tx=ri(r.x,r.x+r.w-1), ty=r.y-1;
       if(map[ty*MW+tx]===1&&map[(ty+1)*MW+tx]===0&&!torches.some(t=>Math.abs(t.tx-tx)<3&&t.ty===ty)){torches.push({tx,ty,x:tx*TILE+16,y:ty*TILE+22,ph:rand(0,6.28)});break;}}}
   const enemies=[], avail=Object.entries(ETYPES).filter(([,t])=>t.minD<=depth&&t.w>0);
-  const wt=(k,t)=>t.w*(theme.roster?(theme.roster[k]??.25):1); // the zone's own crowd, with a few strays from elsewhere
+  const wt=(k,t)=>t.w*(theme.roster?(theme.roster[k]??.25):1)*(fmod==='haunted'&&(k==='wraith'||k==='shade')?4:1); // the zone's own crowd, with a few strays from elsewhere
   const pickType=()=>{let r=Math.random()*avail.reduce((s,[k,t])=>s+wt(k,t),0);for(const [k,t] of avail){r-=wt(k,t);if(r<=0)return k;}return avail[0][0];};
   for(const r of rooms){ if(r===spawnRoom||(isBoss&&r===stairRoom)) continue;
     // more rooms means fewer per room, and a floor never holds more than its cap
-    const n=Math.min(st==='maze'?6:10,ri(2,3)+Math.floor(depth/(st==='maze'?4:2.5)));
+    const n=Math.round(Math.min(st==='maze'?6:10,ri(2,3)+Math.floor(depth/(st==='maze'?4:2.5)))*(fmod==='swarming'?1.5:1));
     for(let k=0;k<n;k++){const tx=ri(r.x,r.x+r.w-1), ty=ri(r.y,r.y+r.h-1), x=cw(tx), y=cw(ty);
-      if(map[ty*MW+tx]||Math.hypot(x-spawn.x,y-spawn.y)<260||enemies.length>=40+depth*1.5) continue;
+      if(map[ty*MW+tx]||Math.hypot(x-spawn.x,y-spawn.y)<260||enemies.length>=(40+depth*1.5)*(fmod==='swarming'?1.5:1)) continue;
       // (a swarm uses up three places in the room)
-      const kind=pickType(); if(ETYPES[kind].swarm) k+=2; enemies.push(spawnEnemy(kind,x,y,depth,Math.random()<.09+depth*.005));
+      const kind=pickType(); if(ETYPES[kind].swarm) k+=2; enemies.push(spawnEnemy(kind,x,y,depth,Math.random()<(.09+depth*.005)*(fmod==='bloodmoon'?3:1)));
       for(let s=0;s<(ETYPES[kind].swarm||0);s++){const sx=x+rand(-30,30), sy=y+rand(-30,30), stx=Math.floor(sx/TILE), sty=Math.floor(sy/TILE); if(!map[sty*MW+stx]) enemies.push(spawnEnemy(kind,sx,sy,depth,false));}}}
   if(!isBoss&&depth>=2&&Math.random()<.18){const r=pick(rooms.filter(q=>q!==spawnRoom)); if(r) enemies.push(spawnEnemy('goblin',cw(r.cx),cw(r.cy),depth,false));}
   // the Wandering Champion: a strange warrior who rides the dark from floor to floor. Beat him and take his gear.
@@ -1394,7 +1408,7 @@ function genFloor(depth){
   const props=[], traps=[], free=(tx,ty)=>map[ty*MW+tx]===0&&!props.some(o=>Math.abs(o.x-cw(tx))<24&&Math.abs(o.y-cw(ty))<24);
   const others=rooms.filter(r=>r!==spawnRoom&&r!==stairRoom);
   for(const r of rooms){ if(r===spawnRoom) continue;
-    for(let k=ri(0,3);k>0;k--){const top=Math.random()<.5, tx=ri(r.x,r.x+r.w-1), ty=top?r.y:r.y+r.h-1;
+    for(let k=ri(0,3)+(fmod==='bountiful'?3:0);k>0;k--){const top=Math.random()<.5, tx=ri(r.x,r.x+r.w-1), ty=top?r.y:r.y+r.h-1;
       if(free(tx,ty)) props.push({kind:'urn',x:cw(tx),y:cw(ty)+(top?-6:4)});}}
   let chestRoom=null;
   if(others.length&&Math.random()<.6){const r=chestRoom=pick(others), tx=r.cx+(Math.random()<.5?-1:1), ty=r.cy; if(free(tx,ty)) props.push({kind:'chest',x:cw(tx),y:cw(ty),open:false});}
@@ -1420,7 +1434,8 @@ function genFloor(depth){
   const decalCv=document.createElement('canvas'); decalCv.width=MW*TILE/2; decalCv.height=MH*TILE/2;
   const dctx=decalCv.getContext('2d'); dctx.setTransform(.5,0,0,.5,0,0); dctx.imageSmoothingEnabled=false;
   const miniCv=document.createElement('canvas'); miniCv.width=MW; miniCv.height=MH;
-  return {theme,isBoss,isTavern:false,shop:null,pools,vents,map,rooms,spawn,stairs,torches,enemies,props,traps,nearProp:null,mapCv,decalCv,dctx,miniCv,miniCtx:miniCv.getContext('2d'),
+  if(fmod==='frenzied') for(const e of enemies) e.speed*=1.3;
+  return {theme,isBoss,isTavern:false,shop:null,floorMod:fmod,pools,vents,map,rooms,spawn,stairs,torches,enemies,props,traps,nearProp:null,mapCv,decalCv,dctx,miniCv,miniCtx:miniCv.getContext('2d'),
     miniDirty:true,explored:new Uint8Array(MW*MH),flow:new Int16Array(MW*MH).fill(-1),flowT:0,exploreT:0,sealed:isBoss,bossBar:null};
 }
 // Painted at 16px per tile, then drawn at 2x with no smoothing so it reads as pixel art.
@@ -1969,10 +1984,12 @@ function healP(v,quiet){
   if(!quiet&&p.hp-before>=1) text(p.x,p.y-20,'+'+Math.round(p.hp-before),'#7fd16a',13);
 }
 function gainXp(x){
-  G.xp+=x;
+  G.xp+=x*(G.floorMod==='swarming'?1.25:1);
   while(G.xp>=xpNeed(G.level)){
-    G.xp-=xpNeed(G.level); G.level++; G.points++; recalc(); healP(G.stats.maxHp*.25);
-    const p=G.player; text(p.x,p.y-34,'LEVEL '+G.level,'#e0b84a',18);
+    G.xp-=xpNeed(G.level); G.level++; G.points++; recalc(); healP(G.stats.maxHp*.1);
+    // YOU levelled up: a pillar of gold and a skill point (gear levelling up shows its own picture instead)
+    const p=G.player; text(p.x,p.y-34,'LEVEL '+G.level,'#e0b84a',20); later(.35,()=>text(p.x,p.y-30,`+1 skill point · ${TOUCH.active?'TREE':PAD.active?'Y':'K'}`,'#e07a2c',12));
+    for(let i=0;i<40;i++) addP({x:p.x+rand(-12,12),y:p.y+rand(-4,8),vx:rand(-10,10),vy:-rand(120,260),life:rand(.5,1),max:1,size:rand(2,3),color:pick(['#e0b84a','#fff0b0','#ffd27a']),drag:1,emissive:true});
     G.effects.push({type:'ring',x:p.x,y:p.y,r0:10,r1:90,t:0,max:.6,color:'#e0b84a',w:3}); play('level'); G.flash=Math.max(G.flash||0,.35);
   }
 }
@@ -3249,6 +3266,7 @@ function drawHUD(){
   const mm=Math.min(150,W*.3), mx=W-20-mm, my=60;
   ctx.textAlign='right'; ctx.font=`34px ${FD}`; ctx.fillStyle='#d3c7ae'; ctx.fillText(`Depth ${G.depth}`,W-20,30);
   ctx.font=`12px ${FB}`; ctx.fillStyle='#857a72'; ctx.fillText(`Deepest ${Math.max(loadBest(),G.depth)}`,W-20,50);
+  if(G.floorMod){const M=FLOOR_MODS[G.floorMod]; ctx.font=`600 11px ${FB}`; ctx.fillStyle=M.c; ctx.fillText(`☠ ${M.n}`,W-20-Math.min(150,W*.3)-10,50);}
   if(G.miniDirty) refreshMini();
   ctx.fillStyle='rgba(0,0,0,.6)'; ctx.fillRect(mx,my,mm,mm); ctx.imageSmoothingEnabled=false; ctx.drawImage(G.miniCv,mx,my,mm,mm); ctx.imageSmoothingEnabled=true;
   ctx.strokeStyle='#2e1c1e'; ctx.strokeRect(mx+.5,my+.5,mm-1,mm-1);
@@ -3422,10 +3440,12 @@ function openDraft(item){
     const id=pick(goodFor()); if(used.has(id)) continue; used.add(id); opts.push({affix:rollAffix(id,G.depth)});
   }
   // make it unmistakable that this is an item levelling up, not you: its picture, its slot, its name
-  G.curDraft={item,opts}; $('draftEyebrow').textContent=`Gear level up: ${SLOT_N[item.slot]}`;
+  G.curDraft={item,opts}; $('draftEyebrow').textContent=`${item.name} · level ${item.level}`; $('draftEyebrow').style.color=RAR[item.rarity].c;
   $('draftIcon').src=iconUrl(item); $('draftIcon').style.borderColor=RAR[item.rarity].c; $('draftIcon').style.boxShadow=`0 0 24px ${hexA(RAR[item.rarity].c,.45)}`;
-  $('draftTitle').textContent=item.name;
-  $('draftSub').textContent=`Your ${SLOT_N[item.slot].toLowerCase()} reached level ${item.level} from your kills. Pick one upgrade for this item.`;
+  // big and plain: it's your gear that grew, not you
+  const word={weapon:'weapon',helm:'helm',armor:'armour',gloves:'gloves',belt:'belt',boots:'boots',charm:'amulet',ring:'ring'}[item.slot], many=item.slot==='gloves'||item.slot==='boots';
+  $('draftTitle').textContent=`Your ${word} ${many?'have':'has'} fed`;
+  $('draftSub').textContent=`Choose a skill to add to ${many?'them':'it'}.`;
   $('draftCards').innerHTML=opts.map((o,i)=>{
     if(o.deepen){const d=AFX[o.deepen.id], nv=Math.min(d.cap||1e9,o.deepen.v*1.6);
       return `<button class="card" data-i="${i}" id="draft_${i}"><span class="key">${i+1} · Strengthen a stat</span><span class="nm">${d.n}</span><span class="ds">${d.f(o.deepen.v)}</span><span class="st">becomes <b>${d.f(nv)}</b></span></button>`;}
@@ -3439,7 +3459,7 @@ function openDraft(item){
 function openSkillDraft(id){
   const sk=G.skills[id], muts=SKILLS[id].muts, free=Object.keys(muts).filter(k=>!sk.muts.includes(k));
   if(!free.length) return; const opts=[]; while(opts.length<Math.min(3,free.length)){const k=pick(free); if(!opts.includes(k)) opts.push(k);}
-  G.curDraft={skill:id,opts}; $('draftEyebrow').textContent='Skill mutation';
+  G.curDraft={skill:id,opts}; $('draftEyebrow').textContent='Skill mutation'; $('draftEyebrow').style.color=SKILL_INFO[id].c;
   $('draftIcon').src=skillIconUrl(id); $('draftIcon').style.borderColor=SKILL_INFO[id].c; $('draftIcon').style.boxShadow=`0 0 24px ${hexA(SKILL_INFO[id].c,.45)}`;
   $('draftTitle').textContent=`${SKILL_INFO[id].n} mutates`;
   $('draftSub').textContent=`Level ${sk.lvl}. Choose what it becomes.`;
@@ -3853,7 +3873,7 @@ $('btnCopyRun').onclick=()=>{ const b=$('btnCopyRun'), t=$('runSummary'), shown=
   try{ navigator.clipboard.writeText(G.summary).then(()=>{b.textContent='Copied. Paste it to the dev';},()=>{b.textContent='Select the text below and copy it'; shown();}); }
   catch(e){ b.textContent='Select the text below and copy it'; shown(); } };
 // one place for the build number: the title screen and run summaries both read it
-const BUILD='0.31';
+const BUILD='0.32';
 // ----- first-time tips: each shows once ever, worded for whatever you're playing with -----
 const HINTS=(()=>{try{return new Set(JSON.parse(localStorage.getItem('deepening.hints')||'[]'))}catch(e){return new Set()}})();
 const keyFor=a=>({dash:TOUCH.active?'Tap DASH':PAD.active?'Press A':'Press Space', use:TOUCH.active?'Tap USE':PAD.active?'Press X':'Press E',
