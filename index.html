@@ -42,6 +42,7 @@ html,body{height:100%;margin:0;background:var(--void);color:var(--bone);overflow
 #tTree{left:calc(74px + env(safe-area-inset-left,0px));top:calc(96px + env(safe-area-inset-top,0px));font-size:11px}
 #tBag{left:calc(130px + env(safe-area-inset-left,0px));top:calc(96px + env(safe-area-inset-top,0px));font-size:11px}
 #tChar{left:calc(186px + env(safe-area-inset-left,0px));top:calc(96px + env(safe-area-inset-top,0px));font-size:11px}
+#tFood{left:calc(18px + env(safe-area-inset-left,0px));top:calc(152px + env(safe-area-inset-top,0px));font-size:11px;border-color:rgba(127,209,106,.6)}
 .ov{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
   background:radial-gradient(ellipse at center,rgba(22,8,9,.78),rgba(3,1,2,.97) 72%);
   padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
@@ -219,6 +220,7 @@ h2{font-family:var(--display);font-weight:400;font-size:clamp(34px,5vw,58px);lin
   <button class="tbtn small" id="tTree" aria-label="Skill tree">TREE</button>
   <button class="tbtn small" id="tBag" aria-label="Bags">BAG</button>
   <button class="tbtn small" id="tChar" aria-label="Character">YOU</button>
+  <button class="tbtn small" id="tFood" aria-label="Eat">EAT</button>
 </div>
 
 <div id="ovTitle" class="ov">
@@ -229,7 +231,7 @@ h2{font-family:var(--display);font-weight:400;font-size:clamp(34px,5vw,58px);lin
   <button class="btn ghost" id="btnTitleSet">Settings</button>
   <p class="small" id="bestLine"></p>
   <p class="small" id="buildTag">Beta build 0.15 · tell the dev what killed you</p>
-  <p class="small">WASD move · Arrow keys attack in that direction (or aim with the mouse and left click) · 1–4 skills (Q or right click also casts skill 1) · Space dash · E take loot, open chests, pray · F put loot in your bag · I bags · K skill tree · C character · Esc pause · M mute · Controllers supported</p>
+  <p class="small">WASD move · Arrow keys attack in that direction (or aim with the mouse and left click) · 1–4 skills (Q or right click also casts skill 1) · Space dash · E take loot, open chests, pray · F put loot in your bag · R eat · I bags · K skill tree · C character · Esc pause · M mute · Controllers supported</p>
 </div>
 
 <div id="ovClass" class="ov" hidden>
@@ -1225,7 +1227,7 @@ function genTavern(depth){
   const decalCv=document.createElement('canvas'); decalCv.width=MW*TILE/2; decalCv.height=MH*TILE/2;
   const dctx=decalCv.getContext('2d'); dctx.setTransform(.5,0,0,.5,0,0); dctx.imageSmoothingEnabled=false;
   const miniCv=document.createElement('canvas'); miniCv.width=MW; miniCv.height=MH;
-  return {theme,isBoss:false,isTavern:true,tavernName:pick(TAVERN_NAMES),shop:{stock,tome:{skill:tomeSkill(),price:Math.round(60+depth*9)}},
+  return {theme,isBoss:false,isTavern:true,tavernName:pick(TAVERN_NAMES),shop:{stock,tome:{skill:tomeSkill(),price:Math.round(60+depth*9)},food:[0,1,2,3].map(()=>({id:pickFood(),price:6+Math.round(depth*1.5)}))},
     pools:[],vents:[],map,rooms:[room],spawn,stairs,torches,enemies:[],props,traps:[],nearProp:null,mapCv,decalCv,dctx,miniCv,miniCtx:miniCv.getContext('2d'),
     miniDirty:true,explored:new Uint8Array(MW*MH),flow:new Int16Array(MW*MH).fill(-1),flowT:0,exploreT:0,sealed:false,bossBar:null};
 }
@@ -1235,7 +1237,7 @@ function newRun(cls){
   G={cls,depth:0,level:1,xp:0,points:0,bonus:{dmgPct:0,light:0},alloc:new Set([CLASS_START[cls]]),gear:Object.fromEntries(SLOTS.map(k=>[k,null])),kills:0,time:0,paused:false,
     draftQueue:[],stats:null,
     player:{x:0,y:0,r:10,hp:1,ghost:1,atkT:0,abilT:0,dashT:0,dashTime:0,inv:0,facing:0,swing:0,swingDir:1,dvx:0,dvy:0,hurtT:0,beatT:0},
-    allies:[],corpses:[],skills:{},slots:[null,null,null,null],orbits:[],bag:[],sets:[null,null],gold:0,cam:{x:0,y:0},shake:0,particles:[],texts:[],effects:[],projectiles:[],drops:[],enemies:[],pending:[],banner:null,transition:null,near:null};
+    allies:[],corpses:[],skills:{},slots:[null,null,null,null],orbits:[],bag:[],sets:[null,null],gold:0,food:['bread','bread'],cam:{x:0,y:0},shake:0,particles:[],texts:[],effects:[],projectiles:[],drops:[],enemies:[],pending:[],banner:null,transition:null,near:null};
   {const cs=CLASSES[cls].ability; G.skills[cs]={lvl:1,xp:0,cdT:0,muts:[]}; G.slots[0]=cs;} // your class skill starts on key 1
   G.gear.weapon=rank('arms')?makeItem('weapon',2,0,'magic'):makeItem('weapon',1,0,'common');
   if(!rank('arms')) G.gear.weapon.name=CLASSES[cls].startWeapon;
@@ -1758,7 +1760,8 @@ function killEnemy(e){
   }
   const su=G.stats.u;
   if(su.hollow) healP(G.stats.maxHp*.03*su.hollow,true);
-  else if(Math.random()<.035) G.drops.push({kind:'orb',x:e.x+rand(-6,6),y:e.y+rand(-6,6),t:0});
+  if(Math.random()<(e.boss?1:e.elite?.18:.012)) dropFood(e.x,e.y);
+  if(su.hollow){} else if(Math.random()<.035) G.drops.push({kind:'orb',x:e.x+rand(-6,6),y:e.y+rand(-6,6),t:0});
   if(Math.random()<G.stats.explode) explosion(e.x,e.y,G.stats.dmg*1.5,75);
   if(su.ember&&e.burn) explosion(e.x,e.y,G.stats.dmg*1.2*su.ember,70);
   if(su.ossuary&&!e.boss&&Math.random()<.1*su.ossuary&&G.allies.length<maxMinions()){spawnMinion(e.x,e.y); const m=G.allies[G.allies.length-1]; if(G.cls!=='necro') m.ttl=20;}
@@ -1777,6 +1780,7 @@ function breakUrn(o,a){
   if(r<.05) G.drops.push({kind:'orb',x:o.x,y:o.y,t:0}); // healing is rare: you earn it, you don't smash it out of pots
   else if(r<.10) dropItem(o.x,o.y,null,0);
   else if(r>.6&&r<.85) dropGold(o.x,o.y,1+G.depth*.4);
+  else if(r>=.18&&r<.24) dropFood(o.x,o.y);
   else if(r<.18){const e=spawnEnemy('gnawer',o.x,o.y,G.depth,false); e.state='chase'; G.enemies.push(e);}
 }
 function nextWave(o){
@@ -1809,7 +1813,7 @@ function useProp(o){
     if(Math.random()<.12+G.depth*.005){
       G.props.splice(G.props.indexOf(o),1); const m=spawnEnemy('mimic',o.x,o.y,G.depth,false); m.state='chase'; m.cd=.4; G.enemies.push(m);
       play('boss'); G.shake=10; text(o.x,o.y-30,'IT WAS HUNGRY','#ff3a1c',16); return;}
-    dropItem(o.x,o.y+22,null,.45); if(Math.random()<.15) dropTome(o.x+18,o.y+24); dropGold(o.x-16,o.y+20,8+G.depth*3);
+    dropItem(o.x,o.y+22,null,.45); if(Math.random()<.15) dropTome(o.x+18,o.y+24); dropGold(o.x-16,o.y+20,8+G.depth*3); if(Math.random()<.4) dropFood(o.x+20,o.y+18);
     if(Math.random()<.5) G.drops.push({kind:'orb',x:o.x+18,y:o.y+20,t:0});
     spark(o.x,o.y,'#e0b84a',14);
   } else if(o.kind==='altar'&&o.state==='idle'){
@@ -2248,7 +2252,7 @@ function updateSkills(dt){
       for(const e of near(bx,by,10)){ if((o.hits.get(e)||0)>G.time) continue; o.hits.set(e,G.time+.25);
         strike(e,o.mult,a+Math.PI/2,{skill:'blades',noKb:true,critBonus:G.stats.skillCrit}); if(o.fire&&!e.dead) e.burn={t:3,dps:G.stats.dmg*.25};}}}
   if(G.orbits) G.orbits=G.orbits.filter(o=>o.t<o.ttl);
-  updatePowers(dt); updateSouls(dt); updateQuest(dt); updateZone(dt);
+  updatePowers(dt); updateSouls(dt); updateQuest(dt); updateZone(dt); updateFood(dt);
   {let n=0; for(const e of G.enemies) if(!e.dead&&e.T.leech&&dist(e,p)<180) n++; const want=1-.2*Math.min(3,n); p.lightK=(p.lightK||1)+(want-(p.lightK||1))*Math.min(1,dt*3);}
   // legendaries that tick on their own
   const u=G.stats.u;
@@ -2539,6 +2543,46 @@ function drawQuestTracker(x,y){
   const prog=q.done?'COMPLETE':q.failed?'FAILED':q.id==='fast'?`${Math.ceil(q.t)}s left`:q.id==='clean'?`hits ${q.hits} / ${q.limit-1}`:`${q.have} / ${q.need}`;
   ctx.fillText(`[QUEST] ${q.title}: ${prog}`,x,y);
 }
+// ================= food =================
+// You carry up to five. Eating heals a little at once, then a slow trickle for a few seconds.
+// It's what keeps you going between the rare healing orbs, not a way to tank a fight.
+const FOOD_MAX=5;
+const FOODS={
+  bread:{n:'Stale Bread',heal:.04,rate:.012,t:7,c:'#c8a060',w:4},
+  shroom:{n:'Grave Mushroom',heal:.02,rate:.01,t:12,c:'#a08aa0',w:3},
+  rat:{n:'Smoked Rat',heal:.06,rate:.01,t:5,c:'#8a5a3a',w:3},
+  apple:{n:'Bitter Apple',heal:.03,rate:.02,t:4,c:'#a03a2a',w:3},
+  cake:{n:'Honey Cake',heal:.05,rate:.02,t:8,c:'#e0b84a',w:1},
+};
+const foodTotal=id=>{const f=FOODS[id]; return Math.round((f.heal+f.rate*f.t)*100);};
+function pickFood(){let r=Math.random()*Object.values(FOODS).reduce((s,f)=>s+f.w,0); for(const k in FOODS){r-=FOODS[k].w; if(r<=0) return k;} return 'bread';}
+function dropFood(x,y,id){G.drops.push({kind:'food',food:id||pickFood(),x:x+rand(-8,8),y:y+rand(-6,6),t:0});}
+function eatFood(){
+  const p=G.player; if(G.dying||state!=='play') return;
+  if(!G.food.length){text(p.x,p.y-30,'Nothing to eat','#857a72',12); return;}
+  if((p.eatCd||0)>0) return; p.eatCd=3; // one mouthful at a time: you can't chain-eat through a fight
+  const id=G.food.shift(), f=FOODS[id], s=G.stats; healP(s.maxHp*f.heal);
+  // a new meal replaces the trickle if it's better, otherwise tops up how long it lasts
+  if(!p.meal||p.meal.t<=0||f.rate>=p.meal.rate) p.meal={rate:f.rate,t:f.t,t0:f.t,c:f.c}; else {p.meal.t=Math.max(p.meal.t,f.t); p.meal.t0=Math.max(p.meal.t0,p.meal.t);}
+  text(p.x,p.y-34,f.n,f.c,12); play('pick');
+  for(let i=0;i<10;i++) addP({x:p.x+rand(-4,4),y:p.y-12,vx:rand(-40,40),vy:rand(-50,10),life:.5,max:.5,size:2,color:f.c,drag:3});
+}
+function updateFood(dt){
+  const p=G.player; p.eatCd=(p.eatCd||0)-dt;
+  if(p.meal&&p.meal.t>0){p.meal.t-=dt; if(!G.dying) p.hp=Math.min(G.stats.maxHp,p.hp+G.stats.maxHp*p.meal.rate*dt);
+    if(Math.random()<dt*3) addP({x:p.x+rand(-8,8),y:p.y+rand(-10,4),vx:0,vy:-25,life:.6,max:.6,size:2,color:'#7fd16a',drag:.5,emissive:true});}
+}
+// little pixel pictures of each food, for the floor, the HUD and the shop
+function drawFoodIcon(g,id,x,y,s=1){
+  const P=(c,a,b,w,h)=>{g.fillStyle=c; g.fillRect(x+a*s,y+b*s,w*s,h*s);}; x=Math.round(x); y=Math.round(y);
+  if(id==='bread'){P('#5a3a1a',-6,-2,12,6); P('#c8a060',-6,-4,12,5); P('#e0c080',-4,-4,8,2); P('#8a6030',-3,-2,1,2); P('#8a6030',1,-2,1,2);}
+  else if(id==='shroom'){P('#e8dcc0',-1,-1,3,5); P('#6a4a6a',-6,-5,12,4); P('#a08aa0',-5,-6,10,2); P('#e8dcc0',-3,-5,2,1); P('#e8dcc0',2,-4,2,1);}
+  else if(id==='rat'){P('#3a2214',-6,-3,10,5); P('#8a5a3a',-6,-4,9,4); P('#c08060',-5,-4,4,1); P('#3a2214',3,-1,4,1); P('#3a2214',6,-2,1,1);}
+  else if(id==='apple'){P('#3a1a10',-4,-4,8,8); P('#a03a2a',-4,-4,7,7); P('#d06a4a',-3,-3,2,2); P('#3a5a1a',0,-6,1,2); P('#5a8a2a',1,-6,2,1);}
+  else {P('#5a3a10',-6,-1,12,4); P('#e0b84a',-6,-4,12,4); P('#f0e0a0',-6,-5,12,1); P('#c03a3a',-1,-7,2,2);}
+}
+const FOOD_URL={};
+function foodUrl(id){ if(!FOOD_URL[id]){const c=document.createElement('canvas'); c.width=c.height=32; const g=c.getContext('2d'); drawFoodIcon(g,id,16,18,2); FOOD_URL[id]=c.toDataURL();} return FOOD_URL[id];}
 // ================= skill icons =================
 // a small glowing symbol for every skill, drawn with paths so it stays crisp at any size
 function skillGlyph(g,id,cx,cy,S,col,dim){
@@ -2754,7 +2798,9 @@ function update(dt){
   G.projectiles=G.projectiles.filter(pr=>{ if(pr.life<=0&&pr.fire&&Math.random()<.45&&!solidAt(pr.x,pr.y)) addHazard(pr.x,pr.y,16,2.5,pr.dmg*.6,'#ff7a2a'); return pr.life>0; });
   G.near=null; let nd=36;
   for(let i=G.drops.length-1;i>=0;i--){const d=G.drops[i]; d.t+=dt; const dd=Math.hypot(d.x-p.x,d.y-p.y);
-    if(d.kind==='tome'){ if(dd<p.r+16){G.drops.splice(i,1); learnSkill(d.skill);} continue; } // walk over a Skill Tome to read it
+    if(d.kind==='tome'){ if(dd<p.r+16){G.drops.splice(i,1); learnSkill(d.skill);} continue; }
+    if(d.kind==='food'){ if(dd<p.r+12&&d.t>.3){ if(G.food.length<FOOD_MAX){G.food.push(d.food); G.drops.splice(i,1); play('pick'); text(p.x,p.y-26,FOODS[d.food].n,FOODS[d.food].c,11);}
+        else if(!d.full){d.full=true; text(d.x,d.y-16,'Your food pouch is full','#857a72',11);} } continue; } // walk over a Skill Tome to read it
     if(d.kind==='gold'){ if(dd<90&&d.t>.4){const a=Math.atan2(p.y-d.y,p.x-d.x); d.x+=Math.cos(a)*300*dt; d.y+=Math.sin(a)*300*dt;}
       if(dd<p.r+8&&d.t>.4){G.gold+=d.n; G.drops.splice(i,1); play('pick'); text(p.x+rand(-8,8),p.y-24,`+${d.n}`,'#e0b84a',11); firePowers('gold'); questEvent('gold',d.n);
         if(s.u.gildedheart&&G.time-(G.gildT||-9)>.3){G.gildT=G.time; boomAt(p.x,p.y,60+Math.min(80,d.n*4),(.5+d.n*.08)*s.u.gildedheart,'#ffd27a');}} continue; }
@@ -2837,7 +2883,7 @@ function render(){
     lctx.save(); clipPoly(lctx,t.poly); L(t.x,t.y+8,130*(.92+.08*Math.sin(G.time*9+t.ph))+rand(-3,3),.9); lctx.restore();}
   for(const pr of G.projectiles) L(pr.x,pr.y-LIFT,pr.owner==='player'?70:42,.7);
   for(const f of G.effects) if(f.type==='ring'&&f.t>=0) L(f.x,f.y,f.r1*1.3,(f.light?.95:.6)*(1-f.t/f.max));
-  for(const d of G.drops) L(d.x,d.y,d.kind==='orb'?34:d.kind==='gold'?22:d.kind==='tome'?60:d.item.rarity==='legendary'?70:30,d.kind==='tome'||(d.kind==='item'&&d.item.rarity==='legendary')?.8:.45);
+  for(const d of G.drops) L(d.x,d.y,d.kind==='orb'?34:d.kind==='gold'||d.kind==='food'?22:d.kind==='tome'?60:d.item.rarity==='legendary'?70:30,d.kind==='tome'||(d.kind==='item'&&d.item.rarity==='legendary')?.8:.45);
   for(const o of G.props) if(o.kind==='hearth') L(o.x,o.y,190*(.95+.05*Math.sin(G.time*7)),1); else if(o.kind==='keeper') L(o.x,o.y+4,110,.9); else if(o.kind==='table') L(o.x,o.y-4,50,.6);
   for(const e of G.enemies) if(e.burn) L(e.x,e.y,40,.5);
   L(G.stairs.x,G.stairs.y,46,.35);
@@ -2888,7 +2934,7 @@ function render(){
   for(const v of G.vents||[]){ if(!inView(v.x,v.y,60)) continue; const heat=clamp(v.t/v.every,0,1), R=30+heat*40, vg=ctx.createRadialGradient(v.x,v.y,0,v.x,v.y,R);
     vg.addColorStop(0,`rgba(255,110,30,${.12+heat*.3})`); vg.addColorStop(1,'rgba(255,110,30,0)'); ctx.fillStyle=vg; ctx.fillRect(v.x-R,v.y-R,R*2,R*2);}
   for(const o of G.props) if(o.kind==='keeper'){const f=.9+.1*Math.sin(G.time*5); ctx.fillStyle=`rgba(255,200,100,${.25*f})`; ctx.beginPath(); ctx.arc(o.x+14,o.y-14,9,0,7); ctx.fill(); ctx.fillStyle='rgba(255,226,150,.95)'; ctx.fillRect(o.x+13,o.y-15,3,3);}
-  for(const d of G.drops){const c=d.kind==='orb'?'#ff2a2a':d.kind==='gold'?'#e0b84a':d.kind==='tome'?SKILL_INFO[d.skill].c:RAR[d.item.rarity].c, pu=.6+.4*Math.sin(G.time*4+d.x);
+  for(const d of G.drops){const c=d.kind==='orb'?'#ff2a2a':d.kind==='gold'?'#e0b84a':d.kind==='food'?FOODS[d.food].c:d.kind==='tome'?SKILL_INFO[d.skill].c:RAR[d.item.rarity].c, pu=.6+.4*Math.sin(G.time*4+d.x);
     ctx.fillStyle=hexA(c,.18*pu); ctx.beginPath(); ctx.arc(d.x,d.y,d.kind==='orb'?10:16,0,7); ctx.fill();
     if(d.kind==='item'&&d.item.rarity==='legendary'){ // a pillar of light you can see from across the room
       const bh=150+20*pu, bg=ctx.createLinearGradient(0,d.y-bh,0,d.y); bg.addColorStop(0,hexA(c,0)); bg.addColorStop(1,hexA(c,.45*pu));
@@ -2971,6 +3017,7 @@ function drawStairs(g){
 function drawDrop(g,d){
   const bob=Math.round(Math.sin(G.time*3+d.x)*1.5)*2;
   if(d.kind==='tome'){drawTome(g,d); return;}
+  if(d.kind==='food'){drawFoodIcon(g,d.food,d.x,d.y+bob,1); return;}
   if(d.kind==='gold'){const x=Math.round(d.x/2)*2, y=Math.round(d.y/2)*2; g.fillStyle='#5a3a10'; g.fillRect(x-4,y-1,8,4);
     g.fillStyle='#c8961e'; g.fillRect(x-4,y-3,6,3); g.fillRect(x,y-5,4,3); g.fillStyle='#ffe08a'; g.fillRect(x-2,y-3,2,1); if(Math.sin(G.time*6+d.x)>.9) g.fillRect(x+2,y-5,1,1); return;}
   if(d.kind==='orb'&&ARTX.ready){drawSprite(g,ARTX.flask,d.x,d.y+10+bob,false,0); return;}
@@ -3137,6 +3184,7 @@ function drawHUD(){
   ctx.strokeStyle='#3a2224'; ctx.lineWidth=1; ctx.strokeRect(x+.5,y+.5,w-1,15);
   ctx.font=`600 12px ${FB}`; ctx.textAlign='left'; ctx.fillStyle='#ecdcc8'; ctx.fillText(`${Math.ceil(p.hp)} / ${s.maxHp}`,x+8,y+8.5);
   ctx.fillStyle='rgba(0,0,0,.65)'; ctx.fillRect(x,y+21,w,4); ctx.fillStyle='#b8ab90'; ctx.fillRect(x,y+21,w*G.xp/xpNeed(G.level),4);
+  if(p.meal&&p.meal.t>0){ctx.fillStyle='#7fd16a'; ctx.fillRect(x,y+16,w*clamp(p.meal.t/(p.meal.t0||p.meal.t),0,1),2);} // a meal's slow healing, running down
   ctx.font=`18px ${FD}`; ctx.fillStyle='#d3c7ae'; ctx.fillText(`Level ${G.level} ${CLASSES[G.cls].name}`,x,y+40);
   ctx.font=`600 12px ${FB}`; ctx.fillStyle='#e0b84a'; ctx.fillText(`${G.gold} gold · bags ${G.bag.length}/${BAG_MAX}`,x,y+58);
   if(G.points>0){ctx.font=`600 12px ${FB}`; ctx.fillStyle='#e07a2c'; ctx.fillText(`${G.points} skill point${G.points>1?'s':''} to spend. Press K`,x,y+76);}
@@ -3158,6 +3206,7 @@ function drawHUD(){
     const sk=G.skills[id], full=skillCd(id);
     slots.push({id,k:(pa?PADK[i]:i===0?'1 / Q':String(i+1))+(id==='raise'?` · ${G.allies.filter(m=>!m.blade&&!m.shadow).length}/${maxMinions()}`:''),n:SKILL_INFO[id].n,col:SKILL_INFO[id].c,lv:sk.lvl,cd:Math.max(0,sk.cdT)/full,sec:sk.cdT,xp:sk.xp/skillNeed(sk.lvl)});});
   slots.push({id:'shadowstep',col:'#d3c7ae',k:pa?'A':'SPACE',n:s.canDash?'Dash':'No dash',cd:s.canDash?Math.max(0,p.dashT):1});
+  slots.push({food:G.food[0],count:G.food.length,k:pa?'D-PAD DOWN':'R',n:G.food.length?FOODS[G.food[0]].n:'No food',empty:!G.food.length,cd:Math.max(0,p.eatCd||0)});
   // on touch the buttons are the ability bar, so cards and prompts sit above them instead
   const bw=W<900?60:72, gap=6, tot=bw*slots.length+gap*(slots.length-1), bx=Math.max(W/2-tot/2,W>760?240:8), by=TOUCH.active?H-250:H-20-56;
   if(!TOUCH.active) slots.forEach((sl,i)=>{const X=bx+i*(bw+gap); ctx.fillStyle='rgba(10,6,7,.8)'; ctx.fillRect(X,by,bw,56);
@@ -3165,6 +3214,7 @@ function drawHUD(){
     ctx.strokeStyle=sl.empty||sl.cd>0?'#2e1c1e':sl.col?hexA(sl.col,.8):'#7d0f0f'; ctx.strokeRect(X+.5,by+.5,bw-1,55);
     // an icon, the name small beneath it, the key at the bottom
     if(sl.id&&!sl.empty) skillGlyph(ctx,sl.id,X+bw/2,by+18,22,sl.cd>0?'#5a504a':(sl.col||'#d3c7ae'),sl.cd>0);
+    if(sl.food){drawFoodIcon(ctx,sl.food,X+bw/2,by+22,2); ctx.textAlign='right'; ctx.font=`600 10px ${FB}`; ctx.fillStyle='#d3c7ae'; ctx.fillText('x'+sl.count,X+bw-4,by+9);}
     ctx.textAlign='center'; ctx.font=`600 9px ${FB}`; ctx.fillStyle=sl.empty?'#3a302c':sl.cd>0?'#6a5e58':'#d3c7ae'; ctx.fillText(fit(sl.empty?'—':sl.n.toUpperCase(),bw-6),X+bw/2,by+39);
     ctx.font=`9px ${FB}`; ctx.fillStyle='#6a5e58'; ctx.fillText(fit(sl.k,bw-4),X+bw/2,by+50);
     if(sl.lv){ctx.textAlign='left'; ctx.font=`600 10px ${FB}`; ctx.fillStyle='#857a72'; ctx.fillText(sl.lv,X+4,by+9);
@@ -3398,7 +3448,9 @@ function tipButtons(where,i){
 }
 function showTip(el){
   const where=el.dataset.where, i=el.dataset.i, it=where==='eq'?G.gear[i]:where==='shop'?G.shop.stock[+i]:where==='bag'?G.bag[+i]:null, tip=$('itemTip');
-  if(where==='tome'){const t=G.shop.tome, I=SKILL_INFO[t.skill];
+  if(where==='food'){const fd=G.shop.food[+i], F=FOODS[fd.id];
+    tip.innerHTML=`<div class="tn" style="color:${F.c}">${F.n}</div><div class="tm">Food · you carry ${G.food.length} / ${FOOD_MAX}</div><div class="tl">Heals ${Math.round(F.heal*100)}% at once, then ${Math.round(F.rate*100*F.t)}% more over ${F.t} seconds.</div><div class="th">Click: buy for ${fd.price} gold</div>`;}
+  else if(where==='tome'){const t=G.shop.tome, I=SKILL_INFO[t.skill];
     tip.innerHTML=`<div class="tn" style="color:${I.c}">Skill Tome: ${I.n}</div><div class="tm">${G.skills[t.skill]?'You know it: reading levels it up':'Teaches you a new skill'}</div><div class="tl">${SKILLS[t.skill].d}</div><div class="th">Click: buy for ${t.price} gold</div>`;}
   else if(!it){hideTip(); return;}
   else tip.innerHTML=tipHTML(it,where)+tipButtons(where,i);
@@ -3421,6 +3473,7 @@ function renderBag(){
   if(shop){
     h+=`<h3>The keeper's stock<small>Rolled deeper than here. Hover to compare.</small></h3><div class="grid">`;
     S.stock.forEach((it,i)=>{h+=cellHTML(it,`data-where="shop" data-i="${i}"${G.gold<buyPrice(it)?' data-poor="1"':''}`,`<span class="price${G.gold<buyPrice(it)?' poor':''}">${buyPrice(it)}g</span>`);});
+    (S.food||[]).forEach((fd,i)=>{h+=`<button class="cell r-common" data-where="food" data-i="${i}"><img src="${foodUrl(fd.id)}" alt=""><span class="price${G.gold<fd.price?' poor':''}">${fd.price}g</span></button>`;});
     if(S.tome) h+=`<button class="cell r-rare" data-where="tome" data-i="0"><img src="${tomeIcon(S.tome.skill)}" alt=""><span class="price${G.gold<S.tome.price?' poor':''}">${S.tome.price}g</span></button>`;
     if(!S.stock.length&&!S.tome) h+=`<span class="invHelp">Sold out.</span>`;
     h+=`</div>`;}
@@ -3431,7 +3484,7 @@ function renderBag(){
 }
 function invAct(act,where,i,el){
   const n=+i, p=G.player;
-  if(act==='use'){ if(where==='bag') act='wear'; else if(where==='eq') act='unwear'; else if(where==='shop') act='buy'; else if(where==='tome') act='tome'; else return; }
+  if(act==='use'){ if(where==='bag') act='wear'; else if(where==='eq') act='unwear'; else if(where==='shop') act='buy'; else if(where==='tome') act='tome'; else if(where==='food') act='food'; else return; }
   switch(act){
     case 'wear': bagEquip(n); break;
     case 'unwear': bagUnequip(i); break;
@@ -3439,6 +3492,8 @@ function invAct(act,where,i,el){
     case 'sell': {const it=G.bag.splice(n,1)[0]; if(!it) break; G.gold+=sellPrice(it); for(const s of G.sets) if(s) for(const k of SLOTS) if(s[k]===it) s[k]=null; play('pick'); break;}
     case 'buy': {const it=G.shop.stock[n], pr=buyPrice(it); if(G.gold<pr){text(p.x,p.y-30,'Not enough gold','#e04a30',12); break;} if(!bagAdd(it)) break; G.gold-=pr; G.shop.stock.splice(n,1); play('legendary'); break;}
     case 'tome': {const t=G.shop.tome; if(G.gold<t.price) break; G.gold-=t.price; G.shop.tome=null; hideAll(); hideTip(); learnSkill(t.skill); return;}
+    case 'food': {const fd=G.shop.food[n]; if(!fd) break; if(G.gold<fd.price){text(p.x,p.y-30,'Not enough gold','#e04a30',12); break;} if(G.food.length>=FOOD_MAX){text(p.x,p.y-30,'Your food pouch is full','#857a72',12); break;}
+      G.gold-=fd.price; G.food.push(fd.id); G.shop.food.splice(n,1); play('pick'); break;}
     case 'close': hideTip(); return;
   }
   renderBag();
@@ -3618,7 +3673,7 @@ function pollPad(dt){
   if(overlay){PAD.fire=false; padMenu(overlay,b,hit,dt);}
   else if(state==='play'&&G&&!G.paused){
     PAD.fire=b[7];
-    if(!G.transition&&!G.dying){ if(hit(0)) dash(); if(hit(4)) castSlot(0); if(hit(6)) castSlot(1); if(hit(5)) castSlot(2); if(hit(1)) castSlot(3);
+    if(!G.transition&&!G.dying){ if(hit(13)) eatFood(); if(hit(0)) dash(); if(hit(4)) castSlot(0); if(hit(6)) castSlot(1); if(hit(5)) castSlot(2); if(hit(1)) castSlot(3);
       if(hit(2)) interact(); }
     if(hit(3)) toggleChar(); else if(hit(9)) showOnly('ovPause'); else if(hit(8)) openBag(false);
   }
@@ -3696,7 +3751,7 @@ addEventListener('pointerup',endStick); addEventListener('pointercancel',endStic
 const tap=(id,fn)=>$(id).addEventListener('pointerdown',e=>{e.preventDefault(); e.stopPropagation(); if(state==='play'&&G&&!G.paused&&!G.dying&&!G.transition) fn();});
 for(let i=0;i<4;i++) tap('tSk'+i,()=>castSlot(i)); tap('tDash',()=>dash());
 tap('tUse',()=>interact());
-tap('tPause',()=>showOnly('ovPause')); tap('tTree',()=>toggleChar('tree')); tap('tBag',()=>openBag(false)); tap('tChar',()=>toggleChar('char'));
+tap('tPause',()=>showOnly('ovPause')); tap('tTree',()=>toggleChar('tree')); tap('tBag',()=>openBag(false)); tap('tChar',()=>toggleChar('char')); tap('tFood',()=>eatFood());
 $('tAttack').addEventListener('pointerdown',e=>{e.preventDefault(); TOUCH.fire=true;});
 for(const ev of ['pointerup','pointercancel','pointerleave']) $('tAttack').addEventListener(ev,()=>{TOUCH.fire=false;});
 
@@ -3720,6 +3775,7 @@ addEventListener('keydown',e=>{
   if(/^Digit[1-4]$/.test(e.code)&&!e.repeat) castSlot(+e.code.slice(5)-1);
   if(e.code==='KeyE') interact();
   if(e.code==='KeyF') stashNear();
+  if(e.code==='KeyR') eatFood();
 });
 addEventListener('keyup',e=>{keys[e.code]=false;});
 addEventListener('mousemove',e=>{mouse.x=e.clientX; mouse.y=e.clientY; if(PAD.active&&(Math.abs(e.movementX)+Math.abs(e.movementY)>2)){PAD.active=false; cv.style.cursor='crosshair';}});
@@ -3738,7 +3794,7 @@ $('btnCopyRun').onclick=()=>{ const b=$('btnCopyRun'), t=$('runSummary'), shown=
   try{ navigator.clipboard.writeText(G.summary).then(()=>{b.textContent='Copied. Paste it to the dev';},()=>{b.textContent='Select the text below and copy it'; shown();}); }
   catch(e){ b.textContent='Select the text below and copy it'; shown(); } };
 // one place for the build number: the title screen and run summaries both read it
-const BUILD='0.27';
+const BUILD='0.28';
 // ----- first-time tips: each shows once ever, worded for whatever you're playing with -----
 const HINTS=(()=>{try{return new Set(JSON.parse(localStorage.getItem('deepening.hints')||'[]'))}catch(e){return new Set()}})();
 const keyFor=a=>({dash:TOUCH.active?'Tap DASH':PAD.active?'Press A':'Press Space', use:TOUCH.active?'Tap USE':PAD.active?'Press X':'Press E',
@@ -3756,6 +3812,7 @@ function checkHints(){
   if(G.explored[tileIdx(G.stairs.x,G.stairs.y)]&&dist(G.stairs,p)<260) hint('stairs','The stairs down. Once you take them there is no coming back up, so loot first if you dare.');
   if(p.hp<s.maxHp*.35) hint('lowhp','Low on life. Red orbs heal you: the dead drop them, and so do smashed urns.');
   if(G.points>0) hint('points',`You have a skill point to spend. ${keyFor('tree')} to open the skill tree. The hexagons teach you new skills.`);
+  if(G.player.hp<G.stats.maxHp*.6&&G.food.length) hint('food',`Hurt? Eat something: ${TOUCH.active?'tap EAT':PAD.active?'press down on the d-pad':'press R'}. Food heals a little, then slowly over a few seconds.`);
   if(G.bag.length) hint('bag',`Swapped gear goes in your bags. ${TOUCH.active?'Tap BAG':PAD.active?'Press Back':'Press I'} to wear it again, or save whole sets for different builds.`);
   if(G.isTavern) hint('tavern',`A tavern. Rest at the hearth, and trade with the keeper: sell what's in your bags, buy what's on the counter.`);
   if(Object.keys(G.skills).length>1) hint('slots',`New skills go on keys 1 to 4. They level up from their kills and mutate as they grow.`);
