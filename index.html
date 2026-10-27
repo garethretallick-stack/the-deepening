@@ -41,6 +41,7 @@ html,body{height:100%;margin:0;background:var(--void);color:var(--bone);overflow
 #tPause{left:calc(18px + env(safe-area-inset-left,0px));top:calc(96px + env(safe-area-inset-top,0px))}
 #tTree{left:calc(74px + env(safe-area-inset-left,0px));top:calc(96px + env(safe-area-inset-top,0px));font-size:11px}
 #tBag{left:calc(130px + env(safe-area-inset-left,0px));top:calc(96px + env(safe-area-inset-top,0px));font-size:11px}
+#tChar{left:calc(186px + env(safe-area-inset-left,0px));top:calc(96px + env(safe-area-inset-top,0px));font-size:11px}
 .ov{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
   background:radial-gradient(ellipse at center,rgba(22,8,9,.78),rgba(3,1,2,.97) 72%);
   padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
@@ -105,6 +106,15 @@ h2{font-family:var(--display);font-weight:400;font-size:clamp(34px,5vw,58px);lin
 .treeTools{position:absolute;right:8px;bottom:8px;display:flex;gap:6px;z-index:2}
 .treeTools .btn{min-width:36px;padding:6px 10px}
 .treeHelp{position:absolute;left:10px;bottom:8px;font-size:12px;color:var(--ash);pointer-events:none}
+/* the tree and the character sheet are two pages of one screen */
+.tabs{display:flex;gap:4px}
+.tab{font-family:var(--display);font-size:26px;background:none;border:none;border-bottom:2px solid transparent;color:var(--ash);padding:2px 12px;cursor:pointer}
+.tab small{font-family:var(--body);font-size:11px;color:#5a504a;margin-left:4px}
+.tab.on{color:var(--bone);border-bottom-color:var(--blood-hi)}
+.tab:hover,.tab:focus-visible{color:var(--bone);outline:none}
+#ovChar[data-tab=tree] #statPanel{display:none}
+#ovChar[data-tab=char] .treeWrap,#ovChar[data-tab=char] #ptsPill{display:none}
+#ovChar[data-tab=char] #statPanel{width:min(1140px,100%);margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));align-items:start;gap:28px}
 #goldPill{font-family:var(--display);font-size:22px;color:#e0b84a}
 .bagBody{width:min(1240px,100%);flex:1;min-height:0;overflow-y:auto;text-align:left;display:flex;flex-direction:column;gap:18px;padding-bottom:12px}
 .bagSec h3{font-family:var(--display);font-weight:400;font-size:24px;margin:0 0 8px;color:var(--bone)}
@@ -157,6 +167,7 @@ h2{font-family:var(--display);font-weight:400;font-size:clamp(34px,5vw,58px);lin
   <button class="tbtn small" id="tPause" aria-label="Pause">II</button>
   <button class="tbtn small" id="tTree" aria-label="Skill tree">TREE</button>
   <button class="tbtn small" id="tBag" aria-label="Bags">BAG</button>
+  <button class="tbtn small" id="tChar" aria-label="Character">YOU</button>
 </div>
 
 <div id="ovTitle" class="ov">
@@ -167,7 +178,7 @@ h2{font-family:var(--display);font-weight:400;font-size:clamp(34px,5vw,58px);lin
   <button class="btn ghost" id="btnTitleSet">Settings</button>
   <p class="small" id="bestLine"></p>
   <p class="small" id="buildTag">Beta build 0.15 · tell the dev what killed you</p>
-  <p class="small">WASD move · Arrow keys attack in that direction (or aim with the mouse and left click) · 1–4 skills (Q or right click also casts skill 1) · Space dash · E take loot, open chests, pray · F put loot in your bag · I bags · K skill tree · Esc pause · M mute · Controllers supported</p>
+  <p class="small">WASD move · Arrow keys attack in that direction (or aim with the mouse and left click) · 1–4 skills (Q or right click also casts skill 1) · Space dash · E take loot, open chests, pray · F put loot in your bag · I bags · K skill tree · C character · Esc pause · M mute · Controllers supported</p>
 </div>
 
 <div id="ovClass" class="ov" hidden>
@@ -193,8 +204,9 @@ h2{font-family:var(--display);font-weight:400;font-size:clamp(34px,5vw,58px);lin
   <p class="small">Click a gift, or press 1, 2 or 3</p>
 </div>
 
-<div id="ovChar" class="ov char" hidden>
-  <div class="charHead"><h2>Skill Tree</h2><span id="ptsPill"></span><button class="btn sm" id="btnCloseChar">Close (K)</button></div>
+<div id="ovChar" class="ov char" data-tab="tree" hidden>
+  <div class="charHead"><div class="tabs"><button class="tab on" id="tabTree">Skill Tree <small>K</small></button><button class="tab" id="tabChar">Character <small>C</small></button></div>
+    <span id="ptsPill"></span><button class="btn sm" id="btnCloseChar">Close</button></div>
   <div class="charBody">
     <div class="treeWrap"><canvas id="treeCv"></canvas>
       <div class="treeHelp" id="treeHelp">Drag to move · wheel to zoom · click a far node to take the whole path</div>
@@ -1878,7 +1890,7 @@ const useAbility=()=>castSlot(0); // Q, right click and the old ability button a
 function learnSkill(id){
   if(G.skills[id]){skillLevelUp(id); text(G.player.x,G.player.y-34,`${SKILL_INFO[id].n} grows stronger`,SKILL_INFO[id].c,13); return;}
   G.skills[id]={lvl:1,xp:0,cdT:0,muts:[]}; const slot=G.slots.indexOf(null); if(slot>=0) G.slots[slot]=id;
-  G.banner={t:0,lines:['New skill',SKILL_INFO[id].n,slot>=0?`On key ${slot+1}. ${SKILLS[id].d}`:'Your slots are full: swap it in from the skill tree screen.']};
+  G.banner={t:0,lines:['New skill',SKILL_INFO[id].n,slot>=0?`On key ${slot+1}. ${SKILLS[id].d}`:'Your keys are full: swap it in from the Character page (C).']};
   play('legendary'); G.flash=Math.max(G.flash||0,.25);
 }
 const skillNeed=l=>Math.round(10*Math.pow(l,1.6));
@@ -2592,11 +2604,16 @@ function chooseDraft(i){
   G.curDraft=null; recalc(); hideAll(); play('pick');
 }
 function charOpen(){return !$('ovChar').hidden;}
-function toggleChar(){
+// K opens the tree, C the character sheet; pressing the key for the page you're on closes it
+let CHARTAB='tree';
+function setCharTab(t){CHARTAB=t; $('ovChar').dataset.tab=t; $('tabTree').classList.toggle('on',t==='tree'); $('tabChar').classList.toggle('on',t==='char'); refreshChar();}
+function toggleChar(tab='tree'){
   if(state!=='play'||!$('ovDraft').hidden||!$('ovPause').hidden) return;
-  if(charOpen()){hideAll(); return;}
-  showOnly('ovChar'); refreshChar();
+  if(charOpen()){ if(CHARTAB===tab) hideAll(); else setCharTab(tab); return; }
+  if(!$('ovBag').hidden) hideAll();
+  showOnly('ovChar'); setCharTab(tab);
 }
+$('tabTree').onclick=()=>setCharTab('tree'); $('tabChar').onclick=()=>setCharTab('char');
 // ----- bags & the keeper's trade -----
 function openBag(shop){
   if(state!=='play'||!$('ovDraft').hidden||!$('ovPause').hidden) return;
@@ -2811,7 +2828,10 @@ function pollPad(dt){
   PAD.prev=b;
 }
 function padMenu(id,b,hit,dt){
-  if(id==='ovChar'){ treePad(b,hit,dt); if(hit(1)||hit(3)||hit(9)) hideAll(); return; }
+  if(id==='ovChar'){ // X flips between the tree and the character sheet
+    if(hit(2)){setCharTab(CHARTAB==='tree'?'char':'tree'); return;}
+    if(hit(1)||hit(3)||hit(9)){hideAll(); return;}
+    if(CHARTAB==='tree'){treePad(b,hit,dt); return;} }
   const els=[...$(id).querySelectorAll('button:not([disabled]),input')].filter(el=>el.offsetParent!==null);
   if(!els.length) return;
   let i=els.indexOf(document.activeElement);
@@ -2879,20 +2899,21 @@ addEventListener('pointerup',endStick); addEventListener('pointercancel',endStic
 const tap=(id,fn)=>$(id).addEventListener('pointerdown',e=>{e.preventDefault(); e.stopPropagation(); if(state==='play'&&G&&!G.paused&&!G.dying&&!G.transition) fn();});
 for(let i=0;i<4;i++) tap('tSk'+i,()=>castSlot(i)); tap('tDash',()=>dash());
 tap('tUse',()=>{ if(G.near) takeNear(); else if(G.nearProp) useProp(G.nearProp); });
-tap('tPause',()=>showOnly('ovPause')); tap('tTree',()=>toggleChar()); tap('tBag',()=>openBag(false));
+tap('tPause',()=>showOnly('ovPause')); tap('tTree',()=>toggleChar('tree')); tap('tBag',()=>openBag(false)); tap('tChar',()=>toggleChar('char'));
 $('tAttack').addEventListener('pointerdown',e=>{e.preventDefault(); TOUCH.fire=true;});
 for(const ev of ['pointerup','pointercancel','pointerleave']) $('tAttack').addEventListener(ev,()=>{TOUCH.fire=false;});
 
 // ================= input =================
 addEventListener('keydown',e=>{
   if(['Space','Tab','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault();
-  if(e.repeat&&(e.code==='KeyK'||e.code==='Tab'||e.code==='Escape')) return;
+  if(e.repeat&&(e.code==='KeyK'||e.code==='KeyC'||e.code==='Tab'||e.code==='Escape')) return;
   keys[e.code]=true;
   if(e.code==='KeyM'){SND.muted=!SND.muted; if(SND.master) SND.master.gain.value=SND.muted?0:.8;}
   if(state==='class'&&/^Digit[1-4]$/.test(e.code)){newRun(Object.keys(CLASSES)[+e.code.slice(5)-1]); return;}
   if(state!=='play') return;
   if(!$('ovDraft').hidden){ if(/^Digit[1-3]$/.test(e.code)) chooseDraft(+e.code.slice(5)-1); return; }
-  if(e.code==='KeyK'||e.code==='Tab'){toggleChar(); return;}
+  if(e.code==='KeyK'||e.code==='Tab'){toggleChar('tree'); return;}
+  if(e.code==='KeyC'){toggleChar('char'); return;}
   if(e.code==='KeyI'||e.code==='KeyB'){ if(charOpen()) hideAll(); openBag(false); return; }
   if(!$('ovBag').hidden){ if(e.code==='Escape') hideAll(); return; }
   if(e.code==='Escape'){ if(charOpen()) hideAll(); else if(!$('ovPause').hidden) hideAll(); else showOnly('ovPause'); return; }
@@ -2920,7 +2941,7 @@ $('btnCopyRun').onclick=()=>{ const b=$('btnCopyRun'), t=$('runSummary'), shown=
   try{ navigator.clipboard.writeText(G.summary).then(()=>{b.textContent='Copied. Paste it to the dev';},()=>{b.textContent='Select the text below and copy it'; shown();}); }
   catch(e){ b.textContent='Select the text below and copy it'; shown(); } };
 // one place for the build number: the title screen and run summaries both read it
-const BUILD='0.21';
+const BUILD='0.22';
 // ----- first-time tips: each shows once ever, worded for whatever you're playing with -----
 const HINTS=(()=>{try{return new Set(JSON.parse(localStorage.getItem('deepening.hints')||'[]'))}catch(e){return new Set()}})();
 const keyFor=a=>({dash:TOUCH.active?'Tap DASH':PAD.active?'Press A':'Press Space', use:TOUCH.active?'Tap USE':PAD.active?'Press X':'Press E',
