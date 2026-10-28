@@ -584,7 +584,7 @@ const LEG=Object.fromEntries(LEGS.map(l=>[l.id,l]));
 // eight body slots, laid out on the paper doll. The first three (weapon, chest, neck) are the big pieces: they level fastest.
 const SLOTS=['weapon','helm','armor','gloves','belt','boots','charm','ring'], MAIN_SLOTS=['weapon','armor','charm'];
 const SLOT_N={weapon:'Main hand',helm:'Head',armor:'Chest',gloves:'Hands',belt:'Waist',boots:'Feet',charm:'Neck',ring:'Finger'};
-const SLOT_W={weapon:1,armor:1,charm:1,helm:.7,gloves:.7,belt:.6,boots:.7,ring:.8}; // how strong a slot's affixes roll
+const SLOT_W={weapon:1,armor:1,charm:1,helm:.5,gloves:.5,belt:.45,boots:.5,ring:.6}; // how strong a slot's affixes roll
 
 const AFX={
   dmgPct:{n:'Cruel',base:.10,f:v=>`+${pct(v)} damage`},
@@ -1084,7 +1084,8 @@ function recalc(){
   s.dmg*=Math.max(.1,1+s.dmgPct); s.maxHp=Math.max(10,Math.round(s.maxHp*Math.max(.2,1+s.hpPct)));
   s.armor=clamp(s.armor,0,.75); s.crit=clamp(s.crit,0,.95); s.critMult=c.critMult+(s.critMult-c.critMult);
   s.speed=c.speed*Math.max(.4,1+s.speedPct); s.atkCd=c.atkCd/Math.max(.3,1+s.atkSpd);
-  s.cdMul=(1-Math.min(.7,s.cdr))*(1+s.cdrPenalty); s.abilCd=c.abilCd*s.cdMul; s.abilDmg=1+s.abilDmg; s.light=Math.max(60,s.light*s.lightMul);
+  // (cooldowns can at most halve)
+  s.cdMul=(1-Math.min(.5,s.cdr))*(1+s.cdrPenalty); s.abilCd=c.abilCd*s.cdMul; s.abilDmg=1+s.abilDmg; s.light=Math.max(60,s.light*s.lightMul);
   const prev=G.stats; G.stats=s;
   if(prev&&G.player){const d=s.maxHp-prev.maxHp; G.player.hp=clamp(G.player.hp+Math.max(0,d),1,s.maxHp);}
   if(!G._try) syncGrants();
@@ -1372,7 +1373,7 @@ function bfs(map,start,limit=9999){
 function genFloor(depth){
   if(isTavernDepth(depth)) return genTavern(depth);
   const theme=THEMES[Math.floor((depth-1)/5)%THEMES.length], isBoss=isBigBossDepth(depth);
-  const fmod=depth>=3&&!isBoss&&Math.random()<.25?pick(Object.keys(FLOOR_MODS)):null;
+  const fmod=depth>=3&&!isBoss&&Math.random()<.15?pick(Object.keys(FLOOR_MODS)):null;
   const map=new Uint8Array(MW*MH).fill(1), rooms=[], st=theme.style, target=8+Math.min(7,Math.floor(depth/3))+(st==='maze'?5:st==='halls'?-3:0);
   for(let a=0;a<600&&rooms.length<target;a++){
     // room sizes by zone: great halls in the Chapel, cramped cells in the Hollow
@@ -1406,13 +1407,13 @@ function genFloor(depth){
   const pickType=()=>{let r=Math.random()*avail.reduce((s,[k,t])=>s+wt(k,t),0);for(const [k,t] of avail){r-=wt(k,t);if(r<=0)return k;}return avail[0][0];};
   for(const r of rooms){ if(r===spawnRoom||(isBoss&&r===stairRoom)) continue;
     // more rooms means fewer per room, and a floor never holds more than its cap
-    const n=Math.round(Math.min(st==='maze'?6:10,(depth<5?ri(1,2):ri(2,3))+Math.floor(depth/(st==='maze'?4:2.5)))*(fmod==='swarming'?1.5:1));
+    const n=Math.round(Math.min(st==='maze'?5:8,(depth<5?ri(1,2):ri(2,3))+Math.floor(depth/(st==='maze'?5:3.4)))*(fmod==='swarming'?1.5:1));
     for(let k=0;k<n;k++){const tx=ri(r.x,r.x+r.w-1), ty=ri(r.y,r.y+r.h-1), x=cw(tx), y=cw(ty);
-      if(map[ty*MW+tx]||Math.hypot(x-spawn.x,y-spawn.y)<260||enemies.length>=(40+depth*1.5)*(fmod==='swarming'?1.5:1)) continue;
+      if(map[ty*MW+tx]||Math.hypot(x-spawn.x,y-spawn.y)<260||enemies.length>=(28+depth)*(fmod==='swarming'?1.5:1)) continue;
       // (a swarm uses up three places in the room)
-      const kind=pickType(); if(ETYPES[kind].swarm) k+=2; enemies.push(spawnEnemy(kind,x,y,depth,Math.random()<(depth<3?.03:.09+depth*.005)*(fmod==='bloodmoon'?3:1)));
+      const kind=pickType(); if(ETYPES[kind].swarm) k+=2; enemies.push(spawnEnemy(kind,x,y,depth,Math.random()<(depth<3?.03:.06+depth*.003)*(fmod==='bloodmoon'?3:1)));
       for(let s=0;s<(ETYPES[kind].swarm||0);s++){const sx=x+rand(-30,30), sy=y+rand(-30,30), stx=Math.floor(sx/TILE), sty=Math.floor(sy/TILE); if(!map[sty*MW+stx]) enemies.push(spawnEnemy(kind,sx,sy,depth,false));}}}
-  if(!isBoss&&depth>=2&&Math.random()<.18){const r=pick(rooms.filter(q=>q!==spawnRoom)); if(r) enemies.push(spawnEnemy('goblin',cw(r.cx),cw(r.cy),depth,false));}
+  if(!isBoss&&depth>=2&&Math.random()<.1){const r=pick(rooms.filter(q=>q!==spawnRoom)); if(r) enemies.push(spawnEnemy('goblin',cw(r.cx),cw(r.cy),depth,false));}
   // the Wandering Champion: a strange warrior who rides the dark from floor to floor. Beat him and take his gear.
   // Rare (3% of floors from depth 3) and tough: lots of life and a boss bar, but he hits like an ordinary elite, so a good build can take him.
   if(!isBoss&&depth>=3&&Math.random()<.03){const r=pick(rooms.filter(q=>q!==spawnRoom)); if(r){const e=spawnEnemy('knight',cw(r.cx),cw(r.cy),depth,true);
@@ -1519,8 +1520,8 @@ function renderMap(map,theme,torches){
 // ================= enemies =================
 function spawnEnemy(type,x,y,depth,elite){
   const early=Math.min(1,.65+.07*depth); // 0.72 on floor 1, full strength from floor 5
-  const T=ETYPES[type], hs=(1+.3*(depth-1)+.016*(depth-1)**2)*1.1*early, ds=(1+.13*(depth-1))*1.2*early;
-  const e={type,T,x,y,r:T.r*(elite?1.25:1),maxHp:Math.round(T.hp*hs*(elite?2.6:1)),dmg:T.dmg*ds*(elite?1.4:1),speed:T.speed*(elite?1.05:1),
+  const T=ETYPES[type], hs=(1+.3*(depth-1)+.012*(depth-1)**2)*1.1*early, ds=(1+.13*(depth-1))*1.2*early;
+  const e={type,T,x,y,r:T.r*(elite?1.25:1),maxHp:Math.round(T.hp*hs*(elite?2.1:1)),dmg:T.dmg*ds*(elite?1.4:1),speed:T.speed*(elite?1.05:1),
     xp:Math.round(T.xp*(1+.1*(depth-1))*(elite?3:1)),elite,state:'idle',t:0,cd:rand(0,1),flash:0,slow:0,burn:null,burnTick:0,face:rand(0,6.28),
     hurt:0,dead:false,kb:{x:0,y:0},ph:rand(0,6.28),name:(elite?pick(ELITE_P)+' ':'')+T.name,boss:false,aim:0,hitDone:false};
   e.hp=e.maxHp;
@@ -1761,7 +1762,7 @@ function hitEnemy(e,dmg,o={}){
   dmg=Math.max(1,Math.round(dmg)); G.dmgDealt=(G.dmgDealt||0)+dmg; if(dmg>(G.bigHit||0)) G.bigHit=dmg; e.hp-=dmg; e.flash=.09; e.hurt=3;
   if(!o.noKb){const a=o.angle!==undefined?o.angle:Math.atan2(e.y-G.player.y,e.x-G.player.x);
     const k=(o.kb||160)*(e.boss||e.type==='stalker'?.12:e.T.r>15?.4:1); e.kb.x+=Math.cos(a)*k; e.kb.y+=Math.sin(a)*k;}
-  text(e.x+rand(-6,6),e.y-e.r,dmg,o.crit?'#ffd36a':(o.color||'#e8dccb'),o.crit?17:12);
+  if(!o.quiet||o.crit) text(e.x+rand(-6,6),e.y-e.r,dmg,o.crit?'#ffd36a':(o.color||'#e8dccb'),o.crit?16:10);
   blood(e.x,e.y,o.crit?10:5,o.angle);
   if(s.lifesteal>0) healP(dmg*s.lifesteal,true);
   if(o.proc!==false){
@@ -2011,7 +2012,7 @@ function gainXp(x){
   }
 }
 function itemXp(x){
-  for(const k of SLOTS){const it=G.gear[k]; if(!it) continue; it.xp+=x*(MAIN_SLOTS.includes(k)?1:.3); // the small pieces grow slower, or drafts would never stop
+  for(const k of SLOTS){const it=G.gear[k]; if(!it) continue; it.xp+=x*(MAIN_SLOTS.includes(k)?1:.2); // the small pieces grow slower, or drafts would never stop
     while(it.xp>=itemNeed(it.level)){it.xp-=itemNeed(it.level); it.level++; growBase(it); G.draftQueue.push(it);
       text(G.player.x,G.player.y-50,`${SLOT_N[it.slot]} level ${it.level}`,RAR[it.rarity].c,13);}}
   recalc();
@@ -2092,7 +2093,7 @@ function releaseAttack(k){
     const b=bodyOf(e), ea=Math.atan2(b.y-handY(),b.x-p.x);
     strike(e,k.mult,ea,Object.assign({kb:k.heavy?320:undefined},k.o)); hits++;
     spark(b.x-Math.cos(ea)*b.r*.6,b.y-Math.sin(ea)*b.r*.6,'#f2e6d8',k.heavy?10:6);}
-  if(hits){G.shake=Math.min(14,G.shake+(k.heavy?6:2)); hitStop(k.heavy?.07:.035);} // a beat of impact on every hit, not just crits
+  if(hits){G.shake=Math.min(14,G.shake+(k.heavy?6:2)); if(k.heavy) hitStop(.06);} // the pause is saved for heavy blows, so a crowd doesn't stutter // a beat of impact on every hit, not just crits
   if(hits&&G.stats.spellblade) for(const id in G.skills) G.skills[id].cdT-=.3; // Spellblade: landing a blow speeds every skill
   hitUrns(o=>{const d=dist(p,o); return d<reach+8&&(d<20||angDiff(Math.atan2(o.y-p.y,o.x-p.x),a)<=arc/2);},a);
 }
@@ -2161,7 +2162,7 @@ const SKILLS={
       const spin=()=>{G.effects.push({type:'ring',x:p.x,y:p.y,r0:20,r1:R,t:0,max:.25,color:'#e8c8a8',w:8});
         for(let i=0;i<3;i++) G.effects.push({type:'slash',x:p.x,y:p.y,a:i*2.1+G.time*8,arc:2.2,reach:R*.9,t:0,max:.22,color:'#e8c8a8'});
         if(x.m('vortex')) pullIn(p.x,p.y,R*1.6,260);
-        for(const e of near(p.x,p.y,R)){x.hit(e,2.2,undefined,{kb:280}); if(x.m('bleed')) e.bleed={t:3,dps:G.stats.dmg*.7*x.M};}
+        for(const e of near(p.x,p.y,R)){x.hit(e,2.8,undefined,{kb:280}); if(x.m('bleed')) e.bleed={t:3,dps:G.stats.dmg*.7*x.M};}
         hitUrns(o=>dist(p,o)<R+8); G.shake=Math.min(14,G.shake+6);};
       spin(); if(x.m('twice')) later(.5,()=>{play('whirlwind'); spin();});
       if(G.stats.u.endlessspin){p.spinT=3; for(let k=1;k<6;k++) later(k*.5,()=>{play('whirlwind'); spin();});}}},
@@ -2179,7 +2180,7 @@ const SKILLS={
     muts:{frost:'Chills everything it hits.',double:'A second ring follows.',wide:'40% larger.',flame:'Leaves a ring of fire on the ground.'},
     cast(x){const p=x.p, R=160*x.A*(x.m('wide')?1.4:1);
       const ring=(m)=>{G.effects.push({type:'ring',x:p.x,y:p.y,r0:10,r1:R,t:0,max:.35,color:'#a68cff',w:10,light:true}); spark(p.x,p.y,'#b9a3ff',24);
-        for(const e of near(p.x,p.y,R)){x.hit(e,2.5*m,undefined,{kb:320}); if(x.m('frost')) e.slow=2.5;
+        for(const e of near(p.x,p.y,R)){x.hit(e,2.9*m,undefined,{kb:320}); if(x.m('frost')) e.slow=2.5;
           if(e.dead&&G.stats.u.novachain){const ex=e.x, ey=e.y; later(.15,()=>{G.effects.push({type:'ring',x:ex,y:ey,r0:6,r1:R*.5,t:0,max:.3,color:'#a68cff',w:6,light:true}); for(const q of near(ex,ey,R*.5)) x.hit(q,1.2,Math.atan2(q.y-ey,q.x-ex),{kb:200});});}}
         hitUrns(o=>dist(p,o)<R+8); G.shake=Math.min(14,G.shake+7);};
       ring(1); if(x.m('double')) later(.4,()=>{play('nova'); ring(.7);});
@@ -2187,31 +2188,31 @@ const SKILLS={
   raise:{cd:4,d:'Raise skeletons from nearby corpses. No corpses? It takes your blood.',
     muts:{army:'+2 max skeletons.',explode:'Corpses burst violently as they rise.',armor:'Skeletons have double life.',fury:'Skeletons attack 60% faster.'},
     cast(){raiseDead();}},
-  fireball:{cd:1.4,d:'Hurl a fireball that explodes on impact.',
+  fireball:{cd:2.2,d:'Hurl a fireball that explodes on impact.',
     muts:{split:'Bursts into three smaller fireballs.',ground:'Leaves burning ground where it lands.',big:'Huge and slow, with a 60% bigger, harder blast.',multi:'Fires 2 more fireballs in a fan.'},
     cast(x){const p=x.p, big=x.m('big'), u=G.stats.u, n=u.bouncefire?1:1+x.P+(x.m('multi')?2:0);
       if(u.skycaller){meteorAt(x.tp.x,x.tp.y,70*x.A*(big?1.4:1),3*x.M*(big?1.5:1)); return;}
       for(let i=0;i<n;i++){const a=x.a+(i-(n-1)/2)*.2, sp=big?260:380;
         fireProj({x:p.x+Math.cos(a)*12,y:p.y+Math.sin(a)*12,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:big?10:7,color:'#ff7a2a',mult:x.M,skill:'fireball',critBonus:x.s.skillCrit,
-          boom:{r:55*x.A*(big?1.6:1),m:x.M*1.4*(big?1.6:1),color:'#ff7a2a',ignite:.4},
+          boom:{r:55*x.A*(big?1.6:1),m:x.M*1.15*(big?1.6:1),color:'#ff7a2a',ignite:.4},
           ground:x.m('ground')?{r:24*x.A,t:3*x.D,m:x.M*.35}:null, split:x.m('split'), bounce:!!u.bouncefire, life:u.bouncefire?10:1.2});}}},
-  iceshards:{cd:1.6,d:'A fan of ice shards that pierce and chill.',
+  iceshards:{cd:2.4,d:'A fan of ice shards that pierce and chill.',
     muts:{more:'3 more shards.',nova:'Shards fly out in every direction.',shatter:'Chilled enemies shatter when they die.',pierce:'Shards pierce 2 more enemies.'},
     cast(x){const p=x.p, n=5+x.P*2+(x.m('more')?3:0), all=x.m('nova'), spread=all?Math.PI*2/n:.9/(n-1||1);
       for(let i=0;i<n;i++){const a=all?x.a+i*spread:x.a+(i-(n-1)/2)*spread;
-        fireProj({x:p.x+Math.cos(a)*10,y:p.y+Math.sin(a)*10,vx:Math.cos(a)*460,vy:Math.sin(a)*460,r:4,life:.8,color:'#9fd6ff',mult:x.M*.7,skill:'iceshards',critBonus:x.s.skillCrit,pierce:1+(x.m('pierce')?2:0),chill:2});}}},
-  lightning:{cd:2,d:'Lightning leaps between enemies.',
+        fireProj({x:p.x+Math.cos(a)*10,y:p.y+Math.sin(a)*10,vx:Math.cos(a)*460,vy:Math.sin(a)*460,r:4,life:.8,color:'#9fd6ff',mult:x.M*.85,skill:'iceshards',critBonus:x.s.skillCrit,pierce:1+(x.m('pierce')?2:0),chill:2});}}},
+  lightning:{cd:2.8,d:'Lightning leaps between enemies.',
     muts:{fork:'Chains 3 more times.',storm:'Three more bolts strike nearby enemies.',overload:'The first enemy takes 80% more.',static:'Struck enemies take 20% more damage for 4 seconds.'},
     cast(x){const p=x.p; let first=null, bd=320;
       for(const e of G.enemies){ if(e.dead) continue; const d=dist(e,p); if(d<bd&&angDiff(Math.atan2(e.y-p.y,e.x-p.x),x.a)<.8&&los(p.x,p.y,e.x,e.y)){bd=d; first=e;} }
       if(!first){G.effects.push({type:'zap',pts:[{x:p.x,y:p.y},{x:p.x+Math.cos(x.a)*120,y:p.y+Math.sin(x.a)*120}],t:0,max:.2}); return;}
       const chain=(start,jumps,m)=>{const pts=[{x:p.x,y:p.y}], hit=new Set(); let cur=start;
-        for(let j=0;j<=jumps&&cur;j++){hit.add(cur); pts.push({x:cur.x,y:cur.y}); x.hit(cur,1.3*m*(j===0&&x.m('overload')?1.8:1),undefined,{noKb:true,color:'#cfe8ff'});
+        for(let j=0;j<=jumps&&cur;j++){hit.add(cur); pts.push({x:cur.x,y:cur.y}); x.hit(cur,(j===0?1.7:1.3)*m*(j===0&&x.m('overload')?1.8:1),undefined,{noKb:true,color:'#cfe8ff'});
           if(x.m('static')) mark(cur,4,.2); let nx=null, nd=170; for(const e of G.enemies){ if(e.dead||hit.has(e)) continue; const d=dist(e,cur); if(d<nd){nd=d; nx=e;}} cur=nx;}
         G.effects.push({type:'zap',pts,t:0,max:.25});};
       if(G.stats.u.lightningrod) chain(first,30,.5); else chain(first,4+x.C+(x.m('fork')?3:0),1);
       if(x.m('storm')) later(.2,()=>{for(let k=0;k<3;k++){const c=near(p.x,p.y,260); if(!c.length) break; chain(pick(c),1,.8);}});}},
-  slam:{cd:3,d:'Smash the ground in front of you, hurling enemies back.',
+  slam:{cd:3.6,d:'Smash the ground in front of you, hurling enemies back.',
     muts:{quake:'An aftershock hits again for 70%.',wide:'Hits all around you.',fissure:'Rips a burning fissure in the ground.',stun:'Stuns everything hit.'},
     cast(x){const P=x.p, R=110*x.A, arc=x.m('wide')?Math.PI*2:1.6, a=x.a;
       let p={x:P.x,y:P.y};
@@ -2230,8 +2231,8 @@ const SKILLS={
     muts:{more:'2 more blades.',wide:'The orbit is 50% wider.',long:'Lasts 75% longer.',fire:'The blades set enemies burning.'},
     cast(x){ if(G.stats.u.gyre){const g=(G.orbits=G.orbits||[]).find(o=>o.gyre); if(g){g.n=Math.min(12,g.n+1); g.mult=x.M*.55; return;}
         G.orbits.push({t:0,ttl:1e9,gyre:true,n:3+x.P,r:46*x.A*(x.m('wide')?1.5:1),ang:0,mult:x.M*.55,fire:x.m('fire'),hits:new Map()}); return;}
-      (G.orbits=G.orbits||[]).push({t:0,ttl:4*x.D*(x.m('long')?1.75:1),n:3+x.P+(x.m('more')?2:0),r:46*x.A*(x.m('wide')?1.5:1),ang:0,mult:x.M*.55,fire:x.m('fire'),hits:new Map()});}},
-  spikes:{cd:2.5,d:'Bone spikes erupt beneath your target.',
+      (G.orbits=G.orbits||[]).push({t:0,ttl:4*x.D*(x.m('long')?1.75:1),n:3+x.P+(x.m('more')?2:0),r:46*x.A*(x.m('wide')?1.5:1),ang:0,mult:x.M*.7,fire:x.m('fire'),hits:new Map()});}},
+  spikes:{cd:3.2,d:'Bone spikes erupt beneath your target.',
     muts:{prison:'Enemies hit are nearly rooted for 3 seconds.',double:'Erupts a second time.',wide:'40% larger.',marrow:'Each enemy hit heals you 1% of your life.'},
     cast(x){const {x:tx,y:ty}=x.tp, R=60*x.A*(x.m('wide')?1.4:1);
       const erupt=m=>{warn(tx,ty,R,.35,'#e8dcc0'); later(.35,()=>{G.effects.push({type:'spikes',x:tx,y:ty,r:R,t:0,max:.45}); play('urn',{x:tx,y:ty});
@@ -2251,7 +2252,7 @@ const SKILLS={
       const drop=(mx,my,r,m)=>{warn(mx,my,r,delay,'#ff5a1a'); later(delay,()=>{
         G.effects.push({type:'ring',x:mx,y:my,r0:8,r1:r,t:0,max:.4,color:'#ff7a2a',w:14,light:true}); spark(mx,my,'#ffb04a',30); play('splat',{x:mx,y:my});
         G.shake=Math.min(14,G.shake+10*m); G.flash=Math.max(G.flash||0,.2*m);
-        for(const e of near(mx,my,r)){x.hit(e,4.5*m,Math.atan2(e.y-my,e.x-mx),{kb:300}); if(x.m('crater')) stun(e,1.5);}
+        for(const e of near(mx,my,r)){x.hit(e,3.9*m,Math.atan2(e.y-my,e.x-mx),{kb:300}); if(x.m('crater')) stun(e,1.5);}
         hitUrns(o=>Math.hypot(o.x-mx,o.y-my)<r);
         for(let i=0;i<5;i++){const a=i*1.26; playerHazard(mx+Math.cos(a)*r*.45,my+Math.sin(a)*r*.45,22,3*x.D*(x.m('molten')?2:1),G.stats.dmg*.4*x.M,'#ff7a2a');}});};
       drop(tx,ty,R,1); if(G.stats.u.meteor3){later(.45,()=>drop(tx,ty,R*.75,.7)); later(.9,()=>drop(tx,ty,R*.5,.5));}
@@ -2261,24 +2262,24 @@ const SKILLS={
     cast(x){const p=x.p, rain=G.stats.u.swordrain, n=rain?8:3+(x.m('more')?2:0);
       for(let k=0;k<n;k++){const a=k*Math.PI*2/n; spawnMinion(p.x+Math.cos(a)*24,p.y+Math.sin(a)*24);
         Object.assign(G.allies[G.allies.length-1],{blade:true,rise:0,ttl:rain?4:12*x.D*(x.m('long')?1.6:1),T:{phase:true},spd:x.m('fast')?260:190,atkCd:x.m('fast')?.35:.6,
-          boomEnd:rain||x.m('explode'),skill:'spectral',mult:x.M});}}},
-  leap:{cd:4,d:'Leap to your target and crash down on everything there.',
+          boomEnd:rain||x.m('explode'),skill:'spectral',mult:x.M*1.25});}}},
+  leap:{cd:4.8,d:'Leap to your target and crash down on everything there.',
     muts:{quake:'The landing is 50% bigger.',twice:'Cooldown is halved.',fire:'Leaves a ring of fire where you land.',stun:'Stuns everything you land on.'},
     cast(x){const p=x.p; let tx=x.tp.x, ty=x.tp.y; const a=Math.atan2(ty-p.y,tx-p.x), L=Math.hypot(tx-p.x,ty-p.y); let d=0;
       for(;d<L;d+=6) if(collides(p.x+Math.cos(a)*(d+6),p.y+Math.sin(a)*(d+6),p.r)) break;
       p.leap={t:0,dur:.35,sx:p.x,sy:p.y,tx:p.x+Math.cos(a)*d,ty:p.y+Math.sin(a)*d,x}; p.inv=Math.max(p.inv,.45);}},
   plague:{cd:6,d:'A cloud of rot settles on your target, eating at anything inside.',
     muts:{wide:'40% larger.',long:'Lingers 60% longer.',spread:'Enemies that die inside it spread the cloud.',wither:'Enemies inside take 25% more damage.'},
-    cast(x){const {x:tx,y:ty}=x.tp; playerHazard(tx,ty,70*x.A*(x.m('wide')?1.4:1),5*x.D*(x.m('long')?1.6:1),G.stats.dmg*.45*x.M,'#9acd32',
+    cast(x){const {x:tx,y:ty}=x.tp; playerHazard(tx,ty,70*x.A*(x.m('wide')?1.4:1),5*x.D*(x.m('long')?1.6:1),G.stats.dmg*.36*x.M,'#9acd32',
       {skill:'plague',wither:x.m('wither'),spread:x.m('spread')}); smoke(tx,ty,14);}},
-  voidorb:{cd:4,d:'A slow orb of nothing that tears at everything near it.',
+  voidorb:{cd:5,d:'A slow orb of nothing that tears at everything near it.',
     muts:{pull:'Drags enemies toward it.',bigger:'50% larger.',twin:'Fires a second orb.',collapse:'Collapses in a blast when it ends.'},
     cast(x){const p=x.p, n=1+x.P+(x.m('twin')?1:0);
       if(G.stats.u.voidtwins){for(let i=0;i<2;i++) fireProj({x:p.x,y:p.y,vx:0,vy:0,r:9,life:6*x.D,color:'#b06aff',pierce:999,noHit:true,skill:'voidorb',orbitP:true,oa:i*Math.PI,
           pulse:{every:.25,acc:0,r:42*x.A*(x.m('bigger')?1.5:1),m:x.M*.45,pull:x.m('pull')}}); return;}
       for(let i=0;i<n;i++){const a=x.a+(i-(n-1)/2)*.3;
-        fireProj({x:p.x+Math.cos(a)*14,y:p.y+Math.sin(a)*14,vx:Math.cos(a)*140,vy:Math.sin(a)*140,r:9,life:3*x.D,color:'#b06aff',pierce:999,noHit:true,skill:'voidorb',
-          pulse:{every:.25,acc:0,r:42*x.A*(x.m('bigger')?1.5:1),m:x.M*.45,pull:x.m('pull')},
+        fireProj({x:p.x+Math.cos(a)*14,y:p.y+Math.sin(a)*14,vx:Math.cos(a)*85,vy:Math.sin(a)*85,r:9,life:3.5*x.D,color:'#b06aff',pierce:999,noHit:true,skill:'voidorb',
+          pulse:{every:.25,acc:0,r:54*x.A*(x.m('bigger')?1.5:1),m:x.M*.6,pull:x.m('pull')},
           boom:x.m('collapse')?{r:90*x.A,m:x.M*2.5,color:'#b06aff',endOnly:true}:null});}}},
   deathmark:{cd:8,d:'Mark everything around your target: marked enemies take 35% more damage.',
     muts:{spread:'The mark jumps to two nearby enemies when its bearer dies.',wide:'40% larger.',long:'Lasts 60% longer.',pact:'Marked enemies often drop healing when they die.'},
@@ -2329,7 +2330,7 @@ function updateSkills(dt){
     if(k>=1){const x=L.x, R=80*x.A*(x.m('quake')?1.5:1); p.leap=null;
       G.effects.push({type:'ring',x:p.x,y:p.y,r0:10,r1:R,t:0,max:.3,color:'#c89060',w:10}); for(let i=0;i<16;i++) dust(p.x+rand(-R,R)*.6,p.y+rand(-R,R)*.4);
       const sky=G.stats.u.skyfall; if(sky) meteorAt(p.x,p.y,90,3*sky*x.M);
-      for(const e of near(p.x,p.y,R)){x.hit(e,2.2,undefined,{kb:300,forceCrit:!!sky}); if(x.m('stun')) stun(e,1.2);}
+      for(const e of near(p.x,p.y,R)){x.hit(e,2.6,undefined,{kb:300,forceCrit:!!sky}); if(x.m('stun')) stun(e,1.2);}
       hitUrns(o=>dist(p,o)<R); G.shake=Math.min(14,G.shake+9); play('splat');
       if(x.m('fire')) for(let i=0;i<8;i++){const a=i*Math.PI/4; playerHazard(p.x+Math.cos(a)*R*.6,p.y+Math.sin(a)*R*.6,20,3*x.D,G.stats.dmg*.35*x.M,'#ff7a2a');}}}
   if(G.orbits) for(const o of G.orbits){o.t+=dt; o.ang+=5*dt;
@@ -2370,7 +2371,8 @@ function boomAt(x,y,r,mult,color,o={}){
 function meteorAt(x,y,r,mult){warn(x,y,r,.6,'#ff5a1a'); later(.6,()=>{boomAt(x,y,r,mult,'#ff7a2a'); play('splat',{x,y}); G.shake=Math.min(14,G.shake+6);
   for(let i=0;i<3;i++){const a=i*2.1; playerHazard(x+Math.cos(a)*r*.4,y+Math.sin(a)*r*.4,18,2.5,G.stats.dmg*.3,'#ff7a2a');}});}
 // homing critters and bolts; they steer toward the nearest enemy
-function critter(x,y,n,o){for(let i=0;i<n;i++){const a=rand(0,6.28), sp=o.spd||240;
+// (never more than 24 critters out at once)
+function critter(x,y,n,o){ n=Math.min(n,24-G.projectiles.filter(q=>q.home).length); for(let i=0;i<n;i++){const a=rand(0,6.28), sp=o.spd||240;
   G.projectiles.push(Object.assign({x:x+Math.cos(a)*8,y:y+Math.sin(a)*8,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,owner:'player',life:o.life||3,r:o.r||3,pierce:0,home:true,proc:false,wob:rand(0,6.28)},o));}}
 function confetti(x,y,mult){boomAt(x,y,80,mult,'#ff5ad8'); text(x,y-24,pick(['POP!','HOORAY','WHEE!','PARTY']),pick(['#ff5ad8','#5affd8','#ffe05a']),16);
   for(let i=0;i<40;i++){const a=rand(0,6.28), sp=rand(80,260); addP({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-60,life:rand(.6,1.2),max:1.2,size:2,color:pick(['#ff5ad8','#5affd8','#ffe05a','#7a9aff','#ff7a2a']),drag:2.5,emissive:true});}
@@ -2501,6 +2503,7 @@ function effLv(id){const sk=G.skills[id], s=G.stats; let l=sk?sk.lvl:1; if(!s||!
 function firePowers(t,x,y,e){
   if(!G||!G.stats||!G.stats.powers||G.dying) return;
   for(const pw of G.stats.powers){ if(pw.t!==t||pw.cd>0) continue; if(Math.random()>pw.ch) continue;
+    if(t!=='floor'&&G.time-(G.lastPowerT??-9)<.2) continue; G.lastPowerT=G.time; // a beat between powers, so they don't avalanche
     pw.cd=pw.icd; const E=EFFECTS[pw.e]; E.run({x:x??G.player.x,y:y??G.player.y,e,p:pw.p,n:1});
     if(pw.t!=='hit'&&pw.t!=='move') text(G.player.x+rand(-10,10),G.player.y-38,E.n,E.c,11);}
 }
@@ -2607,13 +2610,13 @@ function questFail(why){
       if(!collides(x,y,12)){const e=spawnEnemy(pick(['husk','gnawer','wraith'].filter(t=>ETYPES[t].minD<=G.depth+3)),x,y,G.depth+2,true); e.state='chase'; G.enemies.push(e); smoke(x,y,10); break;}}}
 }
 function updateQuest(dt){
-  const q=G.quest; if(G.sysWin){G.sysWin.t+=dt; if(G.sysWin.t>4.2) G.sysWin=null;}
+  const q=G.quest; if(G.sysWin){G.sysWin.t+=dt; if(G.sysWin.t>3.2) G.sysWin=null;}
   if(!q||q.done||q.failed) return;
   if(q.timed){q.t-=dt; if(q.t<=0) questFail('Time ran out.');}
 }
 // the System's window: navy glass, a thin glowing frame, square brackets
 function drawSysWin(){
-  const w=G.sysWin; if(!w) return; const a=Math.min(1,w.t/.25,(4.2-w.t)/.4), bh=74+w.lines.length*19;
+  const w=G.sysWin; if(!w) return; const a=Math.min(1,w.t/.25,(3.2-w.t)/.4), bh=74+w.lines.length*19;
   // it lives in the gap at the top, between your life bar and the depth counter; only a phone is too narrow for that
   const L=20+Math.min(260,W*.42)+12, R=W-20-150-12, fits=R-L>=300, bw=fits?Math.min(400,R-L):Math.min(400,W-40), X=fits?(L+R)/2-bw/2:W/2-bw/2, Y=fits?8:118; G.sysWinBottom=Y+bh;
   ctx.save(); ctx.globalAlpha=clamp(a,0,1);
@@ -2978,7 +2981,9 @@ function update(dt){
   if(!G.sealed&&!G.dying&&Math.hypot(p.x-G.stairs.x,p.y-G.stairs.y)<18){questEvent('stairs'); G.transition={t:0,done:false}; play('stairs'); return;}
   const tx=p.x+(mw.x-p.x)*.12, ty=p.y+(mw.y-p.y)*.12, ck=Math.min(1,dt*8);
   G.cam.x+=(tx-G.cam.x)*ck; G.cam.y+=(ty-G.cam.y)*ck; G.shake=Math.max(0,G.shake-dt*30);
-  if(G.draftQueue.length&&state==='play'&&!G.dying) openDraft(G.draftQueue.shift());
+  // upgrade pop-ups wait for a lull in the fighting, so they never freeze you mid-swing
+  G.calm=!G.bossBar&&!G.enemies.some(e=>!e.dead&&!e.hidden&&e.state!=='idle'&&dist(e,p)<320);
+  if(G.draftQueue.length&&state==='play'&&!G.dying&&G.calm) openDraft(G.draftQueue.shift());
 }
 function mouseWorld(){return {x:(mouse.x-W/2)/ZOOM+G.cam.x, y:(mouse.y-H/2)/ZOOM+G.cam.y};}
 
@@ -3380,6 +3385,9 @@ function drawHUD(){
     if(sl.sec>0){ctx.textAlign='center'; ctx.font=`600 11px ${FB}`; ctx.fillStyle='#d3c7ae'; ctx.fillText(sl.sec.toFixed(1),X+bw-14,by+9);}});
   // gear
   const bigFight=G.bossBar&&G.bossBar.big;
+  // an upgrade is waiting for a quiet moment
+  if(G.draftQueue.length&&!G.calm){ctx.textAlign='left'; ctx.font=`600 12px ${FB}`; ctx.fillStyle=`rgba(224,122,44,${.7+.3*Math.sin(G.time*4)})`;
+    ctx.fillText(`✦ ${G.draftQueue.length>1?G.draftQueue.length+' upgrades':'Upgrade'} waiting: clear the fight`,20,H-150);}
   // gear: eight small pictures in two rows, each with a level bar
   if(W>760&&!bigFight){ctx.imageSmoothingEnabled=false; SLOTS.forEach((k,i)=>{const it=G.gear[k], sz=44, X=20+(i%4)*(sz+6), Y=H-20-56+(i<4?-sz-14:0)+6;
     ctx.fillStyle='rgba(10,6,7,.82)'; ctx.fillRect(X,Y,sz,sz); ctx.strokeStyle=it?hexA(RAR[it.rarity].c,.7):'#2e1c1e'; ctx.strokeRect(X+.5,Y+.5,sz-1,sz-1);
@@ -3958,7 +3966,7 @@ $('btnCopyRun').onclick=()=>{ const b=$('btnCopyRun'), t=$('runSummary'), shown=
   try{ navigator.clipboard.writeText(G.summary).then(()=>{b.textContent='Copied. Paste it to the dev';},()=>{b.textContent='Select the text below and copy it'; shown();}); }
   catch(e){ b.textContent='Select the text below and copy it'; shown(); } };
 // one place for the build number: the title screen and run summaries both read it
-const BUILD='0.37';
+const BUILD='0.38';
 // ----- first-time tips: each shows once ever, worded for whatever you're playing with -----
 const HINTS=(()=>{try{return new Set(JSON.parse(localStorage.getItem('deepening.hints')||'[]'))}catch(e){return new Set()}})();
 const keyFor=a=>({dash:TOUCH.active?'Tap DASH':PAD.active?'Press A':'Press Space', use:TOUCH.active?'Tap USE':PAD.active?'Press X':'Press E',
