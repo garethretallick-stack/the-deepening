@@ -695,11 +695,11 @@ const TREE=(()=>{
   RINGS.forEach((R,ri)=>{for(let i=0;i<R.n;i++){
     const a=-Math.PI/2+(i+(ri%2?.5:0))*Math.PI*2/R.n, cx=Math.cos(a)*R.r, cy=Math.sin(a)*R.r, cl={ri,i,a,ring:[]};
     cl.center=add(cx,cy,'notable');
-    for(let j=0;j<6;j++){const b=a+j*Math.PI/3; cl.ring.push(add(cx+Math.cos(b)*50,cy+Math.sin(b)*50,'small'));}
-    cl.ring.forEach((n,j)=>link(n,cl.ring[(j+1)%6])); link(cl.center,cl.ring[0]); link(cl.center,cl.ring[3]);
+    for(let j=0;j<4;j++){const b=a+j*Math.PI/2+Math.PI/4; cl.ring.push(add(cx+Math.cos(b)*48,cy+Math.sin(b)*48,'small'));}
+    cl.ring.forEach((n,j)=>link(n,cl.ring[(j+1)%4])); link(cl.center,cl.ring[0]); link(cl.center,cl.ring[2]);
     clusters.push(cl);}});
   const pair=(A,B)=>{let best=null,bd=1e9; for(const x of A.ring) for(const y of B.ring){const d=Math.hypot(x.x-y.x,x.y-y.y); if(d<bd){bd=d; best=[x,y];}} return best;};
-  const path=(x,y)=>{const steps=Math.max(0,Math.round(Math.hypot(x.x-y.x,x.y-y.y)/70)-1); let prev=x;
+  const path=(x,y)=>{const steps=Math.max(0,Math.round(Math.hypot(x.x-y.x,x.y-y.y)/100)-1); let prev=x;
     for(let s=1;s<=steps;s++){const t=s/(steps+1), n=add(x.x+(y.x-x.x)*t,x.y+(y.y-x.y)*t,'small'); link(prev,n); prev=n;} link(prev,y);};
   for(const cl of clusters){
     const next=clusters.find(o=>o.ri===cl.ri&&o.i===(cl.i+1)%RINGS[cl.ri].n); path(...pair(cl,next));
@@ -724,7 +724,7 @@ const TREE=(()=>{
   const used={};
   for(const n of nodes){ if(n.kind!=='small'&&n.kind!=='notable') continue;
     const z=zoneOf(n.a+(rnd()-.5)*.3), pool=z.pool;
-    if(n.kind==='small'){const st=pool[Math.floor(rnd()*pool.length)]; n.stats=[[st[0],st[1]]]; n.name=STAT_NAMES[st[0]]||st[0];}
+    if(n.kind==='small'){const st=pool[Math.floor(rnd()*pool.length)]; n.stats=[[st[0],+(st[1]*1.35).toFixed(3)]]; n.name=STAT_NAMES[st[0]]||st[0];}
     else {const a=pool[Math.floor(rnd()*pool.length)]; let b=pool[Math.floor(rnd()*pool.length)]; if(b===a) b=pool[(pool.indexOf(a)+1)%pool.length];
       n.stats=[[a[0],a[1]*3],[b[0],b[1]*2.5]]; used[z.cls]=(used[z.cls]||0)+1; n.name=z.notables[(used[z.cls]-1)%z.notables.length];}}
   return {nodes,edges,starts};
@@ -1827,7 +1827,7 @@ function killEnemy(e){
   if(e.markT>0&&e.markPact&&Math.random()<.25) G.drops.push({kind:'orb',x:e.x,y:e.y,t:0});
   if(e.plagueT>0&&e.plagueSpread) playerHazard(e.x,e.y,45*(1+G.stats.area),3,G.stats.dmg*.35,'#9acd32',{skill:'plague',spread:true});
   if(e.boss) dropTome(e.x+rand(-20,20),e.y+30); else if(Math.random()<(e.elite?.06:.008)) dropTome(e.x,e.y);
-  if(!e.boss&&Math.random()<(e.elite?1:.4)) dropGold(e.x,e.y,(2+G.depth*.8)*(e.elite?4:1)*rand(.7,1.3));
+  if(!e.boss&&Math.random()<(e.elite?1:.4)) dropGold(e.x,e.y,(2+G.depth*.5)*(e.elite?4:1)*rand(.7,1.3));
   if(e.big){ // a great boss's hoard: five pieces of rare or better from deeper than here, gold, and a moment to breathe
     for(let k=0;k<5;k++){const an=k*Math.PI*2/5-Math.PI/2; dropItem(e.x+Math.cos(an)*44,e.y+Math.sin(an)*34,pick(SLOTS),.6,'rare',LEG_CHANCE_BOSS,G.depth+3);}
     dropGold(e.x,e.y,60+G.depth*14); G.bonusSouls=(G.bonusSouls||0)+150; healP(G.stats.maxHp);
@@ -3969,7 +3969,7 @@ $('btnCopyRun').onclick=()=>{ const b=$('btnCopyRun'), t=$('runSummary'), shown=
   try{ navigator.clipboard.writeText(G.summary).then(()=>{b.textContent='Copied. Paste it to the dev';},()=>{b.textContent='Select the text below and copy it'; shown();}); }
   catch(e){ b.textContent='Select the text below and copy it'; shown(); } };
 // one place for the build number: the title screen and run summaries both read it
-const BUILD='0.39';
+const BUILD='0.40';
 // ----- first-time tips: each shows once ever, worded for whatever you're playing with -----
 const HINTS=(()=>{try{return new Set(JSON.parse(localStorage.getItem('deepening.hints')||'[]'))}catch(e){return new Set()}})();
 const keyFor=a=>({dash:TOUCH.active?'Tap DASH':PAD.active?'Press A':'Press Space', use:TOUCH.active?'Tap USE':PAD.active?'Press X':'Press E',
