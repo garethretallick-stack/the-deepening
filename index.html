@@ -2902,7 +2902,7 @@ function update(dt){
   if(p.dashTime>0){p.dashTime-=dt; move(p,p.dvx*dt,p.dvy*dt);
     if(s.u.gravewalk){p.fireT=(p.fireT||0)-dt; if(p.fireT<=0){p.fireT=.035; addHazard(p.x,p.y+6,16,2.6,s.dmg*.45*s.u.gravewalk,'#ff7a2a',0,'player');}} addP({x:p.x,y:p.y,vx:0,vy:0,life:.25,max:.25,size:9,color:CLASSES[G.cls].color,drag:0,fade:true});}
   else { const spd=s.speed*(p.hasteT>0?1.3:1)*(p.spinT>0?.6:1)*(p.mudT>0?.55:1)*(p.wetT>0?.7:1); p.mudT=(p.mudT||0)-dt; move(p,mx*spd*dt,my*spd*dt);
-    if(mx||my){p.stepT=(p.stepT||0)-dt; if(p.stepT<=0){p.stepT=48/s.speed; play('step');}} }
+    if(mx||my){p.stepT=(p.stepT||0)-dt; if(p.stepT<=0){p.stepT=48/s.speed; play('step'); if(!G.isTavern) dust(p.x+rand(-3,3),p.y+8);}} }
   for(const o of G.props){ if(o.kind==='urn'||o.kind==='puff'||(o.kind==='decor'&&!DECO[o.key].r)) continue; const R=o.kind==='decor'?DECO[o.key].r:o.kind==='patron'?9:o.kind==='table'||o.kind==='hearth'?15:o.kind==='shrine'||o.kind==='altar'?13:11, dx=p.x-o.x, dy=p.y-o.y, d=Math.hypot(dx,dy);
     if(d<R+p.r&&d>.01) move(p,dx/d*(R+p.r-d),dy/d*(R+p.r-d)); }
   // spike traps: rest, rattle, then strike anything standing on them
@@ -3350,7 +3350,8 @@ function drawEnemy(g,e){
   g.save(); if(e.T.phase) g.globalAlpha=.55+.25*Math.sin(G.time*6+e.ph);
   g.fillStyle='rgba(0,0,0,.45)'; g.beginPath(); g.ellipse(e.x,feet,e.r*1.1,e.r*.4,0,0,7); g.fill();
   if(e.elite){g.fillStyle=hexA(e.mod?MODS[e.mod].c:'#78080a',.3); g.beginPath(); g.ellipse(e.x,feet,e.r*1.5,e.r*.6,0,0,7); g.fill();}
-  let ox=e.state==='windup'?Math.round(Math.sin(G.time*60))*2:0;
+  const wl=e.state==='windup'&&e.T.windup?clamp(1-e.t/e.T.windup,0,1)*5:0; // leaning back into the blow
+  let ox=e.state==='windup'?Math.round(Math.sin(G.time*60))*2-Math.round(Math.cos(e.aim)*wl):0;
   const kbm=Math.hypot(e.kb.x,e.kb.y); if(e.flash>0&&kbm>1) ox+=Math.round(e.kb.x/kbm*3); // jolt away from the blow
   let ss=s; if(e.T.atk==='bloat'&&e.state==='windup') ss=s*(1+.35*(1-e.t/e.T.windup)); // swelling
   if(e.T.atk==='blink'&&e.state==='windup'&&!e.blinked) g.globalAlpha*=.25+.75*(e.t/e.T.windup); // fading out
@@ -4025,7 +4026,7 @@ $('btnCopyRun').onclick=()=>{ const b=$('btnCopyRun'), t=$('runSummary'), shown=
   try{ navigator.clipboard.writeText(G.summary).then(()=>{b.textContent='Copied. Paste it to the dev';},()=>{b.textContent='Select the text below and copy it'; shown();}); }
   catch(e){ b.textContent='Select the text below and copy it'; shown(); } };
 // one place for the build number: the title screen and run summaries both read it
-const BUILD='0.41';
+const BUILD='0.42';
 // ----- first-time tips: each shows once ever, worded for whatever you're playing with -----
 const HINTS=(()=>{try{return new Set(JSON.parse(localStorage.getItem('deepening.hints')||'[]'))}catch(e){return new Set()}})();
 const keyFor=a=>({dash:TOUCH.active?'Tap DASH':PAD.active?'Press A':'Press Space', use:TOUCH.active?'Tap USE':PAD.active?'Press X':'Press E',
