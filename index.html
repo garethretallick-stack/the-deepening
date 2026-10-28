@@ -509,7 +509,7 @@ const CLASSES={
   warrior:{name:'Warrior',color:'#5e1d17',hood:'#3a120e',hp:140,dmg:14,atkCd:.48,speed:150,crit:.05,critMult:1.6,armor:.10,arc:1.9,reach:62,
     ability:'whirlwind',abilName:'Whirlwind',abilCd:5,light:150,slash:'#e8c8a8',startWeapon:'Rusted Cleaver',
     desc:'Built to be hit. Gets stronger the closer the teeth get.',abilDesc:'Spin and cleave everything around you.'},
-  rogue:{name:'Rogue',color:'#28302a',hood:'#161c18',hp:95,dmg:10,atkCd:.32,speed:178,crit:.15,critMult:2.0,armor:.03,arc:1.1,reach:52,
+  rogue:{name:'Rogue',color:'#28302a',hood:'#161c18',hp:95,dmg:10,atkCd:.32,speed:178,crit:.12,critMult:1.8,armor:.03,arc:1.1,reach:52,
     ability:'shadowstep',abilName:'Shadow Step',abilCd:4,light:140,slash:'#c8d8c0',startWeapon:'Chipped Shiv',
     desc:'Fast and fragile. Kills things before they know where it is.',abilDesc:'Blink through enemies, cutting all of them.'},
   mage:{name:'Mage',color:'#2c2448',hood:'#191330',hp:80,dmg:16,atkCd:.5,speed:155,crit:.07,critMult:1.7,armor:0,ranged:true,
@@ -1055,7 +1055,8 @@ function recalc(){
   Object.assign(s,{fireDmg:0,coldDmg:0,lightDmg:0,physDmg:0,chaosDmg:0,area:0,dur:0,proj:0,chainX:0,skillCrit:0,skillLeech:0,spellblade:false});
   for(const id of G.alloc){const n=TREE.nodes[id]; if(n.ks) KEYSTONES[n.ks].apply(s); else if(n.sup) SUPPORTS[n.sup].apply(s); else for(const [k,v] of n.stats) applyStat(s,k,v);}
   for(const k of SLOTS){const it=G.gear[k]; if(!it) continue;
-    if(it.baseDmg) s.dmg+=it.baseDmg; if(it.baseHp) s.maxHp+=it.baseHp; if(it.baseArmor) s.armor+=it.baseArmor;
+    // a weapon's flat damage is weighted by how fast your class swings, so fast and slow classes get the same value from the same weapon
+    if(it.baseDmg) s.dmg+=it.baseDmg*c.atkCd/.5; if(it.baseHp) s.maxHp+=it.baseHp; if(it.baseArmor) s.armor+=it.baseArmor;
     for(const a of it.affixes) applyStat(s,a.id,a.v);}
   s.u={}; s.lightMul=1;
   // s.u.<id> holds the legendary's current power (1 at its own depth, fading as you go deeper)
@@ -1119,11 +1120,13 @@ function makeItem(slot,depth,bias=0,force){
   if(r==='cursed') it.affixes.push(rollAffix(pick(BAD),depth));
   // the fun part: powers, skill mods and item skills. Better rarities carry more of them.
   it.powers=[]; it.sk=[];
-  const pwN={common:Math.random()<.1?1:0,magic:Math.random()<.5?1:0,rare:1+(Math.random()<.35?1:0),cursed:1+(Math.random()<.5?1:0)}[r]||0;
+  // the big three pieces carry powers more often than the five small ones, so a full outfit lands around five powers, not ten
+  const pc=MAIN_SLOTS.includes(slot)?1:.6;
+  const pwN={common:Math.random()<.06*pc?1:0,magic:Math.random()<.4*pc?1:0,rare:(Math.random()<.85*pc+.15?1:0)+(Math.random()<.2?1:0),cursed:1+(Math.random()<.3?1:0)}[r]||0;
   for(let k=0;k<pwN;k++) it.powers.push(rollPower(depth));
-  const skN={common:0,magic:Math.random()<.3?1:0,rare:Math.random()<.55?1+(Math.random()<.3?1:0):0,cursed:Math.random()<.4?1:0}[r]||0;
+  const skN={common:0,magic:Math.random()<.2?1:0,rare:Math.random()<.42?1+(Math.random()<.2?1:0):0,cursed:Math.random()<.3?1:0}[r]||0;
   for(let k=0;k<skN;k++) it.sk.push(rollSkillMod(depth));
-  if(Math.random()<({common:.02,magic:.07,rare:.16,cursed:.12}[r]||0)) it.grant=pick(EFFECT_IDS);
+  if(Math.random()<({common:.008,magic:.03,rare:.07,cursed:.06}[r]||0)) it.grant=pick(EFFECT_IDS);
   const first=it.affixes.find(a=>!AFX[a.id].bad), bad=it.affixes.find(a=>AFX[a.id].bad);
   const adj=it.powers.length?EFFECTS[it.powers[0].e].adj+' ':first?AFX[first.id].n+' ':pick(['Rusted ','Worn ','Chipped ','Grim ']);
   it.name=(bad?AFX[bad.id].n+' ':'')+adj+it.noun+(it.grant?' of '+EFFECTS[it.grant].n:'');
@@ -3966,7 +3969,7 @@ $('btnCopyRun').onclick=()=>{ const b=$('btnCopyRun'), t=$('runSummary'), shown=
   try{ navigator.clipboard.writeText(G.summary).then(()=>{b.textContent='Copied. Paste it to the dev';},()=>{b.textContent='Select the text below and copy it'; shown();}); }
   catch(e){ b.textContent='Select the text below and copy it'; shown(); } };
 // one place for the build number: the title screen and run summaries both read it
-const BUILD='0.38';
+const BUILD='0.39';
 // ----- first-time tips: each shows once ever, worded for whatever you're playing with -----
 const HINTS=(()=>{try{return new Set(JSON.parse(localStorage.getItem('deepening.hints')||'[]'))}catch(e){return new Set()}})();
 const keyFor=a=>({dash:TOUCH.active?'Tap DASH':PAD.active?'Press A':'Press Space', use:TOUCH.active?'Tap USE':PAD.active?'Press X':'Press E',
